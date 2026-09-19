@@ -138,7 +138,11 @@ async def consistency(file: UploadFile):
 async def analyze(file: UploadFile, consistency_probes: bool = True):
     if (r := _check_type(file)) is not None:
         return r
-    img, err = await _image(file)
+    data = await file.read()
+    if len(data) > _LIMIT:
+        return JSONResponse({"error": "file_too_large",
+                             "detail": "limit 10MB"}, status_code=413)
+    img, err = _image_bytes(data)
     if err is not None:
         return err
     try:
@@ -146,8 +150,28 @@ async def analyze(file: UploadFile, consistency_probes: bool = True):
         payload = result.model_dump()
         if consistency_probes:
             payload["consistency"] = _service.consistency(img)
+        payload["reliability"] = _service.reliability(img, raw=data)
         return payload
     except Exception as e:  # noqa: BLE001 — never leak stack/paths (§64)
+        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
+                            status_code=500)
+
+
+@app.post("/reliability")
+async def reliability(file: UploadFile):
+    """REL-001 descriptive report (observer; SB-1 outputs unchanged)."""
+    if (r := _check_type(file)) is not None:
+        return r
+    data = await file.read()
+    if len(data) > _LIMIT:
+        return JSONResponse({"error": "file_too_large",
+                             "detail": "limit 10MB"}, status_code=413)
+    img, err = _image_bytes(data)
+    if err is not None:
+        return err
+    try:
+        return _service.reliability(img, raw=data)
+    except Exception as e:  # noqa: BLE001
         return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
                             status_code=500)
 

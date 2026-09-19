@@ -31,6 +31,7 @@ def build_payload(svc: InferenceService, data: bytes) -> dict:
     try:
         payload = svc.analyze(img).model_dump()
         payload["consistency"] = svc.consistency(img)
+        payload["reliability"] = svc.reliability(img, raw=data)
         return payload
     except Exception as e:  # noqa: BLE001 — never leak stack/paths
         return {"error": "inference_failed", "detail": str(type(e).__name__)}
@@ -53,6 +54,13 @@ def render_result(st, payload: dict) -> None:
              f"k={con.get('k')}, σ={con.get('sigma')})")
     st.caption("Consistency is a descriptive failure-detection signal; "
                "it does not alter system_state.")
+    rel = payload.get("reliability", {}).get("reliability", {})
+    if rel:
+        st.write(f"Reliability: `{rel.get('summary')}` "
+                 f"(clinical meaning: {rel.get('clinical_meaning')})")
+        with st.expander("Reliability basis"):
+            for b in rel.get("basis", []):
+                st.write(f"- {b}")
     if payload["segmentation_state"] == "nonempty":
         st.write(f"Segmentation: nonempty, area={payload['localization']['area_pixels']} px")
         st.write(f"Bbox (xyxy, original px): {payload['localization']['bbox']}")

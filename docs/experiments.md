@@ -234,6 +234,16 @@
 - Wired as descriptive `service.quality()` + `/quality` endpoint; does not
   alter outputs or system_state. CPU CI 34 green.
 
+## Workstream 3 — REL-001 reliability engine (advanced branch; SB-1 untouched)
+- Descriptive fusion only (`src/brain_tumor/reliability/engine.py`, pure
+  function): confidence + consistency + quality + seg/localization info.
+  Fixed rule — stable iff confident + agreement 1.0 + quality accept +
+  (notumor OR nonempty+localized), else review with basis list. No score,
+  no retraining, no contract/threshold/state changes, clinical_meaning false.
+- Surfaced as `service.reliability()` + `/reliability` + /analyze payload +
+  Streamlit lines. Evidence `outputs/REL-001/rel001.json` (rule, hashes,
+  synthetic combination matrix). CPU CI 48 green (synthetic only).
+
 ## Full-run commands (Kaggle T4, network only for pretrained weights fetch)
 - `python scripts/train/train_classifier.py`  (≈1–3 GPU-h budget, §55)
 - `python scripts/train/train_segmenter.py`   (≈3–6 GPU-h budget, §55)

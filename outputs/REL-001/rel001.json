@@ -1,0 +1,52 @@
+{
+ "rule": "stable iff confident + agreement==1.0 + quality accept + (notumor OR nonempty+localized); else review. Fixed, untuned.",
+ "module_hashes": {
+  "reliability/engine.py": "9f5d375289ea66e4",
+  "inference/service.py": "a1ecee1a670645f6"
+ },
+ "combination_matrix_synthetic": {
+  "textured": {
+   "predicted": "pituitary",
+   "state": "confident",
+   "agreement": 1.0,
+   "quality": "acceptable",
+   "seg_nonempty": false,
+   "summary": "review",
+   "n_basis": 4
+  },
+  "checker_notumor": {
+   "predicted": "notumor",
+   "state": "uncertain",
+   "agreement": 1.0,
+   "quality": "acceptable",
+   "seg_nonempty": false,
+   "summary": "review",
+   "n_basis": 4
+  },
+  "dark_empty_seg": {
+   "predicted": "glioma",
+   "state": "confident",
+   "agreement": 1.0,
+   "quality": "rejected",
+   "seg_nonempty": false,
+   "summary": "review",
+   "n_basis": 4
+  },
+  "blank_reject": {
+   "predicted": "glioma",
+   "state": "confident",
+   "agreement": 1.0,
+   "quality": "rejected",
+   "seg_nonempty": false,
+   "summary": "review",
+   "n_basis": 4
+  }
+ },
+ "observer_note": "reliability() cannot alter SB-1 outputs (pure fusion; equivalence asserted in tests/integration/test_reliability.py)",
+ "limitations": [
+  "descriptive summary, no validated statistical meaning",
+  "no single reliability score constructed",
+  "no clinical-reliability claim; clinical_meaning always false",
+  "does not override predictions or system_state"
+ ]
+}

@@ -189,6 +189,28 @@ class InferenceService:
         from brain_tumor.quality.gate import assess
         return assess(data)
 
+    def reliability(self, image: Any = None, raw: bytes | None = None) -> dict:
+        """REL-001 descriptive fusion (observer only).
+
+        Runs the identical analyze()/consistency()/quality() paths and fuses
+        their already-computed outputs via reliability_report(). Cannot alter
+        predictions, probabilities, segmentation, localization, or
+        system_state — disabling it leaves every SB-1 output bit-identical.
+        """
+        from brain_tumor.reliability.engine import reliability_report
+        result = self.analyze(image)
+        payload = result.model_dump()
+        con = self.consistency(image)
+        qual = self.quality(raw) if raw is not None else None
+        return reliability_report(
+            classification={"predicted_class": payload["predicted_class"],
+                            "confidence": payload["confidence"],
+                            "classification_state": payload["classification_state"]},
+            consistency=con, quality=qual,
+            segmentation_state=payload["segmentation_state"],
+            localization=payload["localization"],
+            system_state=payload["system_state"])
+
     def explain(self, image: Any = None, raw: bytes | None = None) -> dict:
         """EXPL-001 unified explanation (observer only).
 
