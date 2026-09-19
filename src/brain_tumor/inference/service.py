@@ -203,7 +203,8 @@ class InferenceService:
         import io as _io
         from PIL import Image as _Image, ImageDraw as _Draw
         from brain_tumor.explain.gradcam import (
-            gradcam_heatmap, overlay, resolve_target_layer, upsample_cam)
+            cam_mass_in_bbox, gradcam_heatmap, overlay, resolve_target_layer,
+            upsample_cam)
         from brain_tumor.explain.report import build_report
 
         result = self.analyze(image)
@@ -255,14 +256,8 @@ class InferenceService:
             payload["segmentation_vis"] = {
                 "mask_png_b64": _png(mask_full),
                 "overlay_png_b64": _png(blend),
-                "focus_in_bbox": (
-                    round(float(cam[payload["localization"]["bbox"][1]:
-                                       payload["localization"]["bbox"][3],
-                                   payload["localization"]["bbox"][0]:
-                                       payload["localization"]["bbox"][2]].sum()
-                                / max(cam.sum(), 1e-12)), 4)
-                    if payload["localization"]["bbox"] is not None else None
-                ),
+                "focus_in_bbox": cam_mass_in_bbox(
+                    cam, payload["localization"]["bbox"]),
             }
         else:
             payload["segmentation_vis"] = None

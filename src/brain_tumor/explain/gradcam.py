@@ -75,3 +75,15 @@ def overlay(gray: np.ndarray, cam: np.ndarray, alpha: float = 0.45) -> np.ndarra
     """Blend uint8 grayscale base with JET heatmap. Returns uint8 RGB."""
     base = np.stack([gray, gray, gray], axis=-1).astype(np.float32) / 255.0
     return (((1 - alpha) * base + alpha * jet(cam)) * 255).clip(0, 255).astype("uint8")
+
+
+def cam_mass_in_bbox(cam: np.ndarray, bbox: tuple[int, int, int, int] | None) -> float | None:
+    """Fraction of normalized-CAM mass inside an xyxy original-pixel bbox.
+
+    Pure coordinate convention (verified: all-inside -> 1.0, all-outside ->
+    0.0). Returns None when bbox is None. Descriptive statistic only.
+    """
+    if bbox is None:
+        return None
+    x0, y0, x1, y1 = bbox
+    return round(float(cam[y0:y1, x0:x1].sum() / max(cam.sum(), 1e-12)), 4)

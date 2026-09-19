@@ -214,6 +214,14 @@
   disclaimer. `/explain` endpoint; Streamlit Explain button.
 - Evidence `outputs/EXPL-001/expl001.json`: observer equivalence true,
   deterministic, disclaimer present. CPU CI 37 green (synthetic only).
+- Live-check diagnostic (advanced branch): `focus_in_bbox` 0.00 verified as a
+  CORRECT near-zero measurement, not a bug — same coordinate system
+  (bbox original-px, CAM resized pre-statistic), normalized-float (not JET)
+  representation, dedicated `cam_mass_in_bbox` helper with 1.0/0.0/None unit
+  coverage; display precision raised to 4 decimals to rule out rounding
+  ambiguity. Interpretation: Grad-CAM mass fell outside the segmented bbox
+  for that image — consistent with the no-attention-claim boundary. No
+  model/Grad-CAM math change. CPU CI 40 green.
 
 ## Workstream 1 — input-quality gate (SB-1 fallback intact)
 - Deterministic gate (`src/brain_tumor/quality/gate.py`, codes Q01-Q09,

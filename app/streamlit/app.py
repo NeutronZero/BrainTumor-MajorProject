@@ -84,7 +84,7 @@ def render_explanation(st, payload: dict) -> None:
         st.image(base64.b64decode(sv["overlay_png_b64"]),
                  caption="Segmentation overlay (mask + bbox + centroid)")
         if sv.get("focus_in_bbox") is not None:
-            st.write(f"CAM mass inside bbox: {sv['focus_in_bbox']:.2f} (descriptive)")
+            st.write(f"CAM mass inside bbox: {sv['focus_in_bbox']:.4f} (descriptive)")
 
 
 if __name__ == "__main__":
