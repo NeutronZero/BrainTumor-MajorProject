@@ -1,0 +1,45 @@
+{
+ "scope": "reporting correction only; frozen predictions unchanged; no model rerun",
+ "total_errors_N1000": 5,
+ "confident_but_wrong": 2,
+ "correction": "prior chat reporting listed all 5 errors as confident-but-wrong; correct is 2 (certain=True subset). 3 errors were uncertain-pathway (certain=False).",
+ "confident_but_wrong_cases": [
+  {
+   "stem": "brisc2025_test_00229_gl_sa_t1",
+   "true": "glioma",
+   "pred": "meningioma",
+   "confidence": 0.997197
+  },
+  {
+   "stem": "brisc2025_test_00826_pi_co_t1",
+   "true": "pituitary",
+   "pred": "meningioma",
+   "confidence": 0.995971
+  }
+ ],
+ "uncertain_errors": [
+  {
+   "stem": "brisc2025_test_00281_me_ax_t1",
+   "true": "meningioma",
+   "pred": "glioma",
+   "confidence": 0.641269
+  },
+  {
+   "stem": "brisc2025_test_00411_me_co_t1",
+   "true": "meningioma",
+   "pred": "notumor",
+   "confidence": 0.814261
+  },
+  {
+   "stem": "brisc2025_test_00820_pi_ax_t1",
+   "true": "pituitary",
+   "pred": "glioma",
+   "confidence": 0.899598
+  }
+ ],
+ "uncertain_total": 4,
+ "verified_against": [
+  "outputs/PBA-001/per_case_test.json",
+  "outputs/PBA-004/pba004.json"
+ ]
+}

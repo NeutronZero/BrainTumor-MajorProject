@@ -1,0 +1,28 @@
+{
+  "gate": "Data Gate 0",
+  "gate_tooling_rev": "A",
+  "decision": "FAIL",
+  "hard_failures": [
+    "exact_duplicates",
+    "split_overlap"
+  ],
+  "masks_pass": true,
+  "core_if_proceed": [
+    "classification",
+    "calibration",
+    "uncertainty",
+    "explainability",
+    "optimization",
+    "application"
+  ],
+  "limitation": "Complete patient-level independence between train and test cannot be claimed.",
+  "checks": {
+    "source": true,
+    "hashes": true,
+    "characterize": true,
+    "exact_duplicates": false,
+    "near_duplicates": true,
+    "masks": true,
+    "split_overlap": false
+  }
+}

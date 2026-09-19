@@ -1,0 +1,28 @@
+# ROB-001 — Gaussian-noise robustness experiment (NEW experiment, not a SEG-001 modification)
+# Gate hypothesis H-ROBUST-001: train-only Gaussian noise (plan §68 severity
+# sigma=0.05, applied pre-normalization on [0,1]) reduces the PBA-003-observed
+# noise degradation (seg Dice -0.169, empty 10->163). One factor changed vs
+# SEG-001; everything else identical (arch, split, seed, loss, optim, sched).
+# Selection: seg-val mean Dice. Test LOCKED until frozen.
+question: Does train-only Gaussian noise (s=0.05) improve seg-val noise-robustness without harming clean val Dice?
+hypothesis: Noise-augmented U-Net matches SEG-001 clean val Dice (within noise) and degrades less under plan §68 noise.
+architecture: vanilla_unet_2d
+dims: {in_ch: 1, base: [64, 128, 256, 512], bottleneck: 1024}
+image_size: 256
+preprocessing: configs/preprocessing/seg_baseline.yaml
+mask_convention: gt_mask_gt_127_to_1  # Gate-0 established for THIS release
+data:
+  pairs: data/brisc2025/segmentation_task/{train,test}/{images,masks}
+  seg_train_rule: seg-train image stem in project_manifest project_split==train
+  seg_val_rule: seg-train image stem in project_manifest project_split==val
+  test: LOCKED (860 official seg-test pairs; evaluate once after freeze via new locked eval)
+loss: {dice_weight: 1.0, bce_weight: 1.0, summed: true}
+optim: {name: adamw, lr: 3.0e-4, weight_decay: 0.01, warmup_epochs: 3, cosine_to: 1.0e-6}
+batch_size: 16   # T4 target; smoke overrides
+epochs_max: 30
+early_stopping: {patience: 8, min_delta: 0.001, monitor: val_dice}
+stability: {amp: true, grad_clip_norm: 1.0, nan_inf_detect: true}
+augmentation: {train_only: true, synced_image_mask: true, hflip_p: 0.5, rot_deg: 10, affine_translate: 0.05, affine_scale: [0.95, 1.05], gauss_noise_sigma: 0.05}
+seed: 42
+localization: configs/segmentation/localization.yaml
+baseline_ref: SEG-001 (checkpoints/SEG-001/best.pt; frozen, never modified)

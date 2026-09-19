@@ -1,0 +1,62 @@
+{
+  "check": "characterize",
+  "count_match": true,
+  "expected": {
+    "test": 1000,
+    "train": 5000
+  },
+  "formats": {
+    ".jpg": 6000,
+    "JPEG": 6000
+  },
+  "n_images": 6000,
+  "pass": true,
+  "per_split": {
+    "test": {
+      "class_counts": {
+        "glioma": 254,
+        "meningioma": 306,
+        "notumor": 140,
+        "pituitary": 300
+      },
+      "n": 1000,
+      "raw_counts": {
+        "glioma": 254,
+        "meningioma": 306,
+        "no_tumor": 140,
+        "pituitary": 300
+      }
+    },
+    "train": {
+      "class_counts": {
+        "glioma": 1147,
+        "meningioma": 1329,
+        "notumor": 1067,
+        "pituitary": 1457
+      },
+      "n": 5000,
+      "raw_counts": {
+        "glioma": 1147,
+        "meningioma": 1329,
+        "no_tumor": 1067,
+        "pituitary": 1457
+      }
+    }
+  },
+  "reason": null,
+  "release": "data\\brisc2025",
+  "resolution": {
+    "max": [
+      1365,
+      1427
+    ],
+    "min": [
+      174,
+      195
+    ],
+    "n_measured": 6000
+  },
+  "scope": "classification_task/{train,test}",
+  "unexpected_labels": {},
+  "vocabulary_note": "Raw folder 'no_tumor' maps to contract 'notumor'; raw names preserved above."
+}

@@ -1,0 +1,15 @@
+# Locked dependencies — regenerate with pip freeze after verified env.
+# Python 3.14 / CPU baseline (Kaggle T4 image recorded per-run via run_config).
+torch==2.13.0
+torchvision==0.28.0
+numpy==2.4.6
+pandas==3.0.3
+pillow==12.2.0
+scipy==1.17.1
+scikit-learn==1.8.0
+pyyaml==6.0.3
+pydantic==2.13.4
+fastapi==0.119.0
+uvicorn==0.37.0
+streamlit==1.50.0
+pytest==9.0.3

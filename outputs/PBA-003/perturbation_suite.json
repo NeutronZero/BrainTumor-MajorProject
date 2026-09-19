@@ -1,0 +1,50 @@
+{
+ "provenance": "plan \u00a768 Robustness Testing (BrainTumor_MajorProject_Plan.md:3573-3609): Gaussian noise s=0.05, JPEG q=50, Downscale 0.75x, Intensity shift (severity 'defined' -> additive +0.05, documented in SUITE)",
+ "frozen_model_params": "checkpoints/CLS-001/best.pt + checkpoints/SEG-001/best.pt; T/tau1/tau2 from outputs/CLS-001/calibration_frozen.json; no refit under perturbation",
+ "perturbations": [
+  {
+   "id": "none",
+   "family": "control",
+   "definition": "no perturbation; frozen pipeline as-is",
+   "params": {}
+  },
+  {
+   "id": "gauss_noise_s0p05",
+   "family": "noise",
+   "definition": "plan \u00a768: additive Gaussian sigma=0.05 on [0,1] scale, per-case RNG(seed+idx), clip",
+   "params": {
+    "sigma": 0.05,
+    "seed": 7003
+   }
+  },
+  {
+   "id": "jpeg_q50",
+   "family": "compression",
+   "definition": "plan \u00a768: JPEG encode quality=50 to memory buffer, decode back (Pillow, deterministic)",
+   "params": {
+    "quality": 50
+   }
+  },
+  {
+   "id": "downscale_0p75x",
+   "family": "resolution/degradation",
+   "definition": "plan \u00a768: downsample raw input to 0.75x (w,h) BILINEAR then upsample back",
+   "params": {
+    "scale": 0.75
+   }
+  },
+  {
+   "id": "intensity_shift_p0p05",
+   "family": "intensity variation",
+   "definition": "plan \u00a768 severity 'defined' -> fixed here: additive +0.05 on [0,1] scale, clip",
+   "params": {
+    "shift": 0.05
+   }
+  }
+ ],
+ "populations": {
+  "classification": "locked cls-test N=1000",
+  "segmentation": "seg-test N=860 (masks never perturbed)"
+ },
+ "rule": "per-perturbation reporting only; no aggregate robustness score"
+}

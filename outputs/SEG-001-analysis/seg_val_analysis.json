@@ -1,0 +1,125 @@
+{
+ "n_val": 785,
+ "n_train_subset": 200,
+ "val_dice": {
+  "mean": 0.8517558393797221,
+  "median": 0.9297820824944744,
+  "iqr": [
+   0.8452624404599438,
+   0.962627406610841
+  ],
+  "p10": 0.6510912137293403,
+  "min": 2.8943560049509823e-10,
+  "max": 0.9941520467849411
+ },
+ "train_subset_dice_mean": 0.7870928543259968,
+ "by_class": {
+  "glioma": {
+   "n": 230,
+   "mean": 0.7049641676843497,
+   "median": 0.8285934572420173,
+   "p10": 0.08520268281240385
+  },
+  "meningioma": {
+   "n": 265,
+   "mean": 0.937232538133918,
+   "median": 0.9600000000307692,
+   "p10": 0.8675544268305675
+  },
+  "pituitary": {
+   "n": 290,
+   "mean": 0.8900688025523903,
+   "median": 0.9289352308233949,
+   "p10": 0.7663718924125911
+  }
+ },
+ "localization_val": {
+  "empty_null": 14,
+  "nonempty_box": 771,
+  "multi": 60
+ },
+ "gt_empty_in_val": 0,
+ "worst_10": [
+  {
+   "stem": "brisc2025_train_00212_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": false,
+   "gt_empty": false,
+   "area": 2655
+  },
+  {
+   "stem": "brisc2025_train_00977_gl_sa_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": true,
+   "gt_empty": false,
+   "area": 0
+  },
+  {
+   "stem": "brisc2025_train_00688_gl_co_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": false,
+   "gt_empty": false,
+   "area": 268
+  },
+  {
+   "stem": "brisc2025_train_00551_gl_co_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": false,
+   "gt_empty": false,
+   "area": 633
+  },
+  {
+   "stem": "brisc2025_train_00223_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": true,
+   "gt_empty": false,
+   "area": 0
+  },
+  {
+   "stem": "brisc2025_train_01039_gl_sa_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": true,
+   "gt_empty": false,
+   "area": 0
+  },
+  {
+   "stem": "brisc2025_train_00097_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": true,
+   "gt_empty": false,
+   "area": 0
+  },
+  {
+   "stem": "brisc2025_train_00225_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": true,
+   "gt_empty": false,
+   "area": 0
+  },
+  {
+   "stem": "brisc2025_train_00054_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": true,
+   "gt_empty": false,
+   "area": 0
+  },
+  {
+   "stem": "brisc2025_train_01005_gl_sa_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "empty_pred": true,
+   "gt_empty": false,
+   "area": 0
+  }
+ ],
+ "pipeline_change_required": false
+}

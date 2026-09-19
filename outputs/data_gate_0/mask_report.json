@@ -1,0 +1,46 @@
+{
+  "check": "masks",
+  "convention_evaluated": "mask > 127 -> 1 else 0 (documented, files untouched)",
+  "coverage_after_convention": {
+    "empty": 0,
+    "with_foreground": 4793
+  },
+  "gate_effect": null,
+  "mask_encoding": "binary_intent_aa",
+  "mask_sha": {
+    "n_images_with_divergent_masks": 21,
+    "n_unique_mask_hashes": 4776
+  },
+  "note": "Binary-intent with antialiased edges is a release property, not a binarization decision by this gate.",
+  "pairing": {
+    "dimension_mismatches": 0,
+    "missing_image": [],
+    "missing_mask": [],
+    "n_missing_image": 0,
+    "n_missing_mask": 0,
+    "unreadable": 0
+  },
+  "pass": true,
+  "reason": null,
+  "stage1": {
+    "corpus_distinct_values_seen": 21,
+    "global_intermediate_fraction": 0.0034114816563026425,
+    "intermediate_cap": 0.02,
+    "modes": {
+      "L": 4793
+    },
+    "n_checked": 4793,
+    "n_masks_on_disk": 4793,
+    "n_unique_histogram": {
+      "10": 2,
+      "11": 12,
+      "12": 101,
+      "13": 397,
+      "14": 1043,
+      "15": 1710,
+      "16": 1436,
+      "17": 89,
+      "18": 3
+    }
+  }
+}

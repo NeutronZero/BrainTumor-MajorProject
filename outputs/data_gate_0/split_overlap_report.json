@@ -1,0 +1,39 @@
+{
+  "check": "split_overlap",
+  "counts": {
+    "cls_test": 1000,
+    "cls_train": 5000,
+    "seg_test_images": 860,
+    "seg_test_masks": 860,
+    "seg_train_images": 3933,
+    "seg_train_masks": 3933
+  },
+  "method": "byte-SHA256",
+  "note": "Project-internal 4000/1000 membership frozen only after Gate 0 PASS (\u00a710).",
+  "overlap": {
+    "cls_sample": [
+      "02799f7863d49de182357e72179f3cc4e65e70099355f2d5aa2e39d356e492d9",
+      "08690b76457b2b44d58682cece62ec951ef6d30d935ce07df852e97d44434680",
+      "39f4f7b252d7809d8d3d2e4521607de2195bf0f66c0592587b1cebd632aac640",
+      "3e802dd22f483ce4d442fe2c7f1890c1c810ec8c1131b364fd4e4593bf0f268a",
+      "960155b05ea8f0ddcbcd3a5e29905c2a4b55832f03e5b7d6491c73955960d278",
+      "b5e17076d1427e41a618f92bc72100c1be4df26608223512aac51c911ac1eb88",
+      "f3d00bbb942117c2fb62466414d3c466ca283b678200fe87424e4128b80b2dba"
+    ],
+    "cls_train_test_hashes": 7,
+    "seg_img_sample": [
+      "02799f7863d49de182357e72179f3cc4e65e70099355f2d5aa2e39d356e492d9",
+      "08690b76457b2b44d58682cece62ec951ef6d30d935ce07df852e97d44434680",
+      "39f4f7b252d7809d8d3d2e4521607de2195bf0f66c0592587b1cebd632aac640",
+      "3e802dd22f483ce4d442fe2c7f1890c1c810ec8c1131b364fd4e4593bf0f268a",
+      "960155b05ea8f0ddcbcd3a5e29905c2a4b55832f03e5b7d6491c73955960d278",
+      "b5e17076d1427e41a618f92bc72100c1be4df26608223512aac51c911ac1eb88",
+      "f3d00bbb942117c2fb62466414d3c466ca283b678200fe87424e4128b80b2dba"
+    ],
+    "seg_train_test_image_hashes": 7,
+    "seg_train_test_mask_hashes": 0
+  },
+  "pass": false,
+  "reason": "split_overlap_detected",
+  "release": "data\\brisc2025"
+}

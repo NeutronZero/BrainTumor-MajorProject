@@ -1,0 +1,4 @@
+# PI-authorized unlock 2026-09-16: CLS-001 (T/taus frozen) + SEG-001 (val
+# analysis confirmed, no config change) locked evaluation. One-way gate:
+# evaluate exactly once, report, no feedback into any configuration.
+test_set_locked: true

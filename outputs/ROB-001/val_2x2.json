@@ -1,0 +1,345 @@
+{
+ "population": "frozen seg-val N=785 (SegDataset val rule; identical for both models)",
+ "noise_impl": "exact PBA-003 apply_perturb gauss_noise_s0p05 (sigma=0.05, SEED=7003, per-position RNG)",
+ "question_A_clean": {
+  "SEG-001": 0.851756,
+  "ROB-001": 0.807035,
+  "d_mean": -0.044721,
+  "d_median": -0.023676,
+  "d_p10": -0.169623
+ },
+ "question_B_robustness": {
+  "SEG-001_degradation": -0.173128,
+  "ROB-001_degradation": 0.006418,
+  "robustness_gap_closed": 0.179546,
+  "SEG-001_noise": {
+   "mean": 0.678628,
+   "empty": 156,
+   "by_class": {
+    "glioma": 0.319079,
+    "meningioma": 0.82773,
+    "pituitary": 0.82754
+   }
+  },
+  "ROB-001_noise": {
+   "mean": 0.813453,
+   "empty": 13,
+   "by_class": {
+    "glioma": 0.627515,
+    "meningioma": 0.920937,
+    "pituitary": 0.862704
+   }
+  }
+ },
+ "arms": {
+  "SEG-001_clean": {
+   "n": 785,
+   "mean_dice": 0.851756,
+   "median_dice": 0.929782,
+   "p10_dice": 0.651091,
+   "min_dice": 0.0,
+   "mean_iou": 0.781863,
+   "empty_pred": 14,
+   "multi_component": 60,
+   "by_class_mean_dice": {
+    "glioma": 0.704964,
+    "meningioma": 0.937233,
+    "pituitary": 0.890069
+   },
+   "worst_10": [
+    {
+     "stem": "brisc2025_train_00054_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00097_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00212_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00223_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00225_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00291_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00551_gl_co_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": true
+    },
+    {
+     "stem": "brisc2025_train_00610_gl_co_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00688_gl_co_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": true
+    },
+    {
+     "stem": "brisc2025_train_00761_gl_co_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    }
+   ]
+  },
+  "SEG-001_noise_s0p05": {
+   "n": 785,
+   "mean_dice": 0.678628,
+   "median_dice": 0.9,
+   "p10_dice": 0.0,
+   "min_dice": 0.0,
+   "mean_iou": 0.619704,
+   "empty_pred": 156,
+   "multi_component": 35,
+   "by_class_mean_dice": {
+    "glioma": 0.319079,
+    "meningioma": 0.82773,
+    "pituitary": 0.82754
+   },
+   "worst_10": [
+    {
+     "stem": "brisc2025_train_00018_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00021_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00027_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00035_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00036_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00039_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00040_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00050_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00053_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00054_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    }
+   ]
+  },
+  "ROB-001_clean": {
+   "n": 785,
+   "mean_dice": 0.807035,
+   "median_dice": 0.906106,
+   "p10_dice": 0.481468,
+   "min_dice": 0.0,
+   "mean_iou": 0.725716,
+   "empty_pred": 10,
+   "multi_component": 150,
+   "by_class_mean_dice": {
+    "glioma": 0.615079,
+    "meningioma": 0.916658,
+    "pituitary": 0.859103
+   },
+   "worst_10": [
+    {
+     "stem": "brisc2025_train_00050_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00054_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00102_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00205_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00212_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": true
+    },
+    {
+     "stem": "brisc2025_train_00221_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00223_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00225_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00271_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00281_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    }
+   ]
+  },
+  "ROB-001_noise_s0p05": {
+   "n": 785,
+   "mean_dice": 0.813453,
+   "median_dice": 0.906774,
+   "p10_dice": 0.501487,
+   "min_dice": 0.0,
+   "mean_iou": 0.73322,
+   "empty_pred": 13,
+   "multi_component": 119,
+   "by_class_mean_dice": {
+    "glioma": 0.627515,
+    "meningioma": 0.920937,
+    "pituitary": 0.862704
+   },
+   "worst_10": [
+    {
+     "stem": "brisc2025_train_00050_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00054_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00102_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00205_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00212_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": true
+    },
+    {
+     "stem": "brisc2025_train_00221_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00223_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00225_gl_ax_t1",
+     "dice": 0.0,
+     "empty": false,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00271_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    },
+    {
+     "stem": "brisc2025_train_00281_gl_ax_t1",
+     "dice": 0.0,
+     "empty": true,
+     "multi": false
+    }
+   ]
+  }
+ },
+ "note": "evidence only; no feedback into ROB-001; no locked-test decision made here"
+}

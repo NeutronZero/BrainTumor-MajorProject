@@ -1,0 +1,286 @@
+{
+ "frozen": {
+  "T": 0.5115954875946045,
+  "tau1": 0.95,
+  "tau2": 0.05
+ },
+ "n_val": 1000,
+ "n_test": 1000,
+ "val": {
+  "errors": [
+   {
+    "path": "data/brisc2025/classification_task/train/glioma/brisc2025_train_00217_gl_ax_t1.jpg",
+    "true": "glioma",
+    "pred": "meningioma",
+    "confidence": 0.738941,
+    "margin": 0.482284,
+    "certain": false,
+    "contaminated": false,
+    "w": 512,
+    "h": 512,
+    "aspect": 1.0,
+    "mp": 0.262
+   },
+   {
+    "path": "data/brisc2025/classification_task/train/glioma/brisc2025_train_00221_gl_ax_t1.jpg",
+    "true": "glioma",
+    "pred": "meningioma",
+    "confidence": 0.93168,
+    "margin": 0.865393,
+    "certain": false,
+    "contaminated": false,
+    "w": 512,
+    "h": 512,
+    "aspect": 1.0,
+    "mp": 0.262
+   },
+   {
+    "path": "data/brisc2025/classification_task/train/glioma/brisc2025_train_00977_gl_sa_t1.jpg",
+    "true": "glioma",
+    "pred": "meningioma",
+    "confidence": 0.946393,
+    "margin": 0.896168,
+    "certain": false,
+    "contaminated": false,
+    "w": 512,
+    "h": 512,
+    "aspect": 1.0,
+    "mp": 0.262
+   },
+   {
+    "path": "data/brisc2025/classification_task/train/glioma/brisc2025_train_01097_gl_sa_t1.jpg",
+    "true": "glioma",
+    "pred": "meningioma",
+    "confidence": 0.996586,
+    "margin": 0.994789,
+    "certain": true,
+    "contaminated": false,
+    "w": 512,
+    "h": 512,
+    "aspect": 1.0,
+    "mp": 0.262
+   },
+   {
+    "path": "data/brisc2025/classification_task/train/meningioma/brisc2025_train_01711_me_co_t1.jpg",
+    "true": "meningioma",
+    "pred": "pituitary",
+    "confidence": 0.989942,
+    "margin": 0.981174,
+    "certain": true,
+    "contaminated": false,
+    "w": 512,
+    "h": 512,
+    "aspect": 1.0,
+    "mp": 0.262
+   }
+  ],
+  "n_errors": 5,
+  "conf_correct_mean": 0.9974,
+  "conf_wrong_mean": 0.9207,
+  "conf_wrong_values": [
+   0.7389,
+   0.9317,
+   0.9464,
+   0.9966,
+   0.9899
+  ],
+  "uncertain": [
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00217_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00221_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00760_gl_co_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00977_gl_sa_t1.jpg"
+  ],
+  "class_conf": {
+   "glioma": {
+    "mean": 0.9956,
+    "std": 0.0184,
+    "n": 230
+   },
+   "meningioma": {
+    "mean": 0.9974,
+    "std": 0.0014,
+    "n": 265
+   },
+   "pituitary": {
+    "mean": 0.9976,
+    "std": 0.0004,
+    "n": 290
+   },
+   "notumor": {
+    "mean": 0.9975,
+    "std": 0.0002,
+    "n": 215
+   }
+  },
+  "class_ece": {
+   "glioma": 0.012971,
+   "meningioma": 0.001201,
+   "pituitary": 0.002445,
+   "notumor": 0.002521
+  },
+  "overall_ece": 0.002051,
+  "contaminated_errors": 0,
+  "rep_TP": [
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00003_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00013_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00018_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00021_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00027_gl_ax_t1.jpg"
+  ],
+  "rep_TN": [
+   "data/brisc2025/classification_task/train/no_tumor/brisc2025_train_02483_no_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/no_tumor/brisc2025_train_02491_no_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/no_tumor/brisc2025_train_02492_no_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/no_tumor/brisc2025_train_02494_no_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/no_tumor/brisc2025_train_02509_no_ax_t1.jpg"
+  ],
+  "rep_FP": [],
+  "rep_FN": [],
+  "rep_mis_tumor": [
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00217_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00221_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_00977_gl_sa_t1.jpg",
+   "data/brisc2025/classification_task/train/glioma/brisc2025_train_01097_gl_sa_t1.jpg",
+   "data/brisc2025/classification_task/train/meningioma/brisc2025_train_01711_me_co_t1.jpg"
+  ]
+ },
+ "test": {
+  "errors": [
+   {
+    "path": "data/brisc2025/classification_task/test/glioma/brisc2025_test_00229_gl_sa_t1.jpg",
+    "true": "glioma",
+    "pred": "meningioma",
+    "confidence": 0.997197,
+    "margin": 0.996172,
+    "certain": true,
+    "contaminated": false,
+    "w": 512,
+    "h": 512,
+    "aspect": 1.0,
+    "mp": 0.262
+   },
+   {
+    "path": "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00281_me_ax_t1.jpg",
+    "true": "meningioma",
+    "pred": "glioma",
+    "confidence": 0.641269,
+    "margin": 0.287134,
+    "certain": false,
+    "contaminated": false,
+    "w": 300,
+    "h": 258,
+    "aspect": 1.163,
+    "mp": 0.077
+   },
+   {
+    "path": "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00411_me_co_t1.jpg",
+    "true": "meningioma",
+    "pred": "notumor",
+    "confidence": 0.814261,
+    "margin": 0.654627,
+    "certain": false,
+    "contaminated": false,
+    "w": 174,
+    "h": 230,
+    "aspect": 0.757,
+    "mp": 0.04
+   },
+   {
+    "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00820_pi_ax_t1.jpg",
+    "true": "pituitary",
+    "pred": "glioma",
+    "confidence": 0.899598,
+    "margin": 0.832792,
+    "certain": false,
+    "contaminated": false,
+    "w": 512,
+    "h": 512,
+    "aspect": 1.0,
+    "mp": 0.262
+   },
+   {
+    "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00826_pi_co_t1.jpg",
+    "true": "pituitary",
+    "pred": "meningioma",
+    "confidence": 0.995971,
+    "margin": 0.993583,
+    "certain": true,
+    "contaminated": false,
+    "w": 512,
+    "h": 512,
+    "aspect": 1.0,
+    "mp": 0.262
+   }
+  ],
+  "n_errors": 5,
+  "conf_correct_mean": 0.9973,
+  "conf_wrong_mean": 0.8697,
+  "conf_wrong_values": [
+   0.9972,
+   0.6413,
+   0.8143,
+   0.8996,
+   0.996
+  ],
+  "uncertain": [
+   "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00281_me_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00411_me_co_t1.jpg",
+   "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00820_pi_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00974_pi_sa_t1.jpg"
+  ],
+  "class_conf": {
+   "glioma": {
+    "mean": 0.9975,
+    "std": 0.0011,
+    "n": 254
+   },
+   "meningioma": {
+    "mean": 0.9957,
+    "std": 0.0229,
+    "n": 306
+   },
+   "pituitary": {
+    "mean": 0.9966,
+    "std": 0.0117,
+    "n": 300
+   },
+   "notumor": {
+    "mean": 0.9975,
+    "std": 0.0002,
+    "n": 140
+   }
+  },
+  "class_ece": {
+   "glioma": 0.001444,
+   "meningioma": 0.007275,
+   "pituitary": 0.004506,
+   "notumor": 0.002488
+  },
+  "overall_ece": 0.002655,
+  "contaminated_errors": 0,
+  "rep_TP": [
+   "data/brisc2025/classification_task/test/glioma/brisc2025_test_00001_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/glioma/brisc2025_test_00002_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/glioma/brisc2025_test_00003_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/glioma/brisc2025_test_00004_gl_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/glioma/brisc2025_test_00005_gl_ax_t1.jpg"
+  ],
+  "rep_TN": [
+   "data/brisc2025/classification_task/test/no_tumor/brisc2025_test_00561_no_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/no_tumor/brisc2025_test_00562_no_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/no_tumor/brisc2025_test_00563_no_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/no_tumor/brisc2025_test_00564_no_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/no_tumor/brisc2025_test_00565_no_ax_t1.jpg"
+  ],
+  "rep_FP": [],
+  "rep_FN": [
+   "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00411_me_co_t1.jpg"
+  ],
+  "rep_mis_tumor": [
+   "data/brisc2025/classification_task/test/glioma/brisc2025_test_00229_gl_sa_t1.jpg",
+   "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00281_me_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00820_pi_ax_t1.jpg",
+   "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00826_pi_co_t1.jpg"
+  ]
+ }
+}

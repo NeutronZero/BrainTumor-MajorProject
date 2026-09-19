@@ -1,0 +1,6 @@
+# FROZEN §48-49 + freeze #3
+threshold: 0.5
+component_policy: largest_plus_total  # bbox=largest, area=sum of qualifying
+min_area_pixels: 10
+bbox_format: xyxy
+coordinate_space: original_input_pixels

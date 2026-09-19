@@ -1,0 +1,3 @@
+arch: efficientnet_b0_fallback
+loss: ce_label_smoothing_0.1
+early_stopping: {patience: 8, monitor: val_macro_f1}

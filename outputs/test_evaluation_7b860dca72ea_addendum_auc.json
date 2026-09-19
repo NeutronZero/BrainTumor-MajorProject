@@ -1,0 +1,11 @@
+{
+ "addendum_to": "test_evaluation_7b860dca72ea.json",
+ "reason": "roc_auc_ovr was null in locked eval (string/int label-type bug in reporting only)",
+ "roc_auc_ovr_primary_N1000": 0.999936,
+ "roc_auc_ovr_sensitivity_N993": 0.999936,
+ "inputs_unchanged": {
+  "checkpoint": "checkpoints/CLS-001/best.pt",
+  "T": 0.5115954875946045,
+  "model_selection": "none"
+ }
+}

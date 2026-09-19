@@ -1,0 +1,52 @@
+{
+ "untouched_paths": {
+  "macro_f1": 0.995032,
+  "d_f1_vs_fp32ref": -0.0,
+  "mean_dice": 0.851727,
+  "d_dice_vs_fp32ref": -2.9e-05
+ },
+ "equivalence_val_N1000": {
+  "agreement_mismatches": 0,
+  "flag_mismatches": 0,
+  "flagged_total": 25
+ },
+ "latency_s": {
+  "consistency_seq": {
+   "n": 60,
+   "median": 0.1586,
+   "p95": 0.1692,
+   "min": 0.1548,
+   "max": 0.1876
+  },
+  "consistency_batched": {
+   "n": 60,
+   "median": 0.2582,
+   "p95": 0.2689,
+   "min": 0.2517,
+   "max": 0.2779
+  },
+  "analyze_core": {
+   "n": 60,
+   "median": 0.0282,
+   "p95": 0.0296,
+   "min": 0.0273,
+   "max": 0.0365
+  },
+  "analyze_full": {
+   "n": 60,
+   "median": 0.2861,
+   "p95": 0.2957,
+   "min": 0.2812,
+   "max": 0.3226
+  }
+ },
+ "definitions": {
+  "analyze_core": "classify+segment (service.analyze)",
+  "analyze_full": "analyze_core+consistency (what /analyze returns)"
+ },
+ "peak_gpu_memory": {
+  "peak_allocated_MB": 427.1,
+  "peak_reserved_MB": 472.0
+ },
+ "deterministic_repeat": true
+}

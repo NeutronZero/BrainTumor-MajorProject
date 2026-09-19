@@ -1,0 +1,7 @@
+# Segmentation preprocessing — OUR decision (not inherited)
+# Minimal baseline: grayscale resize 256 + z-score norm (stats from OUR seg-train).
+name: seg_baseline
+image_size: 256
+steps: [grayscale, resize_bilinear_256_image_nearest_mask, to_float01, zscore_train_stats]
+mask: {threshold: 127, binarize: gt_127_to_1}
+hash_note: config hash recorded per run (§27); train/infer share this file (§29)

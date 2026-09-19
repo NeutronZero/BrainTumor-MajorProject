@@ -1,0 +1,105 @@
+{
+ "T_frozen": 0.5115954875946045,
+ "tau1": 0.95,
+ "tau2": 0.05,
+ "ece_post_T": 0.002655,
+ "reliability_bins": [
+  {
+   "bin": "0.60-0.67",
+   "n": 1,
+   "accuracy": 0.0,
+   "mean_confidence": 0.6413,
+   "error_rate": 1.0
+  },
+  {
+   "bin": "0.80-0.87",
+   "n": 2,
+   "accuracy": 0.5,
+   "mean_confidence": 0.8164,
+   "error_rate": 0.5
+  },
+  {
+   "bin": "0.87-0.93",
+   "n": 1,
+   "accuracy": 0.0,
+   "mean_confidence": 0.8996,
+   "error_rate": 1.0
+  },
+  {
+   "bin": "0.93-1.00",
+   "n": 996,
+   "accuracy": 0.998,
+   "mean_confidence": 0.9975,
+   "error_rate": 0.002
+  }
+ ],
+ "confidence_histogram": {
+  "0.00-0.07": 0,
+  "0.07-0.13": 0,
+  "0.13-0.20": 0,
+  "0.20-0.27": 0,
+  "0.27-0.33": 0,
+  "0.33-0.40": 0,
+  "0.40-0.47": 0,
+  "0.47-0.53": 0,
+  "0.53-0.60": 0,
+  "0.60-0.67": 1,
+  "0.67-0.73": 0,
+  "0.73-0.80": 0,
+  "0.80-0.87": 2,
+  "0.87-0.93": 1,
+  "0.93-1.00": 996
+ },
+ "confident_but_wrong": [
+  {
+   "path": "data/brisc2025/classification_task/test/glioma/brisc2025_test_00229_gl_sa_t1.jpg",
+   "true": "glioma",
+   "pred": "meningioma",
+   "confidence": 0.997197,
+   "certain": true
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00826_pi_co_t1.jpg",
+   "true": "pituitary",
+   "pred": "meningioma",
+   "confidence": 0.995971,
+   "certain": true
+  }
+ ],
+ "uncertain_cases": [
+  {
+   "path": "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00281_me_ax_t1.jpg",
+   "true": "meningioma",
+   "pred": "glioma",
+   "confidence": 0.641269,
+   "margin": 0.287134
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00411_me_co_t1.jpg",
+   "true": "meningioma",
+   "pred": "notumor",
+   "confidence": 0.814261,
+   "margin": 0.654627
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00820_pi_ax_t1.jpg",
+   "true": "pituitary",
+   "pred": "glioma",
+   "confidence": 0.899598,
+   "margin": 0.832792
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00974_pi_sa_t1.jpg",
+   "true": "pituitary",
+   "pred": "pituitary",
+   "confidence": 0.818565,
+   "margin": 0.639709
+  }
+ ],
+ "class_conditional_ece": {
+  "glioma": 0.001444,
+  "meningioma": 0.007275,
+  "pituitary": 0.004506,
+  "notumor": 0.002488
+ }
+}

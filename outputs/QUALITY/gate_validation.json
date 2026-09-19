@@ -1,0 +1,66 @@
+{
+ "clean_val_n": 1000,
+ "false_rejects": 0,
+ "false_reject_rate": 0.0,
+ "false_reject_cases": [],
+ "corruption_detection": {
+  "blank_black": {
+   "verdict": "reject",
+   "failed": [
+    "Q05_blank_or_uniform",
+    "Q06_intensity_out_of_range",
+    "Q07_insufficient_content"
+   ]
+  },
+  "blank_white": {
+   "verdict": "reject",
+   "failed": [
+    "Q05_blank_or_uniform",
+    "Q06_intensity_out_of_range"
+   ]
+  },
+  "uniform_gray": {
+   "verdict": "reject",
+   "failed": [
+    "Q05_blank_or_uniform"
+   ]
+  },
+  "pure_noise": {
+   "verdict": "accept",
+   "failed": []
+  },
+  "tiny_32px": {
+   "verdict": "reject",
+   "failed": [
+    "Q03_too_small"
+   ]
+  },
+  "stripe": {
+   "verdict": "reject",
+   "failed": [
+    "Q03_too_small",
+    "Q09_extreme_aspect"
+   ]
+  },
+  "truncated": {
+   "verdict": "reject",
+   "failed": [
+    "Q01_undecodable"
+   ]
+  },
+  "text_bytes": {
+   "verdict": "reject",
+   "failed": [
+    "Q01_undecodable"
+   ]
+  },
+  "near_blank": {
+   "verdict": "reject",
+   "failed": [
+    "Q05_blank_or_uniform",
+    "Q07_insufficient_content"
+   ]
+  }
+ },
+ "note": "thresholds fixed in gate.py; val used for reporting only; no test contact"
+}

@@ -1,0 +1,55 @@
+{
+ "perturbation": {
+  "id": "downscale_0p75x",
+  "family": "resolution/degradation",
+  "definition": "plan \u00a768: downsample raw input to 0.75x (w,h) BILINEAR then upsample back",
+  "params": {
+   "scale": 0.75
+  }
+ },
+ "cls": {
+  "n": 1000,
+  "evaluable": 1000,
+  "accuracy": 0.992,
+  "macro_f1": 0.990992,
+  "per_class_f1": {
+   "glioma": 0.998028,
+   "meningioma": 0.990196,
+   "pituitary": 0.993289,
+   "notumor": 0.982456
+  },
+  "ece_frozen_T": 0.004532,
+  "uncertain_n": 7,
+  "errors_n": 8,
+  "cbw_n": 5,
+  "conf_correct_mean": 0.9972,
+  "conf_wrong_mean": 0.9184,
+  "error_stems": [
+   "brisc2025_test_00229_gl_sa_t1",
+   "brisc2025_test_00281_me_ax_t1",
+   "brisc2025_test_00411_me_co_t1",
+   "brisc2025_test_00412_me_co_t1",
+   "brisc2025_test_00766_pi_ax_t1",
+   "brisc2025_test_00820_pi_ax_t1",
+   "brisc2025_test_00826_pi_co_t1",
+   "brisc2025_test_00911_pi_co_t1"
+  ]
+ },
+ "seg": {
+  "n": 860,
+  "evaluable": 860,
+  "mean_dice": 0.858711,
+  "median_dice": 0.935867,
+  "p10_dice": 0.659961,
+  "mean_iou": 0.788567,
+  "empty_pred": 10,
+  "multi_component": 95,
+  "by_class_mean_dice": {
+   "glioma": 0.754327,
+   "meningioma": 0.932858,
+   "pituitary": 0.87146
+  },
+  "mean_fp_rate": 0.234035,
+  "mean_fn_rate": 0.110539
+ }
+}

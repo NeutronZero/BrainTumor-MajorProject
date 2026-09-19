@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+.venv/
+.streamlit/
+# Release data + staging mirrors stay out (retrieved via Kaggle datasets).
+data/
+kaggle/codepkg/
+# Smoke runs and non-production checkpoints stay local (precedent: last.pt
+# remains on kernels; smoke dirs are pipeline checks, not releases).
+*-smoke/
+last.pt
+# Checkpoints: exclude all EXCEPT the three SB-1 production best.pt files,
+# which ride via Git LFS (see .gitattributes). (*.pt first, negations after —
+# last match wins, so exceptions must come last.)
+*.pt
+checkpoints/*
+!checkpoints/CLS-001/
+!checkpoints/SEG-001/
+!checkpoints/ROB-001/
+checkpoints/CLS-001/*
+!checkpoints/CLS-001/best.pt
+checkpoints/SEG-001/*
+!checkpoints/SEG-001/best.pt
+checkpoints/ROB-001/*
+!checkpoints/ROB-001/best.pt
+# Evidence outputs (small JSON/MD/PNG) ARE part of SB-1 and are committed.

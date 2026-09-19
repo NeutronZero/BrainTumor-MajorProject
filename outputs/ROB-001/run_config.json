@@ -1,0 +1,8 @@
+{
+ "config": "configs/experiment/ROB-001.yaml",
+ "seed": 42,
+ "device": "cuda",
+ "torch": "2.10.0+cu128",
+ "git": "unknown",
+ "time": "2026-09-18T16:51:39.750160+00:00"
+}

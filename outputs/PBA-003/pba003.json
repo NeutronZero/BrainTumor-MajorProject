@@ -1,0 +1,175 @@
+{
+ "control": "none",
+ "note": "descriptive deltas vs control arm; no aggregate robustness score computed (forbidden by PBA-003 charter)",
+ "per_perturbation": {
+  "gauss_noise_s0p05": {
+   "family": "noise",
+   "cls": {
+    "accuracy": 0.976,
+    "d_acc": -0.019,
+    "macro_f1": 0.979353,
+    "d_f1": -0.015814,
+    "ece_frozen_T": 0.021523,
+    "uncertain_n": 13,
+    "errors_n": 24,
+    "cbw_n": 20,
+    "new_errors_vs_control": [
+     "brisc2025_test_00020_gl_ax_t1",
+     "brisc2025_test_00064_gl_ax_t1",
+     "brisc2025_test_00137_gl_co_t1",
+     "brisc2025_test_00155_gl_co_t1",
+     "brisc2025_test_00163_gl_co_t1",
+     "brisc2025_test_00176_gl_sa_t1",
+     "brisc2025_test_00234_gl_sa_t1",
+     "brisc2025_test_00235_gl_sa_t1",
+     "brisc2025_test_00237_gl_sa_t1",
+     "brisc2025_test_00338_me_ax_t1",
+     "brisc2025_test_00394_me_co_t1",
+     "brisc2025_test_00399_me_co_t1",
+     "brisc2025_test_00403_me_co_t1",
+     "brisc2025_test_00426_me_co_t1",
+     "brisc2025_test_00432_me_co_t1",
+     "brisc2025_test_00455_me_co_t1",
+     "brisc2025_test_00490_me_sa_t1",
+     "brisc2025_test_00493_me_sa_t1",
+     "brisc2025_test_00526_me_sa_t1",
+     "brisc2025_test_00552_me_sa_t1",
+     "brisc2025_test_00558_me_sa_t1"
+    ],
+    "recovered_vs_control": [
+     "brisc2025_test_00820_pi_ax_t1",
+     "brisc2025_test_00826_pi_co_t1"
+    ]
+   },
+   "seg": {
+    "mean_dice": 0.692929,
+    "d_dice": -0.16873,
+    "median_dice": 0.902968,
+    "p10_dice": 0.0,
+    "mean_iou": 0.632475,
+    "empty_pred": 163,
+    "multi_component": 36,
+    "by_class_mean_dice": {
+     "glioma": 0.435181,
+     "meningioma": 0.765288,
+     "pituitary": 0.83735
+    }
+   }
+  },
+  "jpeg_q50": {
+   "family": "compression",
+   "cls": {
+    "accuracy": 0.995,
+    "d_acc": 0.0,
+    "macro_f1": 0.995719,
+    "d_f1": 0.000552,
+    "ece_frozen_T": 0.002976,
+    "uncertain_n": 6,
+    "errors_n": 5,
+    "cbw_n": 3,
+    "new_errors_vs_control": [
+     "brisc2025_test_00426_me_co_t1",
+     "brisc2025_test_00455_me_co_t1",
+     "brisc2025_test_00552_me_sa_t1"
+    ],
+    "recovered_vs_control": [
+     "brisc2025_test_00411_me_co_t1",
+     "brisc2025_test_00820_pi_ax_t1",
+     "brisc2025_test_00826_pi_co_t1"
+    ]
+   },
+   "seg": {
+    "mean_dice": 0.852542,
+    "d_dice": -0.009117,
+    "median_dice": 0.937598,
+    "p10_dice": 0.622845,
+    "mean_iou": 0.784029,
+    "empty_pred": 18,
+    "multi_component": 82,
+    "by_class_mean_dice": {
+     "glioma": 0.732932,
+     "meningioma": 0.931729,
+     "pituitary": 0.873041
+    }
+   }
+  },
+  "downscale_0p75x": {
+   "family": "resolution/degradation",
+   "cls": {
+    "accuracy": 0.992,
+    "d_acc": -0.003,
+    "macro_f1": 0.990992,
+    "d_f1": -0.004175,
+    "ece_frozen_T": 0.004532,
+    "uncertain_n": 7,
+    "errors_n": 8,
+    "cbw_n": 5,
+    "new_errors_vs_control": [
+     "brisc2025_test_00412_me_co_t1",
+     "brisc2025_test_00766_pi_ax_t1",
+     "brisc2025_test_00911_pi_co_t1"
+    ],
+    "recovered_vs_control": []
+   },
+   "seg": {
+    "mean_dice": 0.858711,
+    "d_dice": -0.002948,
+    "median_dice": 0.935867,
+    "p10_dice": 0.659961,
+    "mean_iou": 0.788567,
+    "empty_pred": 10,
+    "multi_component": 95,
+    "by_class_mean_dice": {
+     "glioma": 0.754327,
+     "meningioma": 0.932858,
+     "pituitary": 0.87146
+    }
+   }
+  },
+  "intensity_shift_p0p05": {
+   "family": "intensity variation",
+   "cls": {
+    "accuracy": 0.997,
+    "d_acc": 0.002,
+    "macro_f1": 0.997295,
+    "d_f1": 0.002128,
+    "ece_frozen_T": 0.001212,
+    "uncertain_n": 6,
+    "errors_n": 3,
+    "cbw_n": 3,
+    "new_errors_vs_control": [
+     "brisc2025_test_00020_gl_ax_t1",
+     "brisc2025_test_00064_gl_ax_t1"
+    ],
+    "recovered_vs_control": [
+     "brisc2025_test_00281_me_ax_t1",
+     "brisc2025_test_00411_me_co_t1",
+     "brisc2025_test_00820_pi_ax_t1",
+     "brisc2025_test_00826_pi_co_t1"
+    ]
+   },
+   "seg": {
+    "mean_dice": 0.846913,
+    "d_dice": -0.014746,
+    "median_dice": 0.932988,
+    "p10_dice": 0.616297,
+    "mean_iou": 0.775502,
+    "empty_pred": 10,
+    "multi_component": 111,
+    "by_class_mean_dice": {
+     "glioma": 0.719342,
+     "meningioma": 0.930561,
+     "pituitary": 0.869603
+    }
+   }
+  }
+ },
+ "control_values": {
+  "cls_acc": 0.995,
+  "cls_f1": 0.995167,
+  "cls_ece": 0.002655,
+  "cls_unc": 4,
+  "seg_dice": 0.861659,
+  "seg_empty": 10
+ }
+}

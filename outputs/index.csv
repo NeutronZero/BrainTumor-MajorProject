@@ -1,0 +1,8 @@
+experiment,val_metric,device,smoke
+CLS-001-smoke,1.0,cpu,True
+CLS-001-smoke,0.1,cpu,True
+CLS-001-smoke,0.1,cpu,True
+CLS-001-smoke,0.1,cpu,True
+CLS-001-smoke,0.1,cpu,True
+CLS-001-smoke,0.1,cpu,True
+CLS-001-smoke,0.1,cpu,True

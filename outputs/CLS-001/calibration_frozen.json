@@ -1,0 +1,1 @@
+{"criterion": "val_macro_f1_minus_half_uncertain_rate", "experiment": "CLS-001", "fit_on": "project validation (1000) only; test never touched", "locked": true, "score": 0.9960719874495622, "tau1": 0.95, "tau2": 0.05, "temperature": 0.5115954875946045, "val_ece_post": 0.0020506659930106252, "val_macro_f1": 0.9950315091850425}

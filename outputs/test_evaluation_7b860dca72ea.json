@@ -1,0 +1,236 @@
+{
+ "evaluation": "locked-test, frozen models/thresholds/localization",
+ "calibration": {
+  "T": 0.5115954875946045,
+  "tau1": 0.95,
+  "tau2": 0.05,
+  "source": "validation-only, frozen"
+ },
+ "cls_primary": {
+  "tag": "N=1000 primary",
+  "n": 1000,
+  "accuracy": 0.995,
+  "macro_f1": 0.995167,
+  "per_class": {
+   "glioma": {
+    "precision": 0.9922,
+    "recall": 0.9961,
+    "f1": 0.9941
+   },
+   "meningioma": {
+    "precision": 0.9935,
+    "recall": 0.9935,
+    "f1": 0.9935
+   },
+   "pituitary": {
+    "precision": 1.0,
+    "recall": 0.9933,
+    "f1": 0.9967
+   },
+   "notumor": {
+    "precision": 0.9929,
+    "recall": 1.0,
+    "f1": 0.9964
+   }
+  },
+  "confusion_matrix": {
+   "labels": [
+    "glioma",
+    "meningioma",
+    "pituitary",
+    "notumor"
+   ],
+   "matrix": [
+    [
+     253,
+     1,
+     0,
+     0
+    ],
+    [
+     1,
+     304,
+     0,
+     1
+    ],
+    [
+     1,
+     1,
+     298,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     140
+    ]
+   ]
+  },
+  "roc_auc_ovr": null,
+  "ece_post_T": 0.002655,
+  "uncertain": 4,
+  "uncertain_rate": 0.004
+ },
+ "cls_sensitivity": {
+  "tag": "N=993 sensitivity",
+  "n": 993,
+  "accuracy": 0.994965,
+  "macro_f1": 0.995142,
+  "per_class": {
+   "glioma": {
+    "precision": 0.9922,
+    "recall": 0.9961,
+    "f1": 0.9941
+   },
+   "meningioma": {
+    "precision": 0.9934,
+    "recall": 0.9934,
+    "f1": 0.9934
+   },
+   "pituitary": {
+    "precision": 1.0,
+    "recall": 0.9932,
+    "f1": 0.9966
+   },
+   "notumor": {
+    "precision": 0.9929,
+    "recall": 1.0,
+    "f1": 0.9964
+   }
+  },
+  "confusion_matrix": {
+   "labels": [
+    "glioma",
+    "meningioma",
+    "pituitary",
+    "notumor"
+   ],
+   "matrix": [
+    [
+     253,
+     1,
+     0,
+     0
+    ],
+    [
+     1,
+     302,
+     0,
+     1
+    ],
+    [
+     1,
+     1,
+     293,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     140
+    ]
+   ]
+  },
+  "roc_auc_ovr": null,
+  "ece_post_T": 0.002657,
+  "uncertain": 4,
+  "uncertain_rate": 0.004028
+ },
+ "cls_delta": {
+  "accuracy": 3.5e-05,
+  "macro_f1": 2.5e-05
+ },
+ "contaminated_test_cases": [
+  {
+   "path": "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00344_me_ax_t1.jpg",
+   "true": "meningioma",
+   "pred": "meningioma",
+   "confidence": 0.997683,
+   "certain": true
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/meningioma/brisc2025_test_00352_me_ax_t1.jpg",
+   "true": "meningioma",
+   "pred": "meningioma",
+   "confidence": 0.997594,
+   "certain": true
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00737_pi_ax_t1.jpg",
+   "true": "pituitary",
+   "pred": "pituitary",
+   "confidence": 0.997553,
+   "certain": true
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00751_pi_ax_t1.jpg",
+   "true": "pituitary",
+   "pred": "pituitary",
+   "confidence": 0.997414,
+   "certain": true
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00825_pi_co_t1.jpg",
+   "true": "pituitary",
+   "pred": "pituitary",
+   "confidence": 0.997968,
+   "certain": true
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00827_pi_co_t1.jpg",
+   "true": "pituitary",
+   "pred": "pituitary",
+   "confidence": 0.997761,
+   "certain": true
+  },
+  {
+   "path": "data/brisc2025/classification_task/test/pituitary/brisc2025_test_00834_pi_co_t1.jpg",
+   "true": "pituitary",
+   "pred": "pituitary",
+   "confidence": 0.997613,
+   "certain": true
+  }
+ ],
+ "system_state_distribution": {
+  "tumor_localized": 846,
+  "tumor_unlocalized": 10,
+  "uncertain": 4,
+  "healthy": 140
+ },
+ "seg_primary": {
+  "tag": "seg-test N=860",
+  "n": 860,
+  "mean_dice": 0.861659,
+  "median_dice": 0.938537,
+  "p10_dice": 0.656268,
+  "min_dice": 0.0,
+  "mean_iou": 0.793411,
+  "empty_pred": 10,
+  "multi_component": 81
+ },
+ "seg_sensitivity": {
+  "tag": "seg-test N=853",
+  "n": 853,
+  "mean_dice": 0.860962,
+  "median_dice": 0.937901,
+  "p10_dice": 0.65403,
+  "min_dice": 0.0,
+  "mean_iou": 0.792543,
+  "empty_pred": 10,
+  "multi_component": 81
+ },
+ "disagreement_confident_tumor_empty_seg": {
+  "rate": 0.011682242990654205,
+  "count": 10,
+  "n_confident_tumor": 856,
+  "per_class": {
+   "glioma": 7,
+   "meningioma": 1,
+   "pituitary": 2
+  },
+  "exceeds_5pct": false
+ },
+ "test_lock": "official test evaluated exactly once; no tuning permitted after this point"
+}

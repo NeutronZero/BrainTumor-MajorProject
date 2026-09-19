@@ -1,0 +1,7 @@
+# PRE-001-adjacent classification preprocessing — OUR decision (not inherited)
+# Minimal baseline: direct resize + ImageNet norm (justified by pretrained init).
+name: cls_baseline
+image_size: 224
+steps: [grayscale_to_rgb, resize_bilinear_224, to_float01, normalize_imagenet]
+normalize: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+hash_note: config hash recorded per run (§27); train/infer share this file (§29)

@@ -1,0 +1,23 @@
+# CLS-001 — new-project classification baseline (frozen config, not inherited)
+question: Does ConvNeXt-Tiny reach competitive Macro-F1 on OUR 4000/1000 split under minimal preprocessing?
+hypothesis: Descriptive prior rank-1 transfers as a strong baseline (>=0.95 val Macro-F1).
+architecture: convnext_tiny
+init: imagenet_pretrained_explicit_transfer  # plan S33; smoke runs use random init offline
+n_classes: 4
+image_size: 224
+preprocessing: configs/preprocessing/cls_baseline.yaml
+data:
+  manifest: outputs/data_gate_0/project_manifest.csv
+  train: project_split==train
+  val: project_split==val
+  test: LOCKED (evaluate once via scripts/evaluate/run_test.py after T,tau lock)
+loss: {name: ce_label_smoothing, eps: 0.1}
+imbalance: stratified_sampling_unweighted_CE  # plan S35 start; recall rule governs change
+optim: {name: adamw, lr: 3.0e-4, weight_decay: 0.05, warmup_epochs: 3, cosine_to: 1.0e-6}
+batch_size: 64   # T4 target; smoke overrides
+epochs_max: 30
+early_stopping: {patience: 8, min_delta: 0.001, monitor: val_macro_f1}
+stability: {amp: true, grad_clip_norm: 1.0, nan_inf_detect: true}
+seed: 42
+calibration: configs/classification/calibration.yaml  # T on val NLL; tau1/tau2 on val; then LOCK
+augmentation: {train_only: true, hflip_p: 0.5, rot_deg: 10, affine_translate: 0.05, affine_scale: [0.95, 1.05]}

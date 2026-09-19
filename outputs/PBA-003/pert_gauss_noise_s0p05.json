@@ -1,0 +1,72 @@
+{
+ "perturbation": {
+  "id": "gauss_noise_s0p05",
+  "family": "noise",
+  "definition": "plan \u00a768: additive Gaussian sigma=0.05 on [0,1] scale, per-case RNG(seed+idx), clip",
+  "params": {
+   "sigma": 0.05,
+   "seed": 7003
+  }
+ },
+ "cls": {
+  "n": 1000,
+  "evaluable": 1000,
+  "accuracy": 0.976,
+  "macro_f1": 0.979353,
+  "per_class_f1": {
+   "glioma": 0.977956,
+   "meningioma": 0.971714,
+   "pituitary": 0.967742,
+   "notumor": 1.0
+  },
+  "ece_frozen_T": 0.021523,
+  "uncertain_n": 13,
+  "errors_n": 24,
+  "cbw_n": 20,
+  "conf_correct_mean": 0.9946,
+  "conf_wrong_mean": 0.9642,
+  "error_stems": [
+   "brisc2025_test_00020_gl_ax_t1",
+   "brisc2025_test_00064_gl_ax_t1",
+   "brisc2025_test_00137_gl_co_t1",
+   "brisc2025_test_00155_gl_co_t1",
+   "brisc2025_test_00163_gl_co_t1",
+   "brisc2025_test_00176_gl_sa_t1",
+   "brisc2025_test_00229_gl_sa_t1",
+   "brisc2025_test_00234_gl_sa_t1",
+   "brisc2025_test_00235_gl_sa_t1",
+   "brisc2025_test_00237_gl_sa_t1",
+   "brisc2025_test_00281_me_ax_t1",
+   "brisc2025_test_00338_me_ax_t1",
+   "brisc2025_test_00394_me_co_t1",
+   "brisc2025_test_00399_me_co_t1",
+   "brisc2025_test_00403_me_co_t1",
+   "brisc2025_test_00411_me_co_t1",
+   "brisc2025_test_00426_me_co_t1",
+   "brisc2025_test_00432_me_co_t1",
+   "brisc2025_test_00455_me_co_t1",
+   "brisc2025_test_00490_me_sa_t1",
+   "brisc2025_test_00493_me_sa_t1",
+   "brisc2025_test_00526_me_sa_t1",
+   "brisc2025_test_00552_me_sa_t1",
+   "brisc2025_test_00558_me_sa_t1"
+  ]
+ },
+ "seg": {
+  "n": 860,
+  "evaluable": 860,
+  "mean_dice": 0.692929,
+  "median_dice": 0.902968,
+  "p10_dice": 0.0,
+  "mean_iou": 0.632475,
+  "empty_pred": 163,
+  "multi_component": 36,
+  "by_class_mean_dice": {
+   "glioma": 0.435181,
+   "meningioma": 0.765288,
+   "pituitary": 0.83735
+  },
+  "mean_fp_rate": 0.115064,
+  "mean_fn_rate": 0.30874
+ }
+}

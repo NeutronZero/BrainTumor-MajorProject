@@ -1,0 +1,111 @@
+{
+ "experiment": "ROB-001 locked evaluation (segmentation only)",
+ "freeze": {
+  "experiment": "ROB-001",
+  "checkpoint_sha256": "36091d63cea9af94c568ee3eaf9895658c7eae9a7179cf1fee6c397f1ad82620",
+  "config_sha256": "d99fcda77bf13dc0b15eb063906e346f9fcb11ed9d5975662ddde4c4e8297e18",
+  "config_matches_kernel_run": true,
+  "pipeline": "src/brain_tumor/preprocessing/pipeline.py",
+  "pipeline_sha256": "a0bdfff9c28f0a1dbfac642819dc955eecd6a750b57292f62439328e45a7f77e",
+  "localization": "configs/segmentation/localization.yaml",
+  "localization_sha256": "17217011c99e8188c584fa7657a5d3f2c733b5d80bcd1f101d606595850627d5",
+  "train_noise_sigma": 0.05,
+  "threshold": 0.5,
+  "morphology": "none (same as SEG-001)",
+  "norm": {
+   "mean": 0.10167703278129603,
+   "std": 0.14063970563559394
+  },
+  "val_selected": {
+   "val_dice": 0.8337152518196035,
+   "best_epoch": 23
+  }
+ },
+ "seg_primary": {
+  "tag": "rob001 seg-test N=860",
+  "n": 860,
+  "mean_dice": 0.820744,
+  "median_dice": 0.919711,
+  "p10_dice": 0.543542,
+  "min_dice": 0.0,
+  "mean_iou": 0.74351,
+  "empty_pred": 9,
+  "multi_component": 163,
+  "by_class": {
+   "glioma": {
+    "n": 254,
+    "mean": 0.662465
+   },
+   "meningioma": {
+    "n": 306,
+    "mean": 0.924705
+   },
+   "pituitary": {
+    "n": 300,
+    "mean": 0.848713
+   }
+  }
+ },
+ "seg_sensitivity": {
+  "tag": "rob001 seg-test N=853",
+  "n": 853,
+  "mean_dice": 0.819721,
+  "median_dice": 0.919231,
+  "p10_dice": 0.540974,
+  "min_dice": 0.0,
+  "mean_iou": 0.742248,
+  "empty_pred": 9,
+  "multi_component": 163,
+  "by_class": {
+   "glioma": {
+    "n": 254,
+    "mean": 0.662465
+   },
+   "meningioma": {
+    "n": 304,
+    "mean": 0.924566
+   },
+   "pituitary": {
+    "n": 295,
+    "mean": 0.847077
+   }
+  }
+ },
+ "seg_delta_vs_SEG001": {
+  "primary": {
+   "mean_dice": -0.040915,
+   "median_dice": -0.018826,
+   "p10_dice": -0.112726,
+   "mean_iou": -0.049901
+  },
+  "sensitivity": {
+   "mean_dice": -0.041241,
+   "median_dice": -0.01867,
+   "p10_dice": -0.113056,
+   "mean_iou": -0.050295
+  },
+  "empty_pred": -1,
+  "multi_component": 82
+ },
+ "system_state_distribution": {
+  "tumor_localized": 847,
+  "tumor_unlocalized": 9,
+  "uncertain": 4,
+  "healthy": 140
+ },
+ "disagreement_confident_tumor_empty_seg": {
+  "rate": 0.010514018691588784,
+  "count": 9,
+  "n_confident_tumor": 856,
+  "per_class": {
+   "glioma": 9
+  },
+  "exceeds_5pct": false
+ },
+ "disagreement_delta_vs_SEG001": {
+  "count": -1,
+  "rate": -0.001168
+ },
+ "cls_source": "frozen CLS-001 records (no new classification inference)",
+ "test_lock": "ROB-001 seg-test contact exactly once; no tuning permitted after this point"
+}

@@ -1,0 +1,21 @@
+{
+ "experiment": "ROB-001",
+ "checkpoint_sha256": "36091d63cea9af94c568ee3eaf9895658c7eae9a7179cf1fee6c397f1ad82620",
+ "config_sha256": "d99fcda77bf13dc0b15eb063906e346f9fcb11ed9d5975662ddde4c4e8297e18",
+ "config_matches_kernel_run": true,
+ "pipeline": "src/brain_tumor/preprocessing/pipeline.py",
+ "pipeline_sha256": "a0bdfff9c28f0a1dbfac642819dc955eecd6a750b57292f62439328e45a7f77e",
+ "localization": "configs/segmentation/localization.yaml",
+ "localization_sha256": "17217011c99e8188c584fa7657a5d3f2c733b5d80bcd1f101d606595850627d5",
+ "train_noise_sigma": 0.05,
+ "threshold": 0.5,
+ "morphology": "none (same as SEG-001)",
+ "norm": {
+  "mean": 0.10167703278129603,
+  "std": 0.14063970563559394
+ },
+ "val_selected": {
+  "val_dice": 0.8337152518196035,
+  "best_epoch": 23
+ }
+}

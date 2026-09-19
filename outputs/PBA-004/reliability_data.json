@@ -1,0 +1,168 @@
+{
+ "source": "frozen per_case_test.json probs; descriptive only, no refit",
+ "frozen": {
+  "T": 0.5115954875946045,
+  "tau1": 0.95,
+  "tau2": 0.05
+ },
+ "N": 1000,
+ "ece_recomputed": 0.002655,
+ "ece_locked_eval": 0.002655,
+ "ece_pba004_stored": 0.002655,
+ "verification": "recomputed == locked-eval == stored (tol 1e-6); N=1000; uncertain=4; CBW=2",
+ "confident_but_wrong_n": 2,
+ "uncertain_n": 4,
+ "bins_15": [
+  {
+   "bin": "0.00-0.07",
+   "lo": 0.0,
+   "hi": 0.06666666666666667,
+   "center": 0.03333333333333333,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.07-0.13",
+   "lo": 0.06666666666666667,
+   "hi": 0.13333333333333333,
+   "center": 0.1,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.13-0.20",
+   "lo": 0.13333333333333333,
+   "hi": 0.2,
+   "center": 0.16666666666666669,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.20-0.27",
+   "lo": 0.2,
+   "hi": 0.26666666666666666,
+   "center": 0.23333333333333334,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.27-0.33",
+   "lo": 0.26666666666666666,
+   "hi": 0.3333333333333333,
+   "center": 0.3,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.33-0.40",
+   "lo": 0.3333333333333333,
+   "hi": 0.4,
+   "center": 0.3666666666666667,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.40-0.47",
+   "lo": 0.4,
+   "hi": 0.4666666666666667,
+   "center": 0.43333333333333335,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.47-0.53",
+   "lo": 0.4666666666666667,
+   "hi": 0.5333333333333333,
+   "center": 0.5,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.53-0.60",
+   "lo": 0.5333333333333333,
+   "hi": 0.6,
+   "center": 0.5666666666666667,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.60-0.67",
+   "lo": 0.6,
+   "hi": 0.6666666666666666,
+   "center": 0.6333333333333333,
+   "n": 1,
+   "accuracy": 0.0,
+   "mean_confidence": 0.641269,
+   "gap": -0.641269
+  },
+  {
+   "bin": "0.67-0.73",
+   "lo": 0.6666666666666666,
+   "hi": 0.7333333333333333,
+   "center": 0.7,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.73-0.80",
+   "lo": 0.7333333333333333,
+   "hi": 0.8,
+   "center": 0.7666666666666666,
+   "n": 0,
+   "accuracy": null,
+   "mean_confidence": null,
+   "gap": null
+  },
+  {
+   "bin": "0.80-0.87",
+   "lo": 0.8,
+   "hi": 0.8666666666666667,
+   "center": 0.8333333333333334,
+   "n": 2,
+   "accuracy": 0.5,
+   "mean_confidence": 0.816413,
+   "gap": -0.31641300000000006
+  },
+  {
+   "bin": "0.87-0.93",
+   "lo": 0.8666666666666667,
+   "hi": 0.9333333333333333,
+   "center": 0.9,
+   "n": 1,
+   "accuracy": 0.0,
+   "mean_confidence": 0.899598,
+   "gap": -0.899598
+  },
+  {
+   "bin": "0.93-1.00",
+   "lo": 0.9333333333333333,
+   "hi": 1.0,
+   "center": 0.9666666666666667,
+   "n": 996,
+   "accuracy": 0.9979919678714859,
+   "mean_confidence": 0.9975085371485943,
+   "gap": 0.00048343072289158684
+  }
+ ],
+ "plot": "reliability_diagram.png"
+}

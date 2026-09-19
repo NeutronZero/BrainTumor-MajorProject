@@ -1,0 +1,48 @@
+{
+ "precision": "FP32 reference",
+ "device": "Tesla T4",
+ "torch": "2.10.0+cu128",
+ "inputs": "synthetic 512px, seeds [101,202,303]",
+ "repeats_per_image": 20,
+ "cold_load_s": 9.694,
+ "latency_s": {
+  "classify": {
+   "n": 60,
+   "median": 0.0111,
+   "p95": 0.0137,
+   "min": 0.0105,
+   "max": 0.0155,
+   "mean": 0.0114
+  },
+  "segment": {
+   "n": 60,
+   "median": 0.0242,
+   "p95": 0.0281,
+   "min": 0.023,
+   "max": 0.0347,
+   "mean": 0.025
+  },
+  "consistency_k8": {
+   "n": 60,
+   "median": 0.3397,
+   "p95": 0.3688,
+   "min": 0.3205,
+   "max": 0.3771,
+   "mean": 0.3406
+  },
+  "analyze": {
+   "n": 60,
+   "median": 0.0349,
+   "p95": 0.0393,
+   "min": 0.0333,
+   "max": 0.0484,
+   "mean": 0.0358
+  }
+ },
+ "peak_gpu_memory": {
+  "peak_allocated_MB": 370.1,
+  "peak_reserved_MB": 576.0
+ },
+ "gpu_deterministic_repeat": true,
+ "floors": "FP16/ONNX deltas vs this reference: Macro-F1/Dice >= -0.01; quantization >= -0.02 (accuracy), plus latency improvement"
+}

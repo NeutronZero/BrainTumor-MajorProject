@@ -1,0 +1,50 @@
+{
+ "perturbation": {
+  "id": "none",
+  "family": "control",
+  "definition": "no perturbation; frozen pipeline as-is",
+  "params": {}
+ },
+ "cls": {
+  "n": 1000,
+  "evaluable": 1000,
+  "accuracy": 0.995,
+  "macro_f1": 0.995167,
+  "per_class_f1": {
+   "glioma": 0.994106,
+   "meningioma": 0.993464,
+   "pituitary": 0.996656,
+   "notumor": 0.996441
+  },
+  "ece_frozen_T": 0.002655,
+  "uncertain_n": 4,
+  "errors_n": 5,
+  "cbw_n": 2,
+  "conf_correct_mean": 0.9973,
+  "conf_wrong_mean": 0.8697,
+  "error_stems": [
+   "brisc2025_test_00229_gl_sa_t1",
+   "brisc2025_test_00281_me_ax_t1",
+   "brisc2025_test_00411_me_co_t1",
+   "brisc2025_test_00820_pi_ax_t1",
+   "brisc2025_test_00826_pi_co_t1"
+  ]
+ },
+ "seg": {
+  "n": 860,
+  "evaluable": 860,
+  "mean_dice": 0.861659,
+  "median_dice": 0.938537,
+  "p10_dice": 0.656268,
+  "mean_iou": 0.793411,
+  "empty_pred": 10,
+  "multi_component": 81,
+  "by_class_mean_dice": {
+   "glioma": 0.749988,
+   "meningioma": 0.935172,
+   "pituitary": 0.881223
+  },
+  "mean_fp_rate": 0.207461,
+  "mean_fn_rate": 0.118947
+ }
+}

@@ -1,0 +1,137 @@
+{
+ "val_dice": 0.8337152518196035,
+ "epochs_run": 30,
+ "epochs_max": 30,
+ "best_epoch": 23,
+ "stopping_reason": "completed_all_epochs",
+ "val_dice_per_epoch": [
+  {
+   "epoch": 0,
+   "val_metric": 0.026383801860215845
+  },
+  {
+   "epoch": 1,
+   "val_metric": 0.476395710087149
+  },
+  {
+   "epoch": 2,
+   "val_metric": 0.5796474190802589
+  },
+  {
+   "epoch": 3,
+   "val_metric": 0.7132138143114374
+  },
+  {
+   "epoch": 4,
+   "val_metric": 0.7167596846727189
+  },
+  {
+   "epoch": 5,
+   "val_metric": 0.7000905703360223
+  },
+  {
+   "epoch": 6,
+   "val_metric": 0.6093453714261391
+  },
+  {
+   "epoch": 7,
+   "val_metric": 0.7121339798015758
+  },
+  {
+   "epoch": 8,
+   "val_metric": 0.7373724170926913
+  },
+  {
+   "epoch": 9,
+   "val_metric": 0.7462142741792802
+  },
+  {
+   "epoch": 10,
+   "val_metric": 0.776012081261497
+  },
+  {
+   "epoch": 11,
+   "val_metric": 0.7857995897960065
+  },
+  {
+   "epoch": 12,
+   "val_metric": 0.7921378560918545
+  },
+  {
+   "epoch": 13,
+   "val_metric": 0.7834189513291034
+  },
+  {
+   "epoch": 14,
+   "val_metric": 0.7998437551298502
+  },
+  {
+   "epoch": 15,
+   "val_metric": 0.7975129721059726
+  },
+  {
+   "epoch": 16,
+   "val_metric": 0.8029484256213978
+  },
+  {
+   "epoch": 17,
+   "val_metric": 0.8244563891097456
+  },
+  {
+   "epoch": 18,
+   "val_metric": 0.8278307143133911
+  },
+  {
+   "epoch": 19,
+   "val_metric": 0.8016508493357554
+  },
+  {
+   "epoch": 20,
+   "val_metric": 0.8217540406507605
+  },
+  {
+   "epoch": 21,
+   "val_metric": 0.8337152518196035
+  },
+  {
+   "epoch": 22,
+   "val_metric": 0.8283596761197535
+  },
+  {
+   "epoch": 23,
+   "val_metric": 0.8342647755986761
+  },
+  {
+   "epoch": 24,
+   "val_metric": 0.8335865575031701
+  },
+  {
+   "epoch": 25,
+   "val_metric": 0.8221347562780184
+  },
+  {
+   "epoch": 26,
+   "val_metric": 0.8274478722108112
+  },
+  {
+   "epoch": 27,
+   "val_metric": 0.8276868768899953
+  },
+  {
+   "epoch": 28,
+   "val_metric": 0.8285078005960232
+  },
+  {
+   "epoch": 29,
+   "val_metric": 0.8290264781273606
+  }
+ ],
+ "norm": {
+  "mean": 0.10167703278129603,
+  "std": 0.14063970563559394
+ },
+ "device": "cuda",
+ "smoke": false,
+ "train_noise_sigma": 0.05,
+ "config_sha256": "d99fcda77bf13dc0b15eb063906e346f9fcb11ed9d5975662ddde4c4e8297e18"
+}

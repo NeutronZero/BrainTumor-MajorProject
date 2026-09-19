@@ -1,0 +1,8 @@
+# FROZEN §38-39 + freeze #4 — validation-only, then LOCK. No post-test tuning.
+temperature_init: 1.0
+optimize: validation_NLL_LBFGS
+tau1_candidate: 0.80   # max_probability >= tau1
+tau2_candidate: 0.20   # top1 - top2 >= tau2
+select_on: validation_only
+lock_after: validation
+ece_bins: 15

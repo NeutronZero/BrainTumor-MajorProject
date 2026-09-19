@@ -1,0 +1,50 @@
+{
+ "perturbation": {
+  "id": "intensity_shift_p0p05",
+  "family": "intensity variation",
+  "definition": "plan \u00a768 severity 'defined' -> fixed here: additive +0.05 on [0,1] scale, clip",
+  "params": {
+   "shift": 0.05
+  }
+ },
+ "cls": {
+  "n": 1000,
+  "evaluable": 1000,
+  "accuracy": 0.997,
+  "macro_f1": 0.997295,
+  "per_class_f1": {
+   "glioma": 0.994059,
+   "meningioma": 0.995122,
+   "pituitary": 1.0,
+   "notumor": 1.0
+  },
+  "ece_frozen_T": 0.001212,
+  "uncertain_n": 6,
+  "errors_n": 3,
+  "cbw_n": 3,
+  "conf_correct_mean": 0.9966,
+  "conf_wrong_mean": 0.9956,
+  "error_stems": [
+   "brisc2025_test_00020_gl_ax_t1",
+   "brisc2025_test_00064_gl_ax_t1",
+   "brisc2025_test_00229_gl_sa_t1"
+  ]
+ },
+ "seg": {
+  "n": 860,
+  "evaluable": 860,
+  "mean_dice": 0.846913,
+  "median_dice": 0.932988,
+  "p10_dice": 0.616297,
+  "mean_iou": 0.775502,
+  "empty_pred": 10,
+  "multi_component": 111,
+  "by_class_mean_dice": {
+   "glioma": 0.719342,
+   "meningioma": 0.930561,
+   "pituitary": 0.869603
+  },
+  "mean_fp_rate": 0.24138,
+  "mean_fn_rate": 0.122549
+ }
+}

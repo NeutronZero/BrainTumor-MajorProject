@@ -1,0 +1,77 @@
+{
+ "scope": "reporting correction only; frozen predictions unchanged; no model rerun",
+ "localization_failures_total": 10,
+ "by_class": {
+  "glioma": 7,
+  "meningioma": 1,
+  "pituitary": 2
+ },
+ "correction": "prior chat reporting stated 8/10 failures were glioma; correct per-class count from frozen seg+cls link is glioma 7 / meningioma 1 / pituitary 2.",
+ "cases": [
+  {
+   "stem": "brisc2025_test_00005_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "cls_conf": 0.997728
+  },
+  {
+   "stem": "brisc2025_test_00007_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "cls_conf": 0.99749
+  },
+  {
+   "stem": "brisc2025_test_00010_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "cls_conf": 0.997612
+  },
+  {
+   "stem": "brisc2025_test_00045_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "cls_conf": 0.995699
+  },
+  {
+   "stem": "brisc2025_test_00057_gl_ax_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "cls_conf": 0.994676
+  },
+  {
+   "stem": "brisc2025_test_00140_gl_co_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "cls_conf": 0.997482
+  },
+  {
+   "stem": "brisc2025_test_00207_gl_sa_t1",
+   "class": "glioma",
+   "dice": 0.0,
+   "cls_conf": 0.997683
+  },
+  {
+   "stem": "brisc2025_test_00376_me_ax_t1",
+   "class": "meningioma",
+   "dice": 0.0,
+   "cls_conf": 0.996998
+  },
+  {
+   "stem": "brisc2025_test_00813_pi_ax_t1",
+   "class": "pituitary",
+   "dice": 0.0,
+   "cls_conf": 0.997499
+  },
+  {
+   "stem": "brisc2025_test_00910_pi_co_t1",
+   "class": "pituitary",
+   "dice": 0.0,
+   "cls_conf": 0.997415
+  }
+ ],
+ "verified_against": [
+  "outputs/PBA-002/per_case_segtest.json",
+  "outputs/PBA-005/pba005.json",
+  "outputs/PBA-001/per_case_test.json"
+ ]
+}

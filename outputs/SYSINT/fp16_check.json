@@ -1,0 +1,53 @@
+{
+ "fp32": {
+  "macro_f1_val": 0.995032,
+  "mean_dice_segval": 0.851756
+ },
+ "fp16": {
+  "macro_f1_val": 0.995032,
+  "mean_dice_segval": 0.851727
+ },
+ "delta": {
+  "macro_f1": 0.0,
+  "mean_dice": -2.9e-05
+ },
+ "floors": {
+  "macro_f1_pass": true,
+  "mean_dice_pass": true
+ },
+ "latency_fp16": {
+  "classify": {
+   "n": 60,
+   "median": 0.0125,
+   "p95": 0.0138,
+   "min": 0.0117,
+   "max": 0.0222
+  },
+  "segment": {
+   "n": 60,
+   "median": 0.0178,
+   "p95": 0.018,
+   "min": 0.0111,
+   "max": 0.0215
+  },
+  "consistency_k8": {
+   "n": 60,
+   "median": 0.3182,
+   "p95": 0.3364,
+   "min": 0.3035,
+   "max": 0.3434
+  },
+  "analyze": {
+   "n": 60,
+   "median": 0.0301,
+   "p95": 0.0314,
+   "min": 0.0249,
+   "max": 0.0323
+  }
+ },
+ "fp16_deterministic_repeat": true,
+ "peak_gpu_memory_fp32_weights": {
+  "peak_allocated_MB": 370.1,
+  "peak_reserved_MB": 578.0
+ }
+}

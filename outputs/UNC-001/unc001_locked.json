@@ -1,0 +1,93 @@
+{
+ "N": 1000,
+ "clean_locked_baseline": "existing CLS-001 result reused, not recomputed (acc 0.9950, macro-F1 0.9952, 5 errors, 4 uncertain)",
+ "detection": {
+  "eval_noise_errors": 27,
+  "flagged_among_eval_errors": 25,
+  "detection_rate": 0.925926,
+  "baseline_detection_rate": 0.185185,
+  "cbw_eval_errors": 25,
+  "cbw_detection_rate": 0.96
+ },
+ "burden": {
+  "flagged_total": 36,
+  "flag_rate_overall": 0.036,
+  "false_alert_rate": 0.033166
+ },
+ "agreement_distribution": {
+  "0/8": 16,
+  "1/8": 7,
+  "2/8": 0,
+  "3/8": 3,
+  "4/8": 2,
+  "5/8": 3,
+  "6/8": 3,
+  "7/8": 2,
+  "8/8": 964
+ },
+ "by_class": {
+  "glioma": {
+   "n": 254,
+   "eval_errors": 13,
+   "detection_rate": 0.923077,
+   "false_alert_rate": 0.067194
+  },
+  "meningioma": {
+   "n": 306,
+   "eval_errors": 14,
+   "detection_rate": 0.928571,
+   "false_alert_rate": 0.049342
+  },
+  "pituitary": {
+   "n": 300,
+   "eval_errors": 0,
+   "detection_rate": null,
+   "false_alert_rate": 0.0
+  },
+  "notumor": {
+   "n": 140,
+   "eval_errors": 0,
+   "detection_rate": null,
+   "false_alert_rate": 0.007143
+  }
+ },
+ "confusion_eval_noise": [
+  [
+   241,
+   5,
+   8,
+   0
+  ],
+  [
+   1,
+   292,
+   13,
+   0
+  ],
+  [
+   0,
+   0,
+   300,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   140
+  ]
+ ],
+ "confusion_labels": [
+  "glioma",
+  "meningioma",
+  "pituitary",
+  "notumor"
+ ],
+ "validation_comparison": {
+  "val_detection": 0.75,
+  "val_baseline": 0.25,
+  "val_cbw": 0.809524,
+  "val_false_alert": 0.027136
+ },
+ "note": "no re-cut; outcome accepted as observed"
+}

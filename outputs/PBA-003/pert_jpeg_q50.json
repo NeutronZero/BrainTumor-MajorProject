@@ -1,0 +1,52 @@
+{
+ "perturbation": {
+  "id": "jpeg_q50",
+  "family": "compression",
+  "definition": "plan \u00a768: JPEG encode quality=50 to memory buffer, decode back (Pillow, deterministic)",
+  "params": {
+   "quality": 50
+  }
+ },
+ "cls": {
+  "n": 1000,
+  "evaluable": 1000,
+  "accuracy": 0.995,
+  "macro_f1": 0.995719,
+  "per_class_f1": {
+   "glioma": 0.996063,
+   "meningioma": 0.99179,
+   "pituitary": 0.995025,
+   "notumor": 1.0
+  },
+  "ece_frozen_T": 0.002976,
+  "uncertain_n": 6,
+  "errors_n": 5,
+  "cbw_n": 3,
+  "conf_correct_mean": 0.9966,
+  "conf_wrong_mean": 0.9015,
+  "error_stems": [
+   "brisc2025_test_00229_gl_sa_t1",
+   "brisc2025_test_00281_me_ax_t1",
+   "brisc2025_test_00426_me_co_t1",
+   "brisc2025_test_00455_me_co_t1",
+   "brisc2025_test_00552_me_sa_t1"
+  ]
+ },
+ "seg": {
+  "n": 860,
+  "evaluable": 860,
+  "mean_dice": 0.852542,
+  "median_dice": 0.937598,
+  "p10_dice": 0.622845,
+  "mean_iou": 0.784029,
+  "empty_pred": 18,
+  "multi_component": 82,
+  "by_class_mean_dice": {
+   "glioma": 0.732932,
+   "meningioma": 0.931729,
+   "pituitary": 0.873041
+  },
+  "mean_fp_rate": 0.210051,
+  "mean_fn_rate": 0.128096
+ }
+}
