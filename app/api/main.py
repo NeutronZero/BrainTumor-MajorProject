@@ -40,6 +40,15 @@ def _check_type(file: UploadFile):
     return None
 
 
+def _image_bytes(data: bytes):
+    from PIL import Image
+    try:
+        return Image.open(io.BytesIO(data)), None
+    except Exception:  # noqa: BLE001
+        return None, JSONResponse({"error": "undecodable_image",
+                                   "detail": "cannot decode upload"}, status_code=422)
+
+
 @app.get("/health")
 def health():
     seg = "loaded" if _service.segmentation_available else "unavailable"
@@ -139,5 +148,24 @@ async def analyze(file: UploadFile, consistency_probes: bool = True):
             payload["consistency"] = _service.consistency(img)
         return payload
     except Exception as e:  # noqa: BLE001 — never leak stack/paths (§64)
+        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
+                            status_code=500)
+
+
+@app.post("/explain")
+async def explain(file: UploadFile):
+    """EXPL-001 unified explanation (observer; inference outputs identical)."""
+    if (r := _check_type(file)) is not None:
+        return r
+    data = await file.read()
+    if len(data) > _LIMIT:
+        return JSONResponse({"error": "file_too_large",
+                             "detail": "limit 10MB"}, status_code=413)
+    img, err = _image_bytes(data)
+    if err is not None:
+        return err
+    try:
+        return _service.explain(img, raw=data)
+    except Exception as e:  # noqa: BLE001
         return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
                             status_code=500)

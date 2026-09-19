@@ -188,6 +188,83 @@ class InferenceService:
         from brain_tumor.quality.gate import assess
         return assess(data)
 
+    def explain(self, image: Any = None, raw: bytes | None = None) -> dict:
+        """EXPL-001 unified explanation (observer only).
+
+        Runs the identical analyze() path (outputs/system_state provably
+        unchanged), then attaches descriptive explanation: UNC-001
+        consistency, Grad-CAM heatmap + overlay, segmentation overlay,
+        quality (when raw bytes supplied), and the text report.
+        Explanation forwards run FP32 on all devices (fidelity choice,
+        documented in EXPL-001 evidence).
+        """
+        import base64
+        import io as _io
+        from PIL import Image as _Image, ImageDraw as _Draw
+        from brain_tumor.explain.gradcam import (
+            gradcam_heatmap, overlay, resolve_target_layer, upsample_cam)
+        from brain_tumor.explain.report import build_report
+
+        result = self.analyze(image)
+        payload = result.model_dump()
+        pil = image if isinstance(image, _Image.Image) else _Image.open(image)
+        base = pil.convert("RGB")
+        gray = pil.convert("L")
+        ow, oh = pil.size
+        payload["consistency"] = self.consistency(base)
+        if raw is not None:
+            payload["quality"] = self.quality(raw)
+
+        def _png(arr) -> str:
+            buf = _io.BytesIO()
+            _Image.fromarray(arr).save(buf, format="PNG")
+            return base64.b64encode(buf.getvalue()).decode()
+
+        # Grad-CAM observer (FP32, hooks removed after use inside helper).
+        x = self.cls_tf(base).unsqueeze(0).to(self.device)
+        with torch.enable_grad():
+            cam_small, target_name = gradcam_heatmap(
+                self.clf, resolve_target_layer(self.clf), x,
+                CLASSES.index(payload["predicted_class"]))
+        cam = upsample_cam(cam_small, (ow, oh))
+        payload["gradcam"] = {
+            "target_layer": target_name,
+            "heatmap_png_b64": _png((cam * 255).astype("uint8")),
+            "overlay_png_b64": _png(overlay(np.asarray(gray), cam)),
+            "stats": {"max": round(float(cam.max()), 4),
+                      "mean": round(float(cam.mean()), 4)},
+        }
+
+        # Segmentation visualization (mirrors segment() exactly).
+        if self.segmentation_available and payload["predicted_class"] != "notumor":
+            prob, _, _ = self._segment_prob(gray)
+            mask = (prob > 0.5).astype("uint8") * 255
+            vis = base.copy()
+            d = _Draw.Draw(vis, "RGBA")
+            if payload["localization"]["bbox"] is not None:
+                d.rectangle(payload["localization"]["bbox"], outline=(255, 0, 0), width=3)
+                cx, cy = payload["localization"]["centroid"]
+                d.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(0, 255, 0))
+            red = np.zeros((oh, ow, 3), dtype=np.float32)
+            red[..., 0] = mask
+            blend = (np.asarray(vis).astype(np.float32) * 0.65
+                     + red * 0.35).clip(0, 255).astype("uint8")
+            payload["segmentation_vis"] = {
+                "mask_png_b64": _png(mask),
+                "overlay_png_b64": _png(blend),
+                "focus_in_bbox": (
+                    round(float(cam[payload["localization"]["bbox"][1]:
+                                       payload["localization"]["bbox"][3],
+                                   payload["localization"]["bbox"][0]:
+                                       payload["localization"]["bbox"][2]].sum()
+                                / max(cam.sum(), 1e-12)), 4)
+                    if payload["localization"]["bbox"] is not None else None
+                ),
+            }
+        else:
+            payload["segmentation_vis"] = None
+        return build_report(payload)
+
     def analyze(self, image: Any = None, consistency_probes: bool = True) -> BrainTumorResult:
         c = self.classify(image)
         warnings: list[str] = []

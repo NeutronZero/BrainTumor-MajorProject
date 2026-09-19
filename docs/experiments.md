@@ -205,6 +205,16 @@
   (classify 0.0125 / segment 0.0178 / K8 0.318 / analyze 0.0301; peak
   370/578MB).
 
+## Workstream 2 — EXPL-001 explainability (advanced branch; SB-1 untouched)
+- Grad-CAM observer on CLS-001 (target `features.7.2.block.0`, hooks only,
+  no retraining; FP32 explanation forwards on all devices). Contribution
+  visualization only — no attention or clinical-meaning claim.
+- Unified object: inference outputs (provably identical) + consistency +
+  quality + heatmap/seg overlays (base64 PNG) + JSON/text report with
+  disclaimer. `/explain` endpoint; Streamlit Explain button.
+- Evidence `outputs/EXPL-001/expl001.json`: observer equivalence true,
+  deterministic, disclaimer present. CPU CI 37 green (synthetic only).
+
 ## Workstream 1 — input-quality gate (SB-1 fallback intact)
 - Deterministic gate (`src/brain_tumor/quality/gate.py`, codes Q01-Q09,
   fixed constants, no model): file/format/dimension/pixel/finite/

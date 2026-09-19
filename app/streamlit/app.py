@@ -65,6 +65,28 @@ def render_result(st, payload: dict) -> None:
         st.write(f"Warnings: {', '.join(payload['warnings'])}")
 
 
+def render_explanation(st, payload: dict) -> None:
+    """EXPL-001 presentation: report text + visual overlays (observer output)."""
+    import base64
+    if "error" in payload:
+        st.error(f"{payload['error']}: {payload.get('detail', '')}")
+        return
+    render_result(st, payload)
+    st.subheader("Explanation (observer — predictions unchanged)")
+    st.text(payload.get("report_text", ""))
+    g = payload.get("gradcam", {})
+    if g.get("overlay_png_b64"):
+        st.image(base64.b64decode(g["overlay_png_b64"]),
+                 caption=f"Grad-CAM ({g.get('target_layer')}) — contribution "
+                         "visualization, no clinical meaning claimed")
+    sv = payload.get("segmentation_vis")
+    if sv and sv.get("overlay_png_b64"):
+        st.image(base64.b64decode(sv["overlay_png_b64"]),
+                 caption="Segmentation overlay (mask + bbox + centroid)")
+        if sv.get("focus_in_bbox") is not None:
+            st.write(f"CAM mass inside bbox: {sv['focus_in_bbox']:.2f} (descriptive)")
+
+
 if __name__ == "__main__":
     try:
         import streamlit as st
@@ -79,5 +101,9 @@ if __name__ == "__main__":
                               type=["jpg", "jpeg", "png", "bmp", "tif", "tiff"])
         if st.button("Analyze") and up is not None:
             render_result(st, build_payload(svc, up.getvalue()))
+        if st.button("Explain") and up is not None:
+            from PIL import Image
+            render_explanation(st, svc.explain(Image.open(io.BytesIO(up.getvalue())),
+                                              raw=up.getvalue()))
     except ImportError:
         print("streamlit not installed")

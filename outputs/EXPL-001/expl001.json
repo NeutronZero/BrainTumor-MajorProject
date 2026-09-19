@@ -1,0 +1,17 @@
+{
+ "target_layer": "features.7.2.block.0",
+ "module_hashes": {
+  "explain/gradcam.py": "c39c27d256e43fc8",
+  "explain/report.py": "dbf47f13f4fc8420",
+  "inference/service.py": "b2acff2093205830"
+ },
+ "observer_equivalence": true,
+ "deterministic_heatmap": true,
+ "report_disclaimer_present": true,
+ "precision_note": "explanation forwards run FP32 on all devices (documented choice)",
+ "limitations": [
+  "heatmap is a contribution visualization, not proof of attention",
+  "no clinical-meaning claim without separate validation",
+  "focus_in_bbox is descriptive, not a detection metric"
+ ]
+}
