@@ -141,6 +141,28 @@ def test_quality_endpoint(client, noise_img):
     assert bad["verdict"] == "reject" and "Q01_undecodable" in bad["failed"]
 
 
+def test_healthy_path_no_validation_error():
+    """Regression: notumor predictions must build valid empty localization
+    (live-check caught bare LocalizationResult() on this path)."""
+    import io
+    import numpy as np
+    from PIL import Image
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from brain_tumor.inference import service as svc_mod
+    svc = svc_mod.InferenceService.from_registry()
+    arr = (np.indices((256, 256)).sum(axis=0) % 2 * 255).astype("uint8")
+    buf = io.BytesIO()
+    Image.fromarray(arr).save(buf, format="PNG")
+    buf.seek(0)
+    img = Image.open(buf)
+    assert svc.classify(img)["predicted_class"] == "notumor"
+    r = svc.analyze(img)
+    assert r.system_state in ("healthy", "uncertain")
+    assert r.localization.area_pixels == 0
+    e = svc.explain(img)
+    assert e["predicted_class"] == "notumor" and e["segmentation_vis"] is None
+
+
 def test_degraded_paths_without_checkpoints(noise_img):
     """Missing weights: classifier raises, segmenter reports unavailable."""
     import io

@@ -103,7 +103,10 @@ if __name__ == "__main__":
             render_result(st, build_payload(svc, up.getvalue()))
         if st.button("Explain") and up is not None:
             from PIL import Image
-            render_explanation(st, svc.explain(Image.open(io.BytesIO(up.getvalue())),
-                                              raw=up.getvalue()))
+            try:
+                render_explanation(st, svc.explain(Image.open(io.BytesIO(up.getvalue())),
+                                                  raw=up.getvalue()))
+            except Exception as e:  # noqa: BLE001 — never leak stack/paths
+                st.error(f"inference_failed: {type(e).__name__}")
     except ImportError:
         print("streamlit not installed")

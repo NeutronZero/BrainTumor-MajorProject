@@ -148,8 +148,9 @@ class InferenceService:
                 "warnings": list(warnings)}
 
     def localize(self, image: Any = None) -> LocalizationResult:
-        return self.segment(image)["localization"] \
-            if self.segmentation_available else LocalizationResult()
+        if self.segmentation_available:
+            return self.segment(image)["localization"]
+        return LocalizationResult(bbox=None, centroid=None, area_pixels=0)
 
     def consistency(self, image: Any = None, k: int = CONSISTENCY_K) -> dict:
         """UNC-001 frozen rule, descriptive only. Fixed seeds (base + k).
@@ -271,9 +272,11 @@ class InferenceService:
         if c["classification_state"] == "uncertain":
             warnings.append("low_confidence")
         if c["predicted_class"] == "notumor":
-            seg_state, loc = "empty", LocalizationResult()
+            seg_state, loc = "empty", LocalizationResult(
+                bbox=None, centroid=None, area_pixels=0)
         elif not self.segmentation_available:
-            seg_state, loc = "unavailable", LocalizationResult()
+            seg_state, loc = "unavailable", LocalizationResult(
+                bbox=None, centroid=None, area_pixels=0)
             warnings.append("segmentation_unavailable")
         else:
             s = self.segment(image)
