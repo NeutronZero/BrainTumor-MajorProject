@@ -240,6 +240,8 @@ class InferenceService:
         if self.segmentation_available and payload["predicted_class"] != "notumor":
             prob, _, _ = self._segment_prob(gray)
             mask = (prob > 0.5).astype("uint8") * 255
+            mask_full = np.asarray(
+                _Image.fromarray(mask).resize((ow, oh), _Image.NEAREST))
             vis = base.copy()
             d = _Draw.Draw(vis, "RGBA")
             if payload["localization"]["bbox"] is not None:
@@ -247,11 +249,11 @@ class InferenceService:
                 cx, cy = payload["localization"]["centroid"]
                 d.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(0, 255, 0))
             red = np.zeros((oh, ow, 3), dtype=np.float32)
-            red[..., 0] = mask
+            red[..., 0] = mask_full
             blend = (np.asarray(vis).astype(np.float32) * 0.65
                      + red * 0.35).clip(0, 255).astype("uint8")
             payload["segmentation_vis"] = {
-                "mask_png_b64": _png(mask),
+                "mask_png_b64": _png(mask_full),
                 "overlay_png_b64": _png(blend),
                 "focus_in_bbox": (
                     round(float(cam[payload["localization"]["bbox"][1]:

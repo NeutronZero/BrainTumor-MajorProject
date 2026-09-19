@@ -74,3 +74,22 @@ def test_explain_endpoint():
     assert "report_text" in body and "disclaimer" in body
     bad = client.post("/explain", files={"file": ("t.png", b"junk", "image/png")})
     assert bad.status_code == 422
+
+
+def test_explain_non256_resolutions():
+    """Regression: overlays must match ORIGINAL size (live-check caught a
+    256-vs-original broadcast crash on large uploads)."""
+    import base64 as _b64
+    from PIL import Image as _Image
+    svc = _svc()
+    for shape, seed in (((1024, 1024), 2), ((384, 512, 3), 3)):
+        arr = (np.random.RandomState(seed).rand(*shape) * 255).astype("uint8")
+        img = _Image.fromarray(arr)
+        e = svc.explain(img)
+        for key in ("overlay_png_b64",):
+            ov = _Image.open(io.BytesIO(_b64.b64decode(e["gradcam"][key])))
+            assert ov.size == img.size, (shape, ov.size, img.size)
+        sv = e["segmentation_vis"]
+        if sv is not None:
+            ov = _Image.open(io.BytesIO(_b64.b64decode(sv["overlay_png_b64"])))
+            assert ov.size == img.size, (shape, ov.size, img.size)
