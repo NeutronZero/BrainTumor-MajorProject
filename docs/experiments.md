@@ -243,6 +243,12 @@
 - Surfaced as `service.reliability()` + `/reliability` + /analyze payload +
   Streamlit lines. Evidence `outputs/REL-001/rel001.json` (rule, hashes,
   synthetic combination matrix). CPU CI 48 green (synthetic only).
+- Quarantine (2026-09-20): an independent audit session ran inference on
+  locked-test image `brisc2025_test_00001_gl_ax_t1.jpg` (direct script +
+  Streamlit AppTest). Unplanned smoke contact, NOT evaluation evidence:
+  enters no output file, calibration, selection, or comparison; no decision
+  flows from it. Full suite per that audit: 49 passed (incl.
+  tests/data/test_gate_fail_open.py).
 
 ## Full-run commands (Kaggle T4, network only for pretrained weights fetch)
 - `python scripts/train/train_classifier.py`  (≈1–3 GPU-h budget, §55)
