@@ -1,0 +1,31 @@
+# SEG-002 model spec — Attention U-Net (architecture delta vs SEG-001, frozen)
+# Implemented post-approval in src/brain_tumor/segmentation/attention_unet.py
+# by ADDING AttentionGate; DoubleConv/UNet topology copied unchanged.
+model: SEG-002
+module: brain_tumor.segmentation.attention_unet
+classes: [AttentionGate, AttentionUNet]
+AttentionGate:
+  inputs: {x: skip feature map (C_x), g: gating signal from coarser level (C_g)}
+  params: {F_int: C_x // 2}
+  ops:
+    - theta_x: Conv2d(C_x, F_int, k=2, s=2, bias=True)
+    - phi_g: Conv2d(C_g, F_int, k=1, s=1, bias=True)
+    - sum + ReLU
+    - psi: Conv2d(F_int, 1, k=1, s=1, bias=True) + Sigmoid
+    - upsample alpha to x size (bilinear) -> x_hat = x * alpha
+  init: default PyTorch init (same convention as SEG-001 DoubleConv)
+AttentionUNet:
+  encoder: DoubleConv(1->64, 64->128, 128->256, 256->512) + MaxPool2d(2)  # reused class
+  bottleneck: DoubleConv(512->1024)  # reused class
+  decoder_level_l:
+    g: upsampled feature from level l+1 (or bottleneck for deepest)
+    x_gated: AttentionGate(skip_l, g)
+    up: ConvTranspose2d -> concat[x_gated, up] -> DoubleConv  # same as SEG-001
+  head: Conv2d(C, 1, k=1)  # single logit, unchanged
+  forward_io: {in: [B,1,256,256] float, out: [B,1,256,256] logits}
+parameter_estimate: SEG-001 params + 4 gates (recorded exactly post-build;
+  reported in aggregate.json, never assumed here)
+invariants:
+  - no change to in/out tensor contract
+  - no change to threshold (0.5), mask convention, norm, aug, loss, optim, ES
+  - checkpoint format identical (engine.fit atomic best.pt + last.pt)

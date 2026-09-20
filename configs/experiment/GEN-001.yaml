@@ -1,0 +1,76 @@
+# GEN-001 — SEG-002 Attention U-Net (FROZEN experiment config, v1.0)
+# Controlled comparison vs SEG-001. Test LOCKED. Train/val only.
+experiment_id: GEN-001
+parent_baseline: SEG-001
+candidate_id: SEG-002
+question: Does adding attention gates to the frozen SEG-001 U-Net topology
+  provide measurable engineering benefit on the identical seg-val population?
+architecture:
+  name: attention_unet_2d
+  reference: Oktay et al. 2018 (additive attention gates on skip connections)
+  in_ch: 1
+  base: [64, 128, 256, 512]
+  bottleneck: 1024
+  encoder_block: DoubleConv (identical to SEG-001: Conv-BN-ReLU x2, bias=False)
+  upsampling: ConvTranspose2d k2 s2 (identical to SEG-001)
+  gate: {type: additive, theta_x: Conv2d k2 s2, phi_g: Conv2d k1 s1,
+         psi: Conv2d k1 s1 + sigmoid, intermediate_ch: cout // 2,
+         upsample_alpha: trilinear_bilinear_to_skip_size}
+  out: Conv2d k1 -> 1 logit
+  ONLY_DELTA_VS_SEG001: attention gates on 4 skip connections; all else identical
+image_size: 256
+preprocessing: configs/preprocessing/seg_baseline.yaml  # unchanged, shared file
+mask_convention: gt_mask_gt_127_to_1  # unchanged; binarized AFTER geometry
+data:
+  manifest: outputs/data_gate_0/project_manifest.csv  # sha256 92cb656a3462e923
+  split_def: outputs/data_gate_0/project_split.json   # sha256 011a5e08362009de
+  seg_train_rule: seg-train image stem in project_manifest project_split==train  # 3148 pairs
+  seg_val_rule: seg-train image stem in project_manifest project_split==val      # 785 pairs
+  test: LOCKED (segmentation_task/test never opened; SegDataset globs train/ only)
+  norm_stats: recompute via seg_stats (same fn); abort unless mean==0.10167703278129603
+    and std==0.14063970563559394 within 1e-12 (drift guard)
+loss: {dice_weight: 1.0, bce_weight: 1.0, summed: true}  # same dice_bce_loss fn
+optim: {name: adamw, lr: 3.0e-4, weight_decay: 0.01, warmup_epochs: 3, cosine_to: 1.0e-6}
+batch_size: 16
+epochs_max: 30
+early_stopping: {patience: 8, min_delta: 0.001, monitor: val_dice_global}
+stability: {amp: true, grad_clip_norm: 1.0, nan_inf_detect: true}
+augmentation: {train_only: true, synced_image_mask: true, hflip_p: 0.5, rot_deg: 10,
+  affine_translate: 0.05, affine_scale: [0.95, 1.05]}  # identical, gauss_noise 0.0
+seeds: [42, 43, 44]
+seed_protocol: set_global_seed(seed) + worker_init_fn + make_generator(seed+3)  # same as SEG-001
+hardware_target: CUDA T4-class GPU (Kaggle kernel pattern per kaggle/seg001/run_seg001.py)
+software_record: run_config.json per seed (torch/cuda/python versions, git sha, UTC time)
+repository_commit: 48dd3ae  # gen-001 branch point on final-001; launch-time HEAD
+  # recorded per-seed in run_config.json and must be a descendant containing
+  # only this frozen config + approved implementation (verified via git log)
+config_hash: pinned in docs/experiments/GEN-001.md §2 (covers both YAMLs post-fill)
+comparator_SEG001_frozen:
+  config_sha16: 69b3ead6c929879a
+  train_val_metric_global_dice_seed42: 0.873061561682885  # engine best, epoch 27/30
+  val_per_image_seed42: {n: 785, mean: 0.8518, median: 0.9298, p10: 0.6511, min: 0.0, max: 0.9942}
+  val_by_class_seed42:
+    glioma: {n: 230, mean: 0.705, median: 0.8286, p10: 0.0852}
+    meningioma: {n: 265, mean: 0.9372, median: 0.96, p10: 0.8676}
+    pituitary: {n: 290, mean: 0.8901, median: 0.9289, p10: 0.7664}
+  val_empty_pred: 14
+  val_multi_component: 60
+  val_gt_empty: 0
+  seg_t4_fp16_latency_median_s: 0.0178  # deployment baseline for resource comparison
+decision_rule_validation_only:
+  ACCEPTED: mean val Dice improves AND no regression beyond tolerance on
+    (p10 per class, empty-pred count, multi-component rate, latency, memory,
+    across-seed stability, reproducibility rerun)
+  REJECTED: any material regression, instability, contract violation, or
+    resource blowout (latency >2x SEG-001 or OOM on T4-class)
+  INCONCLUSIVE: all metrics within across-seed noise band of SEG-001
+  note: status refers ONLY to the GEN-001 engineering objective
+test_policy: NO test evaluation unless (1) config frozen (2) 3 seeds complete
+  (3) decision documented on validation (4) checkpoints frozen (5) explicit PI
+  authorization. Then ONE pre-specified locked evaluation.
+integration_policy: NO registry/service/API/UI changes. Production stays
+  CLS-001 + SEG-001 regardless of outcome unless a later release decides.
+contamination_note: disclosed cross-split duplicates (Gate-0 conditional)
+  apply equally to both arms — comparison is within the same regime.
+forbidden_claims: [leakage-free, patient-independent, clinically-validated,
+  externally-validated, generalizable, sota-superiority]
