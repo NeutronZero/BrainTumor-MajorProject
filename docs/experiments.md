@@ -262,6 +262,11 @@
   with checkpoint hashes matching.
 - Releases: `ADVANCED-R1` (advanced @92eb2f0); `SB-1.1` (branch from SB-1,
   packaging-only delta, suite 35 green) — original tags immutable.
+- Process incident (recorded, not hidden): three near-identical old/new-string
+  edit operations corrupted file structure (joined lines); each detected via
+  compile/tests/header checks and repaired immediately. Standing rule: never
+  issue a near-identical replacement without verifying the exact intended
+  edit first; verify headers after every log edit.
 
 ## Full-run commands (Kaggle T4, network only for pretrained weights fetch)
 - `python scripts/train/train_classifier.py`  (≈1–3 GPU-h budget, §55)
