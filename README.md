@@ -1,6 +1,6 @@
 # BrainTumor-MajorProject v2.3 — STEP 0/1 scaffold
 
-AUTHORITATIVE plan: `C:\Projects\BrainTumor_MajorProject_Plan.md` v2.3.
+AUTHORITATIVE plan: `BrainTumor_MajorProject_Plan.md` v2.3 (repo parent dir).
 Research/educational prototype — **not a clinical diagnostic device**.
 
 ## Frozen contracts (§21-25 + 5 freezes)

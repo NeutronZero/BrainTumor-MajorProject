@@ -268,6 +268,22 @@
   issue a near-identical replacement without verifying the exact intended
   edit first; verify headers after every log edit.
 
+## CORRECTION-001 — forensic-audit findings resolved (branch correction-001)
+- C1 LF policy (`* text=auto eol=lf` in .gitattributes); manifest regenerated
+  UTF-8 with corrected CLS hash below.
+- C2 reproducibility_check.py rebuilt: deterministic synthetic input + real
+  assertions (class/confidence/state repeat, probs sum); exits 0.
+- C3 checkpoint hygiene (Option A): CLS-001 best.pt replaced by key-removal
+  derivative (451e4fc4…, 111MB vs 334MB; 182 tensors identical,
+  bit-identical inference on 3-case battery, 27.8M params). Original retained
+  in git history with lineage record in the file; locked eval stays
+  attributed to the original. Service loads ["state"] from either.
+- C4 README plan reference made repo-relative.
+- Auditor wording corrected in our record: "no data leakage" is NOT adopted;
+  standing language is "no test-driven tuning found; disclosed cross-split
+  contamination; never leakage-free/patient-independent".
+- Full CI 49 green; manifest complete with zero MISSING.
+
 ## Full-run commands (Kaggle T4, network only for pretrained weights fetch)
 - `python scripts/train/train_classifier.py`  (≈1–3 GPU-h budget, §55)
 - `python scripts/train/train_segmenter.py`   (≈3–6 GPU-h budget, §55)
