@@ -1,0 +1,6 @@
+{
+ "service_vs_api": true,
+ "service_vs_streamlit": true,
+ "system_state": "tumor_unlocalized",
+ "predicted": "pituitary"
+}

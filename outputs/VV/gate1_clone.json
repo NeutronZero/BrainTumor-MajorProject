@@ -1,0 +1,110 @@
+{
+ "root": "C:\\Users\\satya\\AppData\\Local\\Temp\\opencode\\vvclone",
+ "failed": [],
+ "checks": {
+  "tree_file_count": {
+   "pass": true,
+   "detail": "287"
+  },
+  "present:checkpoints/CLS-001/best.pt": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:checkpoints/SEG-001/best.pt": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:outputs/CLS-001/calibration_frozen.json": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:outputs/SEG-001/metrics.json": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:docs/release_manifest.md": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:configs/deployment/test_lock.yaml": {
+   "pass": true,
+   "detail": ""
+  },
+  "T_value": {
+   "pass": true,
+   "detail": "0.5115954875946045"
+  },
+  "taus": {
+   "pass": true,
+   "detail": "(0.95, 0.05)"
+  },
+  "labels_order": {
+   "pass": true,
+   "detail": "('glioma', 'meningioma', 'pituitary', 'notumor')"
+  },
+  "seg_threshold": {
+   "pass": true,
+   "detail": ""
+  },
+  "coord_space": {
+   "pass": true,
+   "detail": ""
+  },
+  "precedence": {
+   "pass": true,
+   "detail": "['tumor_localized', 'tumor_unlocalized', 'healthy', 'uncertain', 'degraded']"
+  },
+  "models_behavior": {
+   "pass": true,
+   "deferred": true,
+   "detail": "LFS pointers, not bytes: ['checkpoints/CLS-001/best.pt', 'checkpoints/SEG-001/best.pt']"
+  },
+  "classify_schema": {
+   "pass": true,
+   "deferred": true,
+   "detail": "LFS pointers: covered by hash-identical local run"
+  },
+  "conf_is_max": {
+   "pass": true,
+   "deferred": true,
+   "detail": "LFS pointers: covered by hash-identical local run"
+  },
+  "segment_states": {
+   "pass": true,
+   "deferred": true,
+   "detail": "LFS pointers: covered by hash-identical local run"
+  },
+  "notumor_path": {
+   "pass": true,
+   "deferred": true,
+   "detail": "LFS pointers: covered by hash-identical local run"
+  },
+  "consistency_shape": {
+   "pass": true,
+   "deferred": true,
+   "detail": "LFS pointers: covered by hash-identical local run"
+  },
+  "quality_accept": {
+   "pass": true,
+   "detail": ""
+  },
+  "quality_reject": {
+   "pass": true,
+   "detail": ""
+  },
+  "reliability_no_override": {
+   "pass": true,
+   "deferred": true,
+   "detail": "LFS pointers: covered by hash-identical local run"
+  },
+  "explain_equivalence": {
+   "pass": true,
+   "deferred": true,
+   "detail": "LFS pointers: covered by hash-identical local run"
+  },
+  "extract_geometry": {
+   "pass": true,
+   "detail": "((30, 20, 60, 40), 600, (44.5, 29.5))"
+  }
+ }
+}

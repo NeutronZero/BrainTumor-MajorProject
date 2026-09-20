@@ -1,0 +1,106 @@
+{
+ "root": "C:\\Projects\\BrainTumor-MajorProject",
+ "failed": [],
+ "checks": {
+  "tree_file_count": {
+   "pass": true,
+   "detail": "16307"
+  },
+  "present:checkpoints/CLS-001/best.pt": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:checkpoints/SEG-001/best.pt": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:outputs/CLS-001/calibration_frozen.json": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:outputs/SEG-001/metrics.json": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:docs/release_manifest.md": {
+   "pass": true,
+   "detail": ""
+  },
+  "present:configs/deployment/test_lock.yaml": {
+   "pass": true,
+   "detail": ""
+  },
+  "T_value": {
+   "pass": true,
+   "detail": "0.5115954875946045"
+  },
+  "taus": {
+   "pass": true,
+   "detail": "(0.95, 0.05)"
+  },
+  "labels_order": {
+   "pass": true,
+   "detail": "('glioma', 'meningioma', 'pituitary', 'notumor')"
+  },
+  "seg_threshold": {
+   "pass": true,
+   "detail": ""
+  },
+  "coord_space": {
+   "pass": true,
+   "detail": ""
+  },
+  "precedence": {
+   "pass": true,
+   "detail": "['tumor_localized', 'tumor_unlocalized', 'healthy', 'uncertain', 'degraded']"
+  },
+  "models_loaded": {
+   "pass": true,
+   "detail": ""
+  },
+  "classify_schema": {
+   "pass": true,
+   "detail": ""
+  },
+  "conf_is_max": {
+   "pass": true,
+   "detail": ""
+  },
+  "segment_states": {
+   "pass": true,
+   "detail": ""
+  },
+  "empty_area_zero": {
+   "pass": true,
+   "detail": ""
+  },
+  "notumor_path": {
+   "pass": true,
+   "detail": ""
+  },
+  "consistency_shape": {
+   "pass": true,
+   "detail": ""
+  },
+  "reliability_no_override": {
+   "pass": true,
+   "detail": ""
+  },
+  "explain_equivalence": {
+   "pass": true,
+   "detail": ""
+  },
+  "quality_accept": {
+   "pass": true,
+   "detail": ""
+  },
+  "quality_reject": {
+   "pass": true,
+   "detail": ""
+  },
+  "extract_geometry": {
+   "pass": true,
+   "detail": "((30, 20, 60, 40), 600, (44.5, 29.5))"
+  }
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "failed": [],
+ "checks": {
+  "cpu_load": {
+   "pass": true,
+   "detail": "4.9s"
+  },
+  "cpu_inference": {
+   "pass": true,
+   "detail": "2.18s -> tumor_unlocalized"
+  },
+  "cpu_determinism": {
+   "pass": true,
+   "detail": ""
+  },
+  "t4_fp16_floors": {
+   "pass": true,
+   "detail": ""
+  },
+  "t4_onnx_split": {
+   "pass": true,
+   "detail": ""
+  },
+  "t4_bk8_rejected": {
+   "pass": true,
+   "detail": ""
+  },
+  "hash:checkpoints/CLS-001/best.pt": {
+   "pass": true,
+   "detail": "0fa58033f7460a88"
+  },
+  "hash:checkpoints/SEG-001/best.pt": {
+   "pass": true,
+   "detail": "ce29df5e4225ed8e"
+  },
+  "hash:checkpoints/ROB-001/best.pt": {
+   "pass": true,
+   "detail": "36091d63cea9af94"
+  },
+  "locked_cls": {
+   "pass": true,
+   "detail": ""
+  },
+  "locked_seg": {
+   "pass": true,
+   "detail": ""
+  },
+  "locked_sens": {
+   "pass": true,
+   "detail": ""
+  },
+  "locked_unc": {
+   "pass": true,
+   "detail": ""
+  },
+  "locked_rob": {
+   "pass": true,
+   "detail": ""
+  }
+ }
+}
