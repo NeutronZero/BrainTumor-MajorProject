@@ -1,0 +1,8 @@
+{
+ "classifier": true,
+ "segmenter": true,
+ "load_s": 2.4,
+ "T": 0.5115954875946045,
+ "tau1": 0.95,
+ "tau2": 0.05
+}

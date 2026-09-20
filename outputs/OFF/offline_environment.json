@@ -1,0 +1,6 @@
+{
+ "guard": "non-loopback socket connects raise; loopback exempt (asyncio teardown); external attempts counted",
+ "control": "guard effective (control connect raised)",
+ "inference_blocked_calls": null,
+ "control_probe_blocks": 1
+}

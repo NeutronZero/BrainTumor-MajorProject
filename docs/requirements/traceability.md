@@ -21,8 +21,8 @@ VV-001 evidence is referenced, not regenerated. No locked-test contact.
 | NFR-GPU-1 | FP16 autocast | same | T4 floors |
 | NFR-PERF-1 | bench suite | scripts/bench | FP32 ref + FP16 medians + memory |
 | NFR-PORT-1 | anchored ignore, skips | .gitignore, needs_data | clean-clone (47+2) |
-| NFR-OFF-1 | offline-first intent | service/app (no network calls by design) | DOCUMENTARY GAP: no executed socket-block test; candidate future addition |
+| NFR-OFF-1 | offline-first intent | service/app + scripts/off/verify_offline.py | EXECUTED: OFF-001 PASS (guard effective, startup/load/inference/API offline, zero external calls); loopback-exempt per docs/off/OFF-001.md |
 | NFR-ERR-1 | typed envelopes | API + Streamlit branches | envelope tests |
 
-Gaps: NFR-OFF-1 (no executed offline test) — the single documented gap;
+Gaps: none open. NFR-OFF-1 closed by OFF-001 (executed evidence).
 a runtime socket-block test is the candidate closure. All else executable.

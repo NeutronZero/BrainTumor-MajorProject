@@ -1,0 +1,8 @@
+{
+ "guard_effective": true,
+ "startup_ok": true,
+ "inference_matches": true,
+ "api_ok": true,
+ "zero_blocked_calls": true,
+ "PASS": true
+}

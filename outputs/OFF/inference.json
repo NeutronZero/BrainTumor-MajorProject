@@ -1,0 +1,7 @@
+{
+ "predicted_class": "pituitary",
+ "system_state": "tumor_unlocalized",
+ "matches_established": true,
+ "consistency_k": 8,
+ "quality": "accept"
+}

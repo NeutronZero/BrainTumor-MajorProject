@@ -32,5 +32,5 @@ test-set contact.
 
 ## Status
 
-AC-OFF (executed offline proof) is deferred as the single documented gap.
-All other criteria are satisfied at ENG-001 baseline commit.
+AC-OFF closed by OFF-001 (PASS 2026-09-20; socket-guard proof, loopback
+exemption documented). All criteria satisfied; no open gaps.
