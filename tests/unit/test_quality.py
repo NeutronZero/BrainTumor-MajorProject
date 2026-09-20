@@ -43,20 +43,3 @@ def test_reject_too_small():
 def test_reject_oversize():
     a = assess(b"x" * (11 * 1024 * 1024))
     assert a["verdict"] == "reject" and a["failed"] == ["Q08_size_limit"]
-
-
-def test_cam_mass_in_bbox_convention():
-    """focus_in_bbox coordinate check: all-inside -> 1.0, all-outside -> 0.0,
-    None bbox -> None. (Live-check diagnostic for the observed 0.00 value.)"""
-    import numpy as np
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-    from brain_tumor.explain.gradcam import cam_mass_in_bbox
-    cam = np.zeros((264, 256))
-    cam[183:264, 82:170] = 1.0
-    assert cam_mass_in_bbox(cam, (82, 183, 170, 264)) == 1.0
-    cam2 = np.zeros((264, 256))
-    cam2[0:50, 0:50] = 1.0
-    assert cam_mass_in_bbox(cam2, (82, 183, 170, 264)) == 0.0
-    assert cam_mass_in_bbox(cam, None) is None

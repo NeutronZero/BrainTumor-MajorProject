@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-root = Path("C:/Projects/BrainTumor-MajorProject")
+root = Path(__file__).resolve().parents[2]
 freeze = {
     "experiment": "UNC-001 perturbation-consistency uncertainty",
     "hypothesis": "H-UNCERT-001: consistency across a fixed predefined σ=0.05 "

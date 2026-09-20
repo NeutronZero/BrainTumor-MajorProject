@@ -1,0 +1,11 @@
+# FROZEN §10 — split definition. Generate ONLY after Gate 0 PASS.
+official_test_size: 1000
+train_pool_size: 5000
+internal_train: 4000
+internal_val: 1000
+stratify_by: [class, plane]
+seed: 42
+algorithm: stratified_shuffle_split
+test_set_locked_initial: false
+manifest_hash_required: true
+note: Deviation from official 5000/1000 train/test arrangement must be documented.

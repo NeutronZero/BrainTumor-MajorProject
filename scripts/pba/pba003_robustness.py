@@ -4,8 +4,8 @@ Authorized: PI authorization for PBA-003. Strictly descriptive:
   frozen CLS-001 / SEG-001 -> predefined perturbations -> per-perturbation
   reporting -> NO aggregate robustness score.
 
-Suite provenance: plan §68 "Robustness Testing" (C:/Projects/
-BrainTumor_MajorProject_Plan.md:3573-3609): Gaussian noise σ=0.05, JPEG q=50,
+Suite provenance: plan §68 "Robustness Testing" (BrainTumor_MajorProject_Plan.md,
+lines 3573-3609, repo parent dir): Gaussian noise σ=0.05, JPEG q=50,
 Downscale 0.75x, Intensity shift (severity "defined" -> fixed here as additive
 +0.05 on [0,1], documented). No other perturbations introduced. Report table
 columns per plan: Severity | dAccuracy | dDice | Notes. No aggregate score.

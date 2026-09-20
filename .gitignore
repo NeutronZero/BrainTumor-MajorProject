@@ -2,8 +2,9 @@ __pycache__/
 *.pyc
 .venv/
 .streamlit/
-# Release data + staging mirrors stay out (retrieved via Kaggle datasets).
-data/
+# Release data lives ONLY at repo-root data/ (anchored: bare `data/` would
+# silently exclude src/brain_tumor/data, configs/data, tests/data).
+/data/
 kaggle/codepkg/
 # Smoke runs and non-production checkpoints stay local (precedent: last.pt
 # remains on kernels; smoke dirs are pipeline checks, not releases).
