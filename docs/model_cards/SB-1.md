@@ -81,7 +81,7 @@ validation, not clinical diagnostic accuracy claims.
   ONNX accurate-but-no-faster (closed); K=8 batching exact-but-slower
   (rejected); quantization not opened. T4 FP16 medians: classify 0.0125s /
   segment 0.0178s / K8 0.318s / analyze 0.0301s; 370/578MB. CPU fallback
-  verified; 28-test CI green.
+  verified; 49-test CI green (48 unit+integration + 1 data-gate).
 
 ## Known limitations (summary; see Limitations & Validation Report)
 
