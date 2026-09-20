@@ -1,0 +1,69 @@
+{
+ "failed": [],
+ "checks": {
+  "analyze_has_canonical": {
+   "pass": true,
+   "detail": ""
+  },
+  "analyze_has_quality": {
+   "pass": true,
+   "detail": ""
+  },
+  "analyze_has_observers": {
+   "pass": true,
+   "detail": ""
+  },
+  "derived_state_coherent": {
+   "pass": true,
+   "detail": "('pituitary', 'tumor_unlocalized')"
+  },
+  "service_api_equivalence": {
+   "pass": true,
+   "detail": ""
+  },
+  "endpoint_classify": {
+   "pass": true,
+   "detail": "200"
+  },
+  "endpoint_segment": {
+   "pass": true,
+   "detail": "200"
+  },
+  "endpoint_localize": {
+   "pass": true,
+   "detail": "200"
+  },
+  "endpoint_quality": {
+   "pass": true,
+   "detail": "200"
+  },
+  "endpoint_consistency": {
+   "pass": true,
+   "detail": "200"
+  },
+  "endpoint_reliability": {
+   "pass": true,
+   "detail": "200"
+  },
+  "endpoint_explain": {
+   "pass": true,
+   "detail": "200"
+  },
+  "env_415": {
+   "pass": true,
+   "detail": ""
+  },
+  "env_413": {
+   "pass": true,
+   "detail": ""
+  },
+  "env_422": {
+   "pass": true,
+   "detail": ""
+  },
+  "health": {
+   "pass": true,
+   "detail": ""
+  }
+ }
+}

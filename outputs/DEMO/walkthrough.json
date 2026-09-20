@@ -1,0 +1,45 @@
+{
+ "steps": [
+  {
+   "step": "start_system",
+   "classifier": true,
+   "segmenter": true,
+   "load_s": 1.18
+  },
+  {
+   "step": "load_image",
+   "bytes": 39687
+  },
+  {
+   "step": "read_model_output",
+   "class": "meningioma",
+   "confidence": 0.997687816619873,
+   "state": "confident"
+  },
+  {
+   "step": "read_observers",
+   "quality": "accept",
+   "agreement": 1.0,
+   "reliability": "stable"
+  },
+  {
+   "step": "inspect_explanation",
+   "same_prediction": true,
+   "has_report": true,
+   "has_overlay": true
+  },
+  {
+   "step": "interpret_limitations",
+   "disclaimer": "Automated engineering prototype output \u2014 not a clinical diag",
+   "system_state": "tumor_localized"
+  },
+  {
+   "step": "api_health",
+   "status": "ok"
+  },
+  {
+   "step": "stop_system",
+   "note": "no persistent state; process exit"
+  }
+ ]
+}
