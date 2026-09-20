@@ -11,7 +11,7 @@ architecture:
   in_ch: 1
   base: [64, 128, 256, 512]
   bottleneck: 1024
-  encoder_block: DoubleConv (identical to SEG-001: Conv-BN-ReLU x2, bias=False)
+  encoder_block: "DoubleConv (identical to SEG-001: Conv-BN-ReLU x2, bias=False)"
   upsampling: ConvTranspose2d k2 s2 (identical to SEG-001)
   gate: {type: additive, theta_x: Conv2d k2 s2, phi_g: Conv2d k1 s1,
          psi: Conv2d k1 s1 + sigmoid, intermediate_ch: cout // 2,
