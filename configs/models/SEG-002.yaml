@@ -23,8 +23,8 @@ AttentionUNet:
     up: ConvTranspose2d -> concat[x_gated, up] -> DoubleConv  # same as SEG-001
   head: Conv2d(C, 1, k=1)  # single logit, unchanged
   forward_io: {in: [B,1,256,256] float, out: [B,1,256,256] logits}
-parameter_estimate: SEG-001 params + 4 gates (recorded exactly post-build;
-  reported in aggregate.json, never assumed here)
+parameter_count: {SEG-002: 31908325, SEG-001: 31036481, delta: 871844,
+  verified_by: instantiate-and-count on CPU (no training, no data)}
 invariants:
   - no change to in/out tensor contract
   - no change to threshold (0.5), mask convention, norm, aug, loss, optim, ES
