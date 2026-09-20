@@ -250,6 +250,19 @@
   flows from it. Full suite per that audit: 49 passed (incl.
   tests/data/test_gate_fail_open.py).
 
+## Packaging hardening (forensic-audit response; no model/evidence changes)
+- Fixed `.gitignore` (`data/` → `/data/`); committed `src/brain_tumor/data/`,
+  `configs/data/`, `tests/data/` (49th test restored).
+- Removed all machine-specific paths (3 scripts + pba003 docstring +
+  brisc2025 `copied_from` provenance note); UTF-8 manifest; regenerated
+  manifest; dataset tests skip cleanly without BRISC bytes; cam test moved
+  to `tests/unit/test_explain_units.py`.
+- Clean-clone validation from GitHub PASSES: 47 passed + 2 skipped (no
+  BRISC bytes), synthetic inference + API healthy, manifest regenerates
+  with checkpoint hashes matching.
+- Releases: `ADVANCED-R1` (advanced @92eb2f0); `SB-1.1` (branch from SB-1,
+  packaging-only delta, suite 35 green) — original tags immutable.
+
 ## Full-run commands (Kaggle T4, network only for pretrained weights fetch)
 - `python scripts/train/train_classifier.py`  (≈1–3 GPU-h budget, §55)
 - `python scripts/train/train_segmenter.py`   (≈3–6 GPU-h budget, §55)
