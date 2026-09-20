@@ -46,25 +46,42 @@ repository_commit: 48dd3ae  # gen-001 branch point on final-001; launch-time HEA
   # only this frozen config + approved implementation (verified via git log)
 config_hash: pinned in docs/experiments/GEN-001.md §2 (covers both YAMLs post-fill)
 comparator_SEG001_frozen:
-  config_sha16: 69b3ead6c929879a
-  train_val_metric_global_dice_seed42: 0.873061561682885  # engine best, epoch 27/30
-  val_per_image_seed42: {n: 785, mean: 0.8518, median: 0.9298, p10: 0.6511, min: 0.0, max: 0.9942}
-  val_by_class_seed42:
-    glioma: {n: 230, mean: 0.705, median: 0.8286, p10: 0.0852}
-    meningioma: {n: 265, mean: 0.9372, median: 0.96, p10: 0.8676}
-    pituitary: {n: 290, mean: 0.8901, median: 0.9289, p10: 0.7664}
-  val_empty_pred: 14
-  val_multi_component: 60
-  val_gt_empty: 0
-  seg_t4_fp16_latency_median_s: 0.0178  # deployment baseline for resource comparison
+  # Aggregation quantities are NEVER mixed. Checkpoint selection and primary
+  # comparison use different, explicitly labeled metrics (amendment A1).
+  train_selection_metric_global_val_dice_seed42: 0.873061561682885  # engine
+    # best at epoch 27/30; INTERNAL to SEG-001 training only, NOT the comparator
+  primary_comparison_metric_per_image_val_mean_dice_seed42: 0.8518  # GEN-001
+    # primary endpoint: per-image mean over the identical 785-pair seg-val
+  secondary_seed42:
+    median: 0.9298
+    p10: 0.6511
+    per_class_mean: {glioma: 0.705, meningioma: 0.9372, pituitary: 0.8901}
+    per_class_n: {glioma: 230, meningioma: 265, pituitary: 290}
+    empty_pred: 14
+    multi_component: 60
+    gt_empty: 0
+  resource_baseline:
+    seg_latency_median_s: 0.0178  # T4 FP16, service segment() path, protocol §L1
+    latency_protocol_L1: synthetic 512x512 PIL seeds (101,202,303) x 20 repeats,
+      # autocast float16, torch.cuda.synchronize per sample, median of 60;
+      # path = eval seg_tf + forward + sigmoid + extract() (fp16_check.py (b))
+    # GEN-001 latency MUST replicate §L1 exactly (same inputs/repeats/context/
+    # path), differing ONLY in loaded weights (SEG-002 best.pt, service untouched)
+  rejection_thresholds_numeric:
+    latency_reject_s: 0.0356  # 2x SEG-001 median; SEG-002 median above this -> REJECT
+    memory: OOM at the prescribed T4 evaluation configuration -> REJECT;
+      # otherwise memory is reported as trade-off only, with no independent
+      # numeric ceiling (amendment A2)
 decision_rule_validation_only:
-  ACCEPTED: mean val Dice improves AND no regression beyond tolerance on
-    (p10 per class, empty-pred count, multi-component rate, latency, memory,
-    across-seed stability, reproducibility rerun)
-  REJECTED: any material regression, instability, contract violation, or
-    resource blowout (latency >2x SEG-001 or OOM on T4-class)
+  ACCEPTED: per-image val mean Dice improves vs 0.8518 AND no regression
+    beyond tolerance on (P10 per class, empty-pred count, multi-component
+    rate, latency ≤0.0356s, no OOM, across-seed stability, reproducibility rerun)
+  REJECTED: any material regression, instability, contract violation,
+    latency median >0.0356s, or OOM at prescribed T4 evaluation config
   INCONCLUSIVE: all metrics within across-seed noise band of SEG-001
   note: status refers ONLY to the GEN-001 engineering objective
+  no_target: NO minimum expected Dice improvement is assumed; the experiment
+    discovers the measured trade-off (amendment A3)
 test_policy: NO test evaluation unless (1) config frozen (2) 3 seeds complete
   (3) decision documented on validation (4) checkpoints frozen (5) explicit PI
   authorization. Then ONE pre-specified locked evaluation.
