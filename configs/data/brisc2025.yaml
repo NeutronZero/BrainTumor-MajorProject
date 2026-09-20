@@ -1,0 +1,24 @@
+# FROZEN §6/§9-10 — BRISC 2025 claims to VERIFY (not assumptions).
+# Data Gate 0 must fill actual_* and flip verified:true only with evidence.
+dataset: BRISC2025
+expected:
+  total_images: 6000
+  train_pool: 5000
+  official_test: 1000
+  classes: [glioma, meningioma, pituitary, notumor]
+  modality: MRI
+source: kaggle:briscdataset/brisc2025 (local copy of released bytes under data/brisc2025)
+license: CC-BY-4.0 (per prior-study provenance; license file to confirm at Gate 0)
+version_release: arXiv:2506.14318 (manifest bytes verified below)
+sha256: 4eaa0c3b88ce1fd246d90382c1dcd1010cc126fff1bd3a4a415159661ca8b605
+verified: true
+actual:
+  manifest_csv_sha256: 4eaa0c3b88ce1fd246d90382c1dcd1010cc126fff1bd3a4a415159661ca8b605
+  manifest_json_sha256: ada767e102e9e7ee788b50188712dfe19ba825c250c362d831b560902c249e3a
+  location: data/brisc2025
+  copied_from: upstream Kaggle dataset briscdataset/brisc2025 (byte-identical per manifest SHA; full byte audit by Gate 0)
+subject_level_limitation: >-
+  Reliable patient/subject identifiers are insufficient to guarantee complete
+  subject-level independence. Complete patient-level independence between
+  train and test cannot be claimed. (Must appear in provenance, data card,
+  model cards, final report, viva.)

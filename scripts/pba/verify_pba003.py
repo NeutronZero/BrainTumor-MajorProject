@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-root = Path("C:/Projects/BrainTumor-MajorProject")
+root = Path(__file__).resolve().parents[2]
 out = root / "outputs" / "PBA-003"
 s = json.loads((out / "pba003.json").read_text())
 print("keys:", list(s.keys()))

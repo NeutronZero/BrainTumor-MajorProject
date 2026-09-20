@@ -8,6 +8,11 @@ from brain_tumor.data.brisc import CLASS_TO_IDX, ClsDataset, SegDataset, load_ma
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "outputs" / "data_gate_0" / "project_manifest.csv"
 
+import pytest
+
+DATA_PRESENT = (ROOT / "data" / "brisc2025" / "classification_task").is_dir()
+needs_data = pytest.mark.skipif(not DATA_PRESENT, reason="BRISC bytes not present (external dataset)")
+
 
 def test_manifest_split_counts():
     rows = load_manifest(MANIFEST)
@@ -18,6 +23,7 @@ def test_manifest_split_counts():
     assert not [r for r in pool if r["project_split"] == "val" and r["cross_split_contaminated"] == "1"]
 
 
+@needs_data
 def test_cls_dataset_getitem():
     rows = load_manifest(MANIFEST)
     ds = ClsDataset(ROOT, rows, "val")
@@ -26,6 +32,7 @@ def test_cls_dataset_getitem():
     assert label in (0, 1, 2, 3)
 
 
+@needs_data
 def test_seg_dataset_split_rule():
     rows = load_manifest(MANIFEST)
     tr, va = SegDataset(ROOT, rows, "train"), SegDataset(ROOT, rows, "val")

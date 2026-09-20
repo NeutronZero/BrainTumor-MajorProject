@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-root = Path("C:/Projects/BrainTumor-MajorProject")
+root = Path(__file__).resolve().parents[2]
 
 
 def sha(p: Path) -> str:

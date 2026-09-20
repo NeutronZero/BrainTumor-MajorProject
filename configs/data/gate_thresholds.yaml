@@ -1,0 +1,22 @@
+# Gate 0 FAIL conditions — any violation => gate_decision FAIL (§12).
+# Revision A: BRISC dual-tree aware; fail-closed preserved.
+fail_if:
+  - hashes_mismatch
+  - unexpected_labels               # within classification_task only
+  - count_mismatch_vs_expected      # 5000/1000 official split
+  - broken_image_mask_pairing
+  - mask_encoding_unknown           # incl. multiclass-without-design
+  - cross_split_contamination       # cat3/cat6 above threshold (CRITICAL)
+  - split_overlap_detected          # nested train<->test SHA overlap
+  - version_mismatch
+  - locked_test_rule_violation
+# CRITICAL cross-split categories (cls train<->test, seg train<->test):
+# 0 = any shared byte is a hard finding. Within-partition groups and
+# classification<->segmentation subset correspondence are reported, never
+# auto-deleted, and do not alone fail the gate.
+duplicate_hash_threshold: 0
+near_duplicate_policy: report_only
+# binary = strict 0/255. binary_intent_aa = single-channel with antialiased
+# edge values; convention `mask > 127 -> 1 else 0` documented, files untouched.
+mask_allowed_encodings: [binary, binary_intent_aa]
+mask_intermediate_fraction_cap: 0.02
