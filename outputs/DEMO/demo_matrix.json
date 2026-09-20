@@ -1,0 +1,101 @@
+{
+ "cases": [
+  {
+   "case": "healthy_like",
+   "expected": {
+    "predicted_class": "notumor"
+   },
+   "observed": {
+    "predicted_class": "notumor",
+    "classification_state": "uncertain",
+    "system_state": "uncertain",
+    "segmentation_state": "empty",
+    "quality": "accept"
+   },
+   "contract_holds": true
+  },
+  {
+   "case": "tumor_like",
+   "expected": {
+    "predicted_class": "pituitary",
+    "classification_state": "confident"
+   },
+   "observed": {
+    "predicted_class": "pituitary",
+    "classification_state": "confident",
+    "system_state": "tumor_unlocalized",
+    "segmentation_state": "empty",
+    "quality": "accept"
+   },
+   "contract_holds": true
+  },
+  {
+   "case": "low_quality",
+   "expected": {
+    "quality": "reject"
+   },
+   "observed": {
+    "predicted_class": "glioma",
+    "classification_state": "confident",
+    "system_state": "tumor_unlocalized",
+    "segmentation_state": "empty",
+    "quality": "reject"
+   },
+   "contract_holds": true
+  },
+  {
+   "case": "seg_empty",
+   "expected": {
+    "predicted_class": "glioma",
+    "segmentation_state": "empty"
+   },
+   "observed": {
+    "predicted_class": "glioma",
+    "classification_state": "confident",
+    "system_state": "tumor_unlocalized",
+    "segmentation_state": "empty",
+    "quality": "reject"
+   },
+   "contract_holds": true
+  },
+  {
+   "case": "seg_localized",
+   "expected": {
+    "predicted_class": "meningioma",
+    "system_state": "tumor_localized"
+   },
+   "observed": {
+    "predicted_class": "meningioma",
+    "classification_state": "confident",
+    "system_state": "tumor_localized",
+    "segmentation_state": "nonempty",
+    "quality": "accept"
+   },
+   "contract_holds": true
+  },
+  {
+   "case": "uncertain",
+   "expected": {
+    "classification_state": "uncertain"
+   },
+   "observed": {
+    "predicted_class": "glioma",
+    "classification_state": "uncertain",
+    "system_state": "uncertain",
+    "segmentation_state": "empty",
+    "quality": "reject"
+   },
+   "contract_holds": true
+  },
+  {
+   "case": "degraded_no_segmenter",
+   "expected": {
+    "system_state": "degraded"
+   },
+   "observed": {
+    "system_state": "degraded"
+   },
+   "contract_holds": true
+  }
+ ]
+}

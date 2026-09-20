@@ -148,6 +148,7 @@ async def analyze(file: UploadFile, consistency_probes: bool = True):
     try:
         result = _service.analyze(img)
         payload = result.model_dump()
+        payload["quality"] = _service.quality(data)
         if consistency_probes:
             payload["consistency"] = _service.consistency(img)
         payload["reliability"] = _service.reliability(img, raw=data)

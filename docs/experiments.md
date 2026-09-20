@@ -284,6 +284,16 @@
   contamination; never leakage-free/patient-independent".
 - Full CI 49 green; manifest complete with zero MISSING.
 
+## ENG-002 — final system productization (branch eng-002; no model changes)
+- UI: input image displayed; quality section + model-vs-observer labeling in
+  Analyze/Explain views. API: quality attached to /analyze payload.
+- Demo suite (`scripts/demo/demo_matrix.py`, `outputs/DEMO/demo_matrix.json`):
+  7 deterministic synthetic contract cases (healthy/tumor/low-quality/
+  seg-empty/seg-localized/uncertain/degraded), all holding; drift means the
+  fixture is replaced, never the model.
+- Docs: `docs/api/endpoints.md`, `docs/user_guide/usage.md`,
+  `docs/deployment/profiles.md`. Full CI 49 green.
+
 ## Full-run commands (Kaggle T4, network only for pretrained weights fetch)
 - `python scripts/train/train_classifier.py`  (≈1–3 GPU-h budget, §55)
 - `python scripts/train/train_segmenter.py`   (≈3–6 GPU-h budget, §55)

@@ -30,6 +30,7 @@ def build_payload(svc: InferenceService, data: bytes) -> dict:
         return {"error": "undecodable_image", "detail": "cannot decode upload"}
     try:
         payload = svc.analyze(img).model_dump()
+        payload["quality"] = svc.quality(data)
         payload["consistency"] = svc.consistency(img)
         payload["reliability"] = svc.reliability(img, raw=data)
         return payload
@@ -37,17 +38,28 @@ def build_payload(svc: InferenceService, data: bytes) -> dict:
         return {"error": "inference_failed", "detail": str(type(e).__name__)}
 
 
-def render_result(st, payload: dict) -> None:
-    """Explicit field rendering with empty-segmentation and error branches."""
+def render_result(st, payload: dict, image_bytes: bytes | None = None) -> None:
+    """Explicit field rendering with empty-segmentation and error branches.
+
+    Sections are labeled by provenance: MODEL OUTPUT vs engineering observers.
+    """
     if "error" in payload:
         st.error(f"{payload['error']}: {payload.get('detail', '')}")
         return
-    st.subheader(f"Predicted: {payload['predicted_class']}")
+    if image_bytes is not None:
+        st.image(image_bytes, caption="Input image (as uploaded)")
+    st.subheader("Model output")
+    st.write(f"Predicted: {payload['predicted_class']}")
     st.metric("Calibrated confidence", f"{payload['confidence']:.4f}")
     st.write(f"Classification state: `{payload['classification_state']}`")
     st.write(f"System state: `{payload['system_state']}`")
     with st.expander("Class probabilities"):
         st.json(payload["probabilities"])
+    st.subheader("Engineering observers (descriptive; do not alter the above)")
+    q = payload.get("quality", {})
+    if q:
+        st.write(f"Input quality: `{q.get('verdict')}`"
+                 + (f" — {', '.join(q.get('failed', []))}" if q.get("failed") else ""))
     con = payload.get("consistency", {})
     st.write(f"Consistency: agreement {con.get('agreement_fraction')} "
              f"({'FLAGGED' if con.get('flagged') else 'stable'}, "
@@ -73,13 +85,13 @@ def render_result(st, payload: dict) -> None:
         st.write(f"Warnings: {', '.join(payload['warnings'])}")
 
 
-def render_explanation(st, payload: dict) -> None:
+def render_explanation(st, payload: dict, image_bytes: bytes | None = None) -> None:
     """EXPL-001 presentation: report text + visual overlays (observer output)."""
     import base64
     if "error" in payload:
         st.error(f"{payload['error']}: {payload.get('detail', '')}")
         return
-    render_result(st, payload)
+    render_result(st, payload, image_bytes=image_bytes)
     st.subheader("Explanation (observer — predictions unchanged)")
     st.text(payload.get("report_text", ""))
     g = payload.get("gradcam", {})
@@ -108,12 +120,14 @@ if __name__ == "__main__":
         up = st.file_uploader("Upload MRI slice",
                               type=["jpg", "jpeg", "png", "bmp", "tif", "tiff"])
         if st.button("Analyze") and up is not None:
-            render_result(st, build_payload(svc, up.getvalue()))
+            render_result(st, build_payload(svc, up.getvalue()),
+                          image_bytes=up.getvalue())
         if st.button("Explain") and up is not None:
             from PIL import Image
             try:
                 render_explanation(st, svc.explain(Image.open(io.BytesIO(up.getvalue())),
-                                                  raw=up.getvalue()))
+                                                  raw=up.getvalue()),
+                                   image_bytes=up.getvalue())
             except Exception as e:  # noqa: BLE001 — never leak stack/paths
                 st.error(f"inference_failed: {type(e).__name__}")
     except ImportError:
