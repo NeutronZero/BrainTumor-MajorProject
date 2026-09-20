@@ -18,19 +18,19 @@ Runtime here: torch 2.13.0+cpu; python 3.14.7.
 - `configs/deployment/test_lock.yaml` `d46624af90212ba3a4879981ff307914d690aa751d22fc63bdf3d8da29f96b9b` (238 bytes)
 
 ## data_manifest
-- `outputs/data_gate_0/project_manifest.csv` `c120e5bfea2385d00909e5cfa1c879c18bdf9caa306d9338fcc9e1351685c8b1` (1145352 bytes)
-- `outputs/data_gate_0/cross_split_exclusion_list.json` `060b80344284f50f9a0f1617723a192ba419542aa1775410b58739a78c07e8fc` (2346 bytes)
+- `outputs/data_gate_0/project_manifest.csv` `92cb656a3462e9233a458b2bb0d6d7ad502054a2d34f0874c88b28f2e024a399` (1139351 bytes)
+- `outputs/data_gate_0/cross_split_exclusion_list.json` `aec4e059cf40c5fa6626d13dab3eb8fa2b6d332f5c0397feec1298d9fd7736b0` (2312 bytes)
 
 ## evidence
-- `outputs/test_evaluation_7b860dca72ea.json` `9dbaefddca74fc3e48fe100ef58dad36f758030fe67b9def913be2cdaa77102c` (4597 bytes)
-- `outputs/test_evaluation_7b860dca72ea_addendum_auc.json` `c36dc95a28179118b93ac57f1ea2279338920530646f3a3243bc859979adc816` (373 bytes)
+- `outputs/test_evaluation_7b860dca72ea.json` `c718e17e7edfefe70068df5a66b769079e4559f317812efa09e89c4c35f04752` (4362 bytes)
+- `outputs/test_evaluation_7b860dca72ea_addendum_auc.json` `5530c9ce9a91c37d66b24e70e6179e25adb38e673175184ec97fbcc1d9f8a076` (363 bytes)
 - `outputs/CLS-001/calibration_frozen.json` `2d4bd7365de865b0f57c070a35b9efb0beff19782d7e9f36bb75f0e007b2193c` (327 bytes)
-- `outputs/SEG-001/metrics.json` `faf5a0fe7c9f11374c720c4041b8e2d02a8d98f35cb15fe73807e55d91904035` (173 bytes)
+- `outputs/SEG-001/metrics.json` `0f75cc8fc9b9ec5a63fe5888cbc1f74853bf68bb491ba59e5c044f43c80b3ffb` (164 bytes)
 - `outputs/ROB-001/metrics.json` `2528ba4ba661ba3a994f8128971ce1c4b68ebd6b3a1fbb0914934ecfd007d30e` (2209 bytes)
-- `outputs/ROB-001/locked_eval.json` `2e6086c9232e842fd06423ab7067e5e9012a2b1a6f271049ad4c52dd9b45c3bd` (2720 bytes)
-- `outputs/UNC-001/unc001.json` `5438a020bb41ff1c72eaed5dbcd92821070b4f08f2a309ff887fc914ace81aa1` (1674 bytes)
+- `outputs/ROB-001/locked_eval.json` `bf53653b2e865698c9f548b6cdc214d37ec76b4c7ec2b28ef9d503c8875033cb` (2610 bytes)
+- `outputs/UNC-001/unc001.json` `f3deac8cd94167db8394a8af466e8840a67db77669cd75afaefff06b3992d2d3` (1559 bytes)
 - `outputs/UNC-001/unc001_locked.json` `153fadd52c676ea4d9e52e14ea61e51cf8fd8648e72024a666f9978588e4db43` (1506 bytes)
-- `outputs/PBA-003/pba003.json` `3b3165821e67519cf2aff902dbb97fa4b817c906c993e99491fb506e84961e02` (4492 bytes)
+- `outputs/PBA-003/pba003.json` `5a3bf2a76da024d340ea3408070394deae91cc249df00104982fb3227ae27e4f` (4318 bytes)
 - `outputs/SYSINT/gpu_latency_fp32.json` `b1b3f62be19902b3235d42e0ee54ea12566e055220363ddc16bb2036aa4aa1ba` (960 bytes)
 - `outputs/SYSINT/fp16_check.json` `1ccdd9eb17c5655e17fe9ebbe17c778797b8fdf9aca7047fc34ec154ce926979` (862 bytes)
 - `outputs/SYSINT/onnx_check.json` `fa750e5f9d0cf7669f434526e185916c1e086e6bcc58a3e23da62956db15bd22` (1018 bytes)
@@ -38,10 +38,10 @@ Runtime here: torch 2.13.0+cpu; python 3.14.7.
 
 ## contract_code
 - `src/brain_tumor/contracts.py` `38433c75b1561c2d980e71c85e18eca609f085ff70981073b4ae8b1add2d280b` (7586 bytes)
-- `src/brain_tumor/inference/service.py` `65f0b349b21ea035c45b33a7ecd4d55e64c26072614bdc7893052942ea625280` (14734 bytes)
+- `src/brain_tumor/inference/service.py` `a1ecee1a670645f6dc1c6da73572364849ea88c25394034bcab799ab67e14145` (14415 bytes)
 - `src/brain_tumor/preprocessing/pipeline.py` `a0bdfff9c28f0a1dbfac642819dc955eecd6a750b57292f62439328e45a7f77e` (3146 bytes)
-- `app/api/main.py` `abacd6baf7b92107b2a96a8c8dd976ebe7db033aae88107adeae83267fc25096` (7079 bytes)
-- `app/streamlit/app.py` `9a77a5df975185c626c42a20a76c2d26d415c27d36b2c410725892277c41924f` (5429 bytes)
+- `app/api/main.py` `e4b0b824ccfd493059f6a9f38dc5de4af2f0c90f9ae9077d92ce906b575af838` (6884 bytes)
+- `app/streamlit/app.py` `3ee9be5d2a69e83fdd08b9327eefe5f72b4be381bf8d492899c2ebc2311acae3` (5309 bytes)
 
 ## Status
 - SB-1 submission-ready fallback: CLS-001 + SEG-001 + UNC-001 (descriptive) + ROB-001 (documented variant) + FP16/autocast.
