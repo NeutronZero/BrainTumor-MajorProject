@@ -1,0 +1,12 @@
+{"amended_commit": "90e49df", "campaign": "GEN-001 / SEG-002 Attention U-Net, seeds 42/43/44",
+ "code_snapshot": "satyaanudeep/bt-major-code (version 2026-09-20, GEN-001.yaml cb6d9f1a verified in-kernel x3)",
+ "data_mount": "briscdataset/brisc2025 (mount counts only: train=5000 test=1000; no test reads)",
+ "failed_pre_training_attempts": ["v1 ERROR (GEN-001.yaml:14 syntax)", "v2 ERROR (same)"],
+ "git_field": "run_config git=unknown is EXPECTED: kernel runs from dataset snapshot without .git; provenance is dataset version + in-kernel config hash cb6d9f1a (matches amended freeze)",
+ "hardware": "Tesla T4, torch 2.10.0+cu128 (same stack as SEG-001)",
+ "kernel": "satyaanudeep/bt-major-gen-001-attention-u-net-3-seed v3 COMPLETE",
+ "checkpoint_preservation": "best.pt x3 + last.pt x2 verified loadable locally; EXCLUDED from git per repo convention (non-production checkpoints stay local; only SB-001 CLS/SEG/ROB best.pt ride LFS). Canonical copies persist on the Kaggle kernel output (server-side) + operator storage.",
+ "known_gaps": ["checkpoints/GEN-001/seed44/last.pt not retrieved (transport resets x3; persists on Kaggle kernel output, retrievable later)",
+  "outputs/GEN-001/decision.md contains a UTF-8 rendering artifact (+/- shown as A+/-); byte-identical to kernel output, aggregate.json is canonical"],
+ "seed_epochs": {"42": 27, "43": 25, "44": 26},
+ "test_contact": "NONE (log audited: SegDataset globs segmentation_task/train only; no evaluate_locked/test paths)"}

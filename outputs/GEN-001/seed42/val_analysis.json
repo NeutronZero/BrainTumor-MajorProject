@@ -1,0 +1,52 @@
+{
+ "experiment": "GEN-001",
+ "seed": 42,
+ "n_val": 785,
+ "params": 31908325,
+ "val_global_train_metric": 0.8693684330349776,
+ "val_dice": {
+  "mean": 0.8489807115593724,
+  "median": 0.9248598131122019,
+  "p10": 0.6559054083941374,
+  "min": 4.2973785972078305e-10,
+  "max": 0.9932493249340123
+ },
+ "by_class": {
+  "glioma": {
+   "n": 230,
+   "mean": 0.7109015074231079,
+   "median": 0.8239299123865815,
+   "p10": 0.2352141169264453
+  },
+  "meningioma": {
+   "n": 265,
+   "mean": 0.9264133596368263,
+   "median": 0.9582389122828621,
+   "p10": 0.8564460079806961
+  },
+  "pituitary": {
+   "n": 290,
+   "mean": 0.8877343847001159,
+   "median": 0.9272994269925207,
+   "p10": 0.7738942375140009
+  }
+ },
+ "localization_val": {
+  "empty_null": 17,
+  "nonempty_box": 768,
+  "multi": 91
+ },
+ "gt_empty_in_val": 0,
+ "l1_latency": {
+  "n": 60,
+  "median": 0.0138,
+  "p95": 0.0176
+ },
+ "peak_memory": {
+  "peak_allocated_MB": 255.5,
+  "peak_reserved_MB": 480.0
+ },
+ "cuda": {
+  "available": true
+ }
+}

@@ -1,0 +1,8 @@
+{
+ "config": "configs/experiment/GEN-001.yaml",
+ "seed": 42,
+ "device": "cuda",
+ "torch": "2.10.0+cu128",
+ "git": "unknown",
+ "time": "2026-09-20T13:51:31.310686+00:00"
+}
