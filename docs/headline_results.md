@@ -50,7 +50,7 @@ $$\text{degraded} \succ \text{uncertain} \succ \text{tumor\_unlocalized} \succ \
 
 ---
 
-### 4. PERTURBATION OBSERVER MATRIX (`UNC-001`, $K=8$ Probes, $\sigma=0.05$ AWGN)
+### 4. PERTURBATION OBSERVER MATRIX (`UNC-001`, $K=8$ Probes, $\sigma=0.05$ Controlled Gaussian Perturbation)
 
 | Observer Status | Perturbation Error (True Error) | Invariant (No Error) | Total Cohort |
 | :--- | :--- | :--- | :--- |
@@ -92,9 +92,9 @@ $$\text{degraded} \succ \text{uncertain} \succ \text{tumor\_unlocalized} \succ \
 | :--- | :--- | :--- |
 | **1. Digital Image Processing (DIP)** | Pipeline Resampling, Localization Engine | Forward/inverse bilinear scaling; connected components; spatial moments |
 | **2. Digital Signal Processing (DSP)** | ConvNeXt-Tiny Stem, Quality Gate (`gate.py`) | 2D discrete FIR convolution ($7 \times 7$ depthwise); moment estimation ($\bar{x}, s^2$) |
-| **3. Probability & Random Processes** | Perturbation Observer, Calibrator | AWGN modeling ($\sigma=0.05$); Platt scaling ($T=0.5116$); Clopper-Pearson CIs |
+| **3. Probability & Random Processes** | Perturbation Observer, Calibrator | Controlled Gaussian perturbation ($\sigma=0.05$); Temperature scaling ($T=0.5116$); Clopper-Pearson CIs |
 | **4. Communication & Networks** | FastAPI Endpoints, Ingestion Guards | Multipart serialization; HTTP/1.1 contracts; socket interception (`OFF-001`) |
-| **5. Computer Architecture** | Precision Profiles, Hardware Runtime | CPU SIMD vs. GPU Tensor Cores; FP16 mixed precision; VRAM management |
+| **5. Computer Architecture** | Precision Profiles, Hardware Runtime | CPU execution vs. GPU acceleration; FP16 mixed precision; VRAM management |
 | **6. Numerical Systems & Computing** | Numerically Stable Softmax, Determinism | Log-sum-exp formulation; IEEE 754 precision; algorithmic determinism controls |
 | **7. Fault-Tolerant Instrumentation** | State Precedence, Defensive Quality Gates | Priority state machine; defensive screening (`Q01`–`Q09`); contract validation |
 

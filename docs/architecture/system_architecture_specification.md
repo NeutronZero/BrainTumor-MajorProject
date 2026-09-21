@@ -1272,7 +1272,7 @@ Transparent documentation of architectural limits is a central requirement of so
 3. **Absence of Subject Metadata:** Because BRISC 2025 lacks complete patient identifiers, slice-independence cannot be established, leaving cross-slice patient overlap unmeasurable.
 4. **Data Contamination:** Cross-split duplicate hashes span training and test partitions. While sensitivity evaluations show minimal numerical impact, the dataset cannot be termed "leakage-free."
 5. **No External Clinical Validation:** Validation is confined entirely to the BRISC 2025 distribution; generalization across different scanner manufacturers, field strengths ($1.5\text{T}$ vs. $3.0\text{T}$), or clinical protocols is unproven.
-6. **Low-Prevalence Base-Rate Fallacy and PPV Collapse:** The BRISC 2025 dataset exhibits an artificial, approximately balanced class distribution (per-class shares ranging from 21% to 29%: pituitary 29.2%, meningioma 26.6%, glioma 22.9%, notumor 21.3%; max/min ratio 1.37). In real-world screening or general hospital populations, primary intracranial neoplasms have an extremely low incidence (typically $< 0.1\% - 1.0\%$). Under Bayes' theorem, positive predictive value (PPV) collapses severely in low-prevalence regimes, meaning that even a classifier with $\ge 99\%$ specificity would produce an unacceptably high ratio of false-positive tumor alerts. The system's operating characteristics are conditioned strictly on high-prevalence benchmark assumptions.
+6. **Low-Prevalence Base-Rate Fallacy and PPV Collapse:** The BRISC 2025 dataset exhibits an artificial, approximately balanced class distribution (per-class shares ranging from 21% to 29%: pituitary 29.2%, meningioma 26.6%, glioma 22.9%, notumor 21.3%; max/min ratio 1.37). Benchmark class balance does not represent real-world clinical screening prevalence. Under Bayes' theorem, positive predictive value (PPV) collapses in low base-rate regimes, meaning that benchmark accuracy and specificity cannot be directly interpreted as clinical screening reliability, where low prevalence induces severe false-positive inflation. The system's operating characteristics are conditioned strictly on benchmark distribution assumptions.
 7. **Isolated Pipeline Stages:** Classification and segmentation execute sequentially rather than through a shared multi-task representation.
 8. **Glioma Lower-Tail Segmentation Weakness:** Gliomas exhibit infiltrative margins that lower segmentation performance (10th-percentile Dice drops to $0.656$ overall and $0.317$ for glioma).
 9. **Multi-Component Fragmentation:** The vanilla U-Net occasionally fragments large tumor masses into disconnected prediction islands ($81$ test cases).
@@ -1336,7 +1336,7 @@ Within academic review and accreditation frameworks, this project is formally si
 > **CLARIFICATION ON DISCIPLINARY ACRONYM (ECE)**  
 > In this chapter and throughout the project governance documentation, **ECE** designates the foundational academic discipline of **Electronics and Communication Engineering**. It must not be conflated with *Expected Calibration Error* (also abbreviated ECE), which denotes the scalar statistical calibration metric evaluated in §12 and §24.
 
-While computer science curricula typically treat deep learning as an abstract software optimization on dataset matrices, this project approaches medical imaging through the rigorous lens of physical signal acquisition, discrete transform processing, stochastic noise modeling, communication boundaries, computer architecture acceleration, and digital instrumentation. The engineering architecture embodies seven core pillars of the undergraduate and graduate ECE curriculum:
+While computer science curricula often treat deep learning as an abstract software optimization on dataset matrices, this project approaches medical imaging through the applied engineering lens of discrete transform processing, statistical noise perturbation, communication boundaries, computer architecture execution, and digital instrumentation. The engineering architecture embodies seven core pillars of the undergraduate and graduate ECE curriculum:
 
 ```mermaid
 flowchart TD
@@ -1363,9 +1363,9 @@ The following matrix formally cross-references standard ECE syllabus subjects to
 | :--- | :--- | :--- | :--- | :--- |
 | **1. Digital Image Processing (DIP)** | 2D Spatial Sampling, Intensity Normalization, Affine Mapping, Connected Components | Ingestion pipeline, U-Net thresholding, Localization Engine (`extract.py`) | Forward/inverse bilinear coordinate scaling: $(\hat{x}, \hat{y}) = (x \cdot \frac{W}{256}, y \cdot \frac{H}{256})$; Centroid: $(c_x, c_y) = \left(\frac{\sum x M}{\sum M}, \frac{\sum y M}{\sum M}\right)$ | `tests/unit/test_localization.py`, `outputs/SEG-001/metrics.json` |
 | **2. Digital Signal Processing (DSP)** | 2D Spatial Convolution, Spatial Filter Banks, Statistical Signal Moments | ConvNeXt-Tiny stem/stages (`CLS-001`), Quality Gate (`gate.py`) | 2D discrete spatial convolution: $y[i, j] = \sum_m \sum_n x[i-m, j-n] h[m, n]$; $7 \times 7$ depthwise spatial FIR filtering; zero/first/second moments | `src/brain_tumor/quality/gate.py`, `outputs/QUALITY/gate_validation.json` |
-| **3. Probability & Random Processes** | Additive White Gaussian Noise (AWGN), Post-Hoc Calibration, Confidence Intervals | Perturbation Observer (`UNC-001`), Temperature Calibrator (`service.py`) | AWGN channel: $x' = x + \eta, \eta \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$; Platt scaling: $P(Y=c \mid \mathbf{z}, T) = \frac{\exp(z_c/T)}{\sum \exp(z_j/T)}$; Clopper-Pearson exact binomial bounds | `outputs/UNC-001/unc001_locked.json`, `outputs/CLS-001/calibration_frozen.json` |
+| **3. Probability & Random Processes** | Controlled Additive Perturbation, Calibration, Confidence Bounds | Perturbation Observer (`UNC-001`), Temperature Calibrator (`service.py`) | Controlled additive Gaussian perturbation: $x' = x + \eta, \eta \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$; Temperature scaling: $P(Y=c \mid \mathbf{z}, T) = \frac{\exp(z_c/T)}{\sum \exp(z_j/T)}$; Clopper-Pearson exact binomial bounds | `outputs/UNC-001/unc001_locked.json`, `outputs/CLS-001/calibration_frozen.json` |
 | **4. Communication & Network Interfaces** | Client-Server Architecture, Data Marshaling, Transport Security, Network Isolation | FastAPI REST API (`app/api/main.py`), Payload Ingestion Guards | Multipart stream serialization, HTTP/1.1 REST contracts, payload bounds ($\le 10\text{MB}$), socket interceptor (`OFF-001`) | `tests/integration/test_error_envelopes.py`, `docs/off/OFF-001.md` |
-| **5. Computer Architecture & Hardware-Aware Computing** | Heterogeneous Compute, Instruction Pipelines, Mixed-Precision Arithmetic, Memory Hierarchy | Hardware profiles (`profiles.md`), CUDA AMP autocast (`service.py`) | IEEE 754 FP32 vs. FP16 Tensor Core execution, Host-to-Device PCI-e transfer, VRAM allocation ($370.1\text{ MB}$ alloc / $578.0\text{ MB}$ res) | `outputs/SYSINT/fp16_check.json`, `outputs/SYSINT/gpu_latency_fp32.json` |
+| **5. Computer Architecture & Hardware-Aware Computing** | Heterogeneous Compute, Instruction Pipelines, Mixed-Precision Arithmetic, Memory Hierarchy | Hardware profiles (`profiles.md`), CUDA AMP autocast (`service.py`) | IEEE 754 FP32 vs. FP16 mixed precision execution, Host-to-Device PCI-e transfer, VRAM allocation ($370.1\text{ MB}$ alloc / $578.0\text{ MB}$ res) | `outputs/SYSINT/fp16_check.json`, `outputs/SYSINT/gpu_latency_fp32.json` |
 | **6. Digital Computing & Numerical Systems** | Floating-Point Roundoff, Numerical Overflow Prevention, Algorithmic Determinism | Softmax normalization, PyTorch determinism hooks | Log-sum-exp formulation: $\log \sum \exp(z_i) = m + \log \sum \exp(z_i - m)$; seeded PRNG execution (`torch.use_deterministic_algorithms`) | `tests/integration/test_determinism.py`, `src/brain_tumor/contracts.py` |
 | **7. Systems & Fault-Tolerant Instrumentation** | Fail-Safe State Machines, Defensive Interlocking, Input Signal Integrity Checks | Precedence State Machine, Quality Gates `Q01`–`Q09`, Pydantic Schema | Priority precedence: $\text{degraded} \succ \text{uncertain} \succ \text{unlocalized} \succ \text{localized} \succ \text{healthy}$; exception containment | `src/brain_tumor/contracts.py`, `tests/unit/test_contracts.py` |
 
@@ -1415,15 +1415,15 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
 
 ### 31.5 Pillar 3: Probability and Random Processes
 
-1. **Additive White Gaussian Noise (AWGN) Degradation Model:**  
-   Perturbation observer `UNC-001` models real-world MRI acquisition noise (e.g., thermal RF coil noise, preamplifier Johnson-Nyquist noise) as an Additive White Gaussian Noise channel:
+1. **Controlled Additive Gaussian Perturbation Model:**  
+   Perturbation observer `UNC-001` evaluates local decision boundary robustness by modeling high-frequency sensor noise as controlled additive Gaussian perturbations:
    $$x'[i, j] = x[i, j] + \eta[i, j], \quad \eta[i, j] \sim \mathcal{N}(0, \sigma^2)$$
    where $\sigma = 0.05$ represents a controlled noise variance injected into normalized intensity space $[0, 1]$. By generating $K=8$ independent stochastic noise realizations, the system evaluates the empirical stability of the decision boundary:
    $$\alpha = \frac{1}{K} \sum_{k=1}^{K} \mathbb{I}\left(\arg\max_c f(x + \eta_k) = \hat{y}_{\text{clean}}\right)$$
    If $\alpha < 1.0$, the observer flags stochastic instability, capturing 96.0% of confident-but-wrong predictions under noise.
 
 2. **Post-Hoc Probability Calibration via Temperature Scaling:**  
-   Raw deep neural network outputs represent uncalibrated affine logits $\mathbf{z} \in \mathbb{R}^C$. To transform these into mathematically sound posterior probabilities $P(Y = c \mid \mathbf{z})$, the system applies Platt temperature scaling:
+   Raw deep neural network outputs represent uncalibrated affine logits $\mathbf{z} \in \mathbb{R}^C$. To transform these into mathematically sound posterior probabilities $P(Y = c \mid \mathbf{z})$, the system applies temperature scaling:
    $$\hat{p}_c(T) = \frac{\exp(z_c / T)}{\sum_{j=1}^{C} \exp(z_j / T)}$$
    The scalar temperature parameter $T$ is optimized on the frozen validation cohort ($N=1000$) by minimizing the continuous cross-entropy loss (Kullback-Leibler divergence to empirical labels):
    $$T^* = \arg\min_T \left[ -\frac{1}{N_{\text{val}}} \sum_{i=1}^{N_{\text{val}}} \log \hat{p}_{y_i}(T) \right]$$
@@ -1457,7 +1457,7 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
 1. **Heterogeneous Compute Workloads:**  
    The system is engineered to execute across heterogeneous compute architectures:
    - **Host CPU (x86_64):** Executes scalar orchestration, image decoding, morphological connected-component labeling, and state machine validation. Supports complete end-to-end inference via AVX2 vector SIMD instructions as a universal deployment baseline ($1.4\text{s}$ per scan).
-   - **Target GPU (NVIDIA T4):** Offloads massive parallel 2D tensor contractions to 2,560 CUDA cores and 320 Turing Tensor Cores, reducing total analysis latency to $30.1\text{ms}$ ($33\times$ speedup).
+   - **Target GPU (NVIDIA T4):** Offloads parallel 2D tensor contractions to GPU execution units under FP16 autocast, reducing total analysis latency to $30.1\text{ms}$ ($33\times$ speedup).
 
 2. **IEEE 754 Floating-Point Precision Profiles (FP32 vs. FP16):**  
    The inference service supports dual arithmetic execution paths:
