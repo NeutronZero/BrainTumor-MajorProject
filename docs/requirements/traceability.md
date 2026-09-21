@@ -25,4 +25,3 @@ VV-001 evidence is referenced, not regenerated. No locked-test contact.
 | NFR-ERR-1 | typed envelopes | API + Streamlit branches | envelope tests |
 
 Gaps: none open. NFR-OFF-1 closed by OFF-001 (executed evidence).
-a runtime socket-block test is the candidate closure. All else executable.

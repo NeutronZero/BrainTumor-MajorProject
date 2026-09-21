@@ -40,8 +40,8 @@ Runtime here: torch 2.13.0+cpu; python 3.14.7.
 - `src/brain_tumor/contracts.py` `38433c75b1561c2d980e71c85e18eca609f085ff70981073b4ae8b1add2d280b` (7586 bytes)
 - `src/brain_tumor/inference/service.py` `a1ecee1a670645f6dc1c6da73572364849ea88c25394034bcab799ab67e14145` (14415 bytes)
 - `src/brain_tumor/preprocessing/pipeline.py` `a0bdfff9c28f0a1dbfac642819dc955eecd6a750b57292f62439328e45a7f77e` (3146 bytes)
-- `app/api/main.py` `e4b0b824ccfd493059f6a9f38dc5de4af2f0c90f9ae9077d92ce906b575af838` (6884 bytes)
-- `app/streamlit/app.py` `3ee9be5d2a69e83fdd08b9327eefe5f72b4be381bf8d492899c2ebc2311acae3` (5309 bytes)
+- `app/api/main.py` `674ef6d71cabb9f0c3c33ed3b732fc42ec33ba8d481377320bd60d36437ad48d` (6936 bytes)
+- `app/streamlit/app.py` `ecb4bf2d8ec029f813e4d46ef2124e996813060986a9512ac3e8c7d1ef6eed70` (6048 bytes)
 
 ## Status
 - SB-1 submission-ready fallback: CLS-001 + SEG-001 + UNC-001 (descriptive) + ROB-001 (documented variant) + FP16/autocast.
