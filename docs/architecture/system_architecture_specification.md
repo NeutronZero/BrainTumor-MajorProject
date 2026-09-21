@@ -1,13 +1,13 @@
 # SYSTEM ARCHITECTURE SPECIFICATION
 ## Automated Multi-Stage Brain Tumor MRI Classification, Segmentation, and Reliability Assessment Platform
-### Authoritative Production Baseline: Release FINAL-001 (Git Commit: `48dd3ae`) / Maintenance Branch: `final-001` (`ad01b73`)
+### Authoritative Production Baseline: Release FINAL-001 (Git Commit: `48dd3ae`) / Maintenance Branch: `final-001` (Lineage: `ad01b73`)
 
 ---
 
 **Document Classification:** Academic Major Project Engineering Architecture & Technical Design Specification  
 **Project Identifier:** `BrainTumor-MajorProject`  
 **System Version:** Release Baseline `FINAL-001` (`48dd3aeb757ecda15a9bf53665ef7f0adad118c2`)  
-**Maintenance Lineage:** Commit `ad01b73` (`CORRECTION-002` documentation integrity update)  
+**Maintenance Lineage:** Commit `ad01b73` (`CORRECTION-002` documentation integrity update); subsequent documentation-only verification commits on `final-001` are cataloged in Document Revision History (zero changes to code, weights, configs, or interfaces).  
 **Lead Engineer / Author:** Senior Systems Architect & ML Engineering Team  
 **Academic Guides & Examination Committee:** Major Project Review Board  
 **Target Domain:** Applied Machine Learning Systems, Computer Vision, Fault-Tolerant Software Engineering  
@@ -22,7 +22,8 @@
 | **0.2** | July 2026 | Systems Architecture Team (`ENG-002`) | Observer-boundary decoupling, reliability synthesis (`REL-001`), and offline verification (`OFF-001`). |
 | **1.0** | September 2026 | Core Engineering Baseline (`FINAL-001`, `48dd3ae`) | Authoritative production baseline release; frozen `CLS-001` and `SEG-001` models. |
 | **1.1** | September 2026 | Documentation Maintenance (`CORRECTION-002`, `ad01b73`) | Cryptographic manifest synchronization, forensic precision updates, and failure-mode analysis. |
-| **1.2** | September 2026 | Documentation Maintenance (`final-001` branch HEAD) | ECE engineering curriculum mapping reconciliation (§31) against frozen FINAL-001 artifacts, exact Q01–Q09 specification, and hardware profiling alignment. |
+| **1.2** | September 2026 | Documentation Maintenance (`final-001` branch) | ECE engineering curriculum mapping reconciliation (§31) against frozen FINAL-001 artifacts, exact Q01–Q09 specification, and hardware profiling alignment. |
+| **1.3** | September 2026 | Documentation Maintenance (`final-001` branch HEAD) | Final forensic verification pass: §31 diagram terminology alignment, §24.2 cross-reference correction, T5/T7 test suite consolidation clarification (§23.2), and maintenance lineage header refinement. |
 
 ---
 
@@ -175,7 +176,7 @@ The system architecture is derived from twelve functional requirements (FR) and 
 | **FR-CON-1** | Consistency Observer | `src/brain_tumor/inference/service.py` | `outputs/UNC-001/unc001_locked.json` |
 | **FR-REL-1** | Reliability Engine | `src/brain_tumor/reliability/engine.py` | `outputs/REL-001/rel001.json` |
 | **FR-QLT-1** | Quality Gate (Observer) | `src/brain_tumor/quality/gate.py` | `outputs/QUALITY/gate_validation.json` |
-| **FR-QLT-2** | Quality Gate (Boundary) | `app/api/main.py` | `tests/integration/test_error_envelopes.py` |
+| **FR-QLT-2** | Quality Gate (Boundary) | `app/api/main.py` | `tests/integration/test_system.py` |
 | **FR-EXP-1** | Explainability Hook | `src/brain_tumor/explain/gradcam.py` | `outputs/EXPL-001/expl001.json` |
 | **FR-API-1** | RESTful Interface | `app/api/main.py` | `tests/integration/test_system.py` |
 | **FR-UI-1** | Streamlit Web App | `app/streamlit/app.py` | `tests/integration/test_streamlit.py` |
@@ -187,7 +188,7 @@ The system architecture is derived from twelve functional requirements (FR) and 
 | **NFR-PERF-1** | Deployment Profiler | `scripts/bench/` | `outputs/SYSINT/gpu_latency_fp32.json` |
 | **NFR-PORT-1** | Packaging Framework | Repository Structure & Lockfile | Clean Git clone verification |
 | **NFR-OFF-1** | Network Subsystem | Socket Guard Interceptor | `docs/off/OFF-001.md` |
-| **NFR-ERR-1** | Error Handling Layer | FastAPI Exception Handlers | `tests/integration/test_error_envelopes.py` |
+| **NFR-ERR-1** | Error Handling Layer | FastAPI Exception Handlers | `tests/integration/test_system.py` |
 
 ---
 
@@ -321,7 +322,7 @@ The primary data foundation for this project is the **BRISC 2025** benchmark dat
 
 ## 7. GATE-0 DATA INTEGRITY VERIFICATION AND CONTAMINATION FORENSICS
 
-Prior to training model architectures, the engineering charter required executing **Gate 0**, an automated cryptographic data-integrity audit (`scripts/data/audit_gate0.py`). 
+Prior to training model architectures, the engineering charter required executing **Gate 0**, an automated cryptographic data-integrity audit (`scripts/data_gate/run_gate.py`). 
 
 ### 7.1 Cross-Split Duplicate Contamination Discovery
 Gate 0 computed exact SHA-256 digests across all 6,000 classification images and revealed that the official benchmark distribution contains **cross-split byte-level identity contamination**:
@@ -1012,6 +1013,7 @@ All verification tests, regression suites, and latency benchmarks were executed 
 - **Zero Locked-Test Contact:** CI test suites execute exclusively using synthetic, programmatically generated test images (tensors generated via `torch.randn` or PIL shapes), preventing test-set exposure during automated runs.
 - **Strict Error Envelopes:** Negative tests verify that malformed uploads trigger structured HTTP error codes (`413`, `415`, `422`, `500`) without leaking internal file paths or stack traces.
 - **Cross-Hardware Validation Tolerances:** Rather than asserting bit-identical floating-point equality between CPU and GPU architectures, continuous integration enforces numerical equivalence within defined tolerances: probability distributions match within absolute tolerance $\epsilon \le 10^{-4}$ and binary masks are evaluated for bounding-box congruence.
+- **Test Suite Consolidation (T5 & T7):** The API-contract and determinism integration checks are consolidated in `tests/integration/test_system.py`; they remain separately identified as T5 and T7 for traceability purposes.
 
 ---
 
@@ -1344,7 +1346,7 @@ flowchart TD
     subgraph ECE["Electronics & Communication Engineering (ECE) Foundations"]
         DIP["1. Digital Image Processing (DIP)<br/>Sampling, Transforms, Morphological Math"]
         DSP["2. Digital Signal Processing (DSP)<br/>2D Spatial Convolutions, Moment Estimators"]
-        PRP["3. Probability & Random Processes<br/>AWGN Modeling, Calibration, Hypothesis Bounds"]
+        PRP["3. Probability & Random Processes<br/>Controlled Gaussian Perturbation, Calibration, Hypothesis Bounds"]
         COM["4. Communication & Networks<br/>REST Interfaces, Payload Streaming, Transport Guards"]
         ARCH["5. Computer Architecture<br/>CPU/GPU Acceleration, Mixed-Precision, Memory Profiles"]
         NUM["6. Numerical Systems & Computing<br/>Floating-Point Precision, Numerical Stability, Determinism"]
@@ -1365,7 +1367,7 @@ The following matrix formally cross-references standard ECE syllabus subjects to
 | **1. Digital Image Processing (DIP)** | 2D Spatial Sampling, Intensity Normalization, Affine Mapping, Connected Components | Ingestion pipeline, U-Net thresholding, Localization Engine (`extract.py`) | Forward/inverse bilinear coordinate scaling: $(\hat{x}, \hat{y}) = (x \cdot \frac{W}{256}, y \cdot \frac{H}{256})$; Centroid: $(c_x, c_y) = \left(\frac{\sum x M}{\sum M}, \frac{\sum y M}{\sum M}\right)$; 8-conn labeling via `scipy.ndimage.label` | `tests/unit/test_localization.py`, `outputs/SEG-001/metrics.json` |
 | **2. Digital Signal Processing (DSP)** | 2D Spatial Convolution, Spatial Filter Banks, Statistical Signal Moments | ConvNeXt-Tiny stem/stages (`CLS-001`), Quality Gate (`gate.py`) | 2D discrete spatial convolution: $y[i, j] = \sum_m \sum_n x[i-m, j-n] h[m, n]$; $7 \times 7$ depthwise spatial FIR filtering; zero/first/second moments | `src/brain_tumor/quality/gate.py`, `outputs/QUALITY/gate_validation.json` |
 | **3. Probability & Random Processes** | Controlled Additive Perturbation, Calibration, Confidence Bounds | Perturbation Observer (`UNC-001`), Temperature Calibrator (`service.py`) | Controlled additive Gaussian perturbation: $x' = x + \eta, \eta \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$; Temperature scaling: $P(Y=c \mid \mathbf{z}, T) = \frac{\exp(z_c/T)}{\sum \exp(z_j/T)}$; Clopper-Pearson exact binomial bounds | `outputs/UNC-001/unc001_locked.json`, `outputs/CLS-001/calibration_frozen.json` |
-| **4. Communication & Network Interfaces** | Client-Server Architecture, Data Marshaling, Transport Security, Network Isolation | FastAPI REST API (`app/api/main.py`), Payload Ingestion Guards | Multipart stream serialization, HTTP/1.1 REST contracts, payload bounds ($\le 10\text{MB}$), socket interceptor (`OFF-001`) | `tests/integration/test_error_envelopes.py`, `docs/off/OFF-001.md` |
+| **4. Communication & Network Interfaces** | Client-Server Architecture, Data Marshaling, Transport Security, Network Isolation | FastAPI REST API (`app/api/main.py`), Payload Ingestion Guards | Multipart stream serialization, HTTP/1.1 REST contracts, payload bounds ($\le 10\text{MB}$), socket interceptor (`OFF-001`) | `tests/integration/test_system.py`, `docs/off/OFF-001.md` |
 | **5. Computer Architecture & Hardware-Aware Computing** | Heterogeneous Compute, Instruction Pipelines, Mixed-Precision Arithmetic, Memory Hierarchy | Hardware profiles (`profiles.md`), CUDA AMP autocast (`service.py`) | IEEE 754 FP32 vs. FP16 mixed precision execution, Host-to-Device PCI-e transfer, VRAM allocation ($370.1\text{ MB}$ alloc / $578.0\text{ MB}$ res) | `outputs/SYSINT/fp16_check.json`, `outputs/SYSINT/gpu_latency_fp32.json` |
 | **6. Digital Computing & Numerical Systems** | Floating-Point Roundoff, Numerical Overflow Prevention, Algorithmic Determinism | Softmax normalization, PyTorch determinism hooks | Log-sum-exp formulation: $\log \sum \exp(z_i) = m + \log \sum \exp(z_i - m)$; seeded PRNG execution (`torch.use_deterministic_algorithms`) | `tests/integration/test_system.py`, `src/brain_tumor/contracts.py` |
 | **7. Systems & Fault-Tolerant Instrumentation** | Fail-Safe State Machines, Defensive Interlocking, Input Signal Integrity Checks | Precedence State Machine, Quality Gates `Q01`–`Q09`, Pydantic Schema | Priority precedence: $\text{degraded} \succ \text{uncertain} \succ \text{unlocalized} \succ \text{localized} \succ \text{healthy}$; exception containment | `src/brain_tumor/contracts.py`, `tests/unit/test_contracts.py` |
@@ -1391,7 +1393,7 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
 3. **Binary Morphological Processing and Connected Components:**  
    The continuous posterior probability map $\hat{P}(x, y) \in [0, 1]$ generated by the U-Net is binarized using a decision threshold $\tau_{\text{seg}} = 0.5$:
    $$\hat{M}(x, y) = \begin{cases} 1 & \text{if } \hat{P}(x, y) \ge 0.5 \\ 0 & \text{otherwise} \end{cases}$$
-   The resulting binary matrix is processed using 8-connectivity connected-component labeling (`from scipy import ndimage; lab, n = ndimage.label(binary)` in `src/brain_tumor/localization/extract.py`). Components are filtered by a minimum area threshold ($\ge 10\text{ pixels}$). If multiple qualifying components exist (81 cases identified in §24.4), the system flags the `multiple_components` warning, records the aggregate area of all qualifying components ($A_{\text{total}} = \sum_{k} A_k$), and isolates the largest connected component $L$ to compute its spatial centroid and bounding box:
+   The resulting binary matrix is processed using 8-connectivity connected-component labeling (`from scipy import ndimage; lab, n = ndimage.label(binary)` in `src/brain_tumor/localization/extract.py`). Components are filtered by a minimum area threshold ($\ge 10\text{ pixels}$). If multiple qualifying components exist (81 cases identified in §24.2), the system flags the `multiple_components` warning, records the aggregate area of all qualifying components ($A_{\text{total}} = \sum_{k} A_k$), and isolates the largest connected component $L$ to compute its spatial centroid and bounding box:
    $$c_x = \frac{1}{|L|} \sum_{(x, y) \in L} x, \quad c_y = \frac{1}{|L|} \sum_{(x, y) \in L} y$$
    If no components satisfy the area threshold (or if the mask is entirely zero), the engine returns `bbox=None, centroid=None, area_pixels=0` in strict conformance with contract invariants.
 

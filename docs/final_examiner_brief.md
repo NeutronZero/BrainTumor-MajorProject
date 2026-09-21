@@ -1,12 +1,12 @@
 # ACADEMIC REVIEWER AND PROJECT GUIDE BRIEF
 ## Multi-Stage MRI Brain Tumor Classification, Segmentation, and Reliability Platform
-### Authoritative Baseline: Release `FINAL-001` (`48dd3ae`) / Maintenance Branch: `final-001` (`ad01b73`)
+### Authoritative Baseline: Release `FINAL-001` (`48dd3ae`) / Maintenance Branch: `final-001` (Lineage: `ad01b73`)
 
 ---
 
 **Document Purpose:** Executive Technical Brief and Examination Summary  
 **Project Identifier:** `BrainTumor-MajorProject`  
-**System Version:** Release Baseline `FINAL-001` (Commit `48dd3ae`) / Lineage `ad01b73` (`CORRECTION-002`)  
+**System Version:** Release Baseline `FINAL-001` (Commit `48dd3ae`) / Lineage `ad01b73` (`CORRECTION-002`); subsequent documentation-only verification commits on `final-001` cataloged in SAS Document Revision History (zero changes to code, weights, configs, or interfaces).  
 **Target Audience:** Major Project Guide, Technical Review Board, and External Examiners  
 **Authoritative Reference:** Detailed 31-chapter [System Architecture Specification](architecture/system_architecture_specification.md) (`docs/architecture/system_architecture_specification.md`)  
 **Publication Date:** September 2026  
@@ -84,7 +84,7 @@ flowchart TD
 | **FR-CON-1** | Perturbation Observer ($K=8$) | `service.py::consistency` | `outputs/UNC-001/unc001_locked.json` |
 | **FR-REL-1** | Multi-Signal Diagnostic Fusion | `src/brain_tumor/reliability/engine.py` | `outputs/REL-001/rel001.json` |
 | **FR-QLT-1** | Quality Gate Observer (`Q01`–`Q09`)| `src/brain_tumor/quality/gate.py` | `outputs/QUALITY/gate_validation.json` |
-| **FR-QLT-2** | Transport Boundary Rejection | `app/api/main.py` | `tests/integration/test_error_envelopes.py` |
+| **FR-QLT-2** | Transport Boundary Rejection | `app/api/main.py` | `tests/integration/test_system.py` |
 | **FR-EXP-1** | Deterministic Grad-CAM Overlay | `src/brain_tumor/explain/gradcam.py` | `outputs/EXPL-001/expl001.json` |
 | **FR-SYS-1** | Invariant State Precedence | `src/brain_tumor/contracts.py` | `tests/unit/test_contracts.py` |
 | **NFR-REPRO-1**| Cryptographic Manifest Audit | `scripts/release/build_manifest.py` | `docs/release_manifest.md` (30 tracked files) |
@@ -253,7 +253,7 @@ The project represents an applied capstone in **Electronics and Communication En
 | **1. Digital Image Processing (DIP)** | Spatial Sampling, Morphological Analysis, Affine Translation | Pipeline Resampling, U-Net Binarization, Localization Engine | Forward/inverse bilinear scaling $(\hat{x}, \hat{y}) = (x \frac{W}{256}, y \frac{H}{256})$; Centroid: $\frac{\sum \mathbf{x} M}{\sum M}$; 8-conn components | `tests/unit/test_localization.py` |
 | **2. Digital Signal Processing (DSP)** | 2D Spatial Convolution, Filter Banks, Statistical Moments | ConvNeXt-Tiny stem/stages (`CLS-001`), Quality Gate (`gate.py`) | 2D discrete spatial FIR convolution $y = x * h$; $7 \times 7$ depthwise spatial filtering; sample mean $\bar{x}$ & variance $s^2$ | `outputs/QUALITY/gate_validation.json` |
 | **3. Probability & Random Processes** | Controlled Additive Perturbation, Calibration, Confidence Bounds | Perturbation Observer (`UNC-001`), Temperature Scaling (`service.py`) | Controlled additive Gaussian perturbation $x' = x + \eta, \eta \sim \mathcal{N}(0, \sigma^2)$; Temperature scaling $P(Y=c \mid \mathbf{z}, T)$; Clopper-Pearson exact bounds | `outputs/UNC-001/unc001_locked.json` |
-| **4. Communication & Networks** | Client-Server Architecture, Stream Marshaling, Network Isolation | FastAPI REST API (`main.py`), Ingestion Guards, Socket Interceptor | Multipart binary serialization, HTTP/1.1 REST contracts, payload bounds ($\le 10\text{MB}$), socket interceptor (`OFF-001`) | `tests/integration/test_error_envelopes.py` |
+| **4. Communication & Networks** | Client-Server Architecture, Stream Marshaling, Network Isolation | FastAPI REST API (`main.py`), Ingestion Guards, Socket Interceptor | Multipart binary serialization, HTTP/1.1 REST contracts, payload bounds ($\le 10\text{MB}$), socket interceptor (`OFF-001`) | `tests/integration/test_system.py` |
 | **5. Computer Architecture** | Heterogeneous Compute, Instruction SIMD, Precision Profiles | Hardware Profiles (`profiles.md`), CUDA AMP Autocast (`service.py`) | IEEE 754 FP32 vs. FP16 mixed precision execution, Host-to-Device transfer, VRAM footprint ($370.1\text{ MB}$ alloc / $578.0\text{ MB}$ res) | `outputs/SYSINT/fp16_check.json` |
 | **6. Numerical Systems & Computing** | Floating-Point Stability, Overflow Prevention, Determinism | Numerically Stable Softmax, Determinism Hooks | Log-sum-exp formulation $\log \sum \exp(z_i) = m + \log \sum \exp(z_i - m)$; seeded PRNG execution (`torch.use_deterministic_algorithms`) | `tests/integration/test_system.py` |
 | **7. Fault-Tolerant Instrumentation** | Fail-Safe State Machines, Defensive Interlocking, Integrity Checks | Precedence State Machine, Quality Gates `Q01`–`Q09`, Pydantic Schema | Priority precedence: $\text{degraded} \succ \text{uncertain} \succ \text{unlocalized} \succ \text{localized} \succ \text{healthy}$; exception containment | `src/brain_tumor/contracts.py` |
@@ -265,7 +265,7 @@ The project represents an applied capstone in **Electronics and Communication En
 | Question for Candidate | Concrete Engineering Defense | Verified Evidence Source |
 | :--- | :--- | :--- |
 | **Q1: Why choose ConvNeXt-Tiny over ResNet-50 or ViT?** | ConvNeXt-Tiny modernizes 7x7 depthwise convolutions with high parameter efficiency (27.8M params) and fast latency (12.5ms). Historical controlled trials showed it tied with DenseNet/Swin; it was chosen for training stability and convolutional receptive fields. | `docs/architecture_evidence.md` |
-| **Q2: Why use a Vanilla U-Net instead of Attention U-Net?** | Attention U-Net (`SEG-002` on branch `gen-001`) was evaluated across 3 random seeds; validation Dice difference was $-0.0012$, falling within seed noise. Under parsimony principles, the unverified 2.8% parameter addition was rejected. | `configs/experiment/SEG-002.yaml` |
+| **Q2: Why use a Vanilla U-Net instead of Attention U-Net?** | Attention U-Net (`SEG-002` on branch `gen-001`) was evaluated across 3 random seeds; validation Dice difference was $-0.0012$, falling within seed noise. Under parsimony principles, the unverified 2.8% parameter addition was rejected. | Branch `gen-001` (commit `051487b`), §25.2 of SAS |
 | **Q3: How did you address data leakage in BRISC 2025?** | We conducted SHA-256 deduplication, discovering 7 test hashes identical to 9 training files. We quarantined them to the training partition and evaluated dual cohorts ($N=1000$ and $N=993$), proving the sensitivity delta is negligible ($+3.5 \times 10^{-5}$). | `outputs/data_gate_0/cross_split_exclusion_list.json` |
 | **Q4: Why is calibration temperature $T=0.5116 < 1.0$?** | Optimization of validation NLL via L-BFGS yielded $T < 1.0$, indicating raw logits were under-concentrated relative to validation empirical frequencies. Logit scaling by $1/T \approx 1.9547$ sharpens the distribution, reducing ECE to 0.002655. | `outputs/CLS-001/calibration_frozen.json` |
 | **Q5: What is the purpose of the state precedence machine?** | It enforces contract-level capability prioritization ($\text{degraded} > \text{uncertain} > \text{unlocalized} > \text{localized} > \text{healthy}$), ensuring that missing weights or uncertain classifications immediately suppress downstream spatial claims. | `src/brain_tumor/contracts.py` |
