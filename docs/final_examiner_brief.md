@@ -88,7 +88,7 @@ flowchart TD
 | **FR-EXP-1** | Deterministic Grad-CAM Overlay | `src/brain_tumor/explain/gradcam.py` | `outputs/EXPL-001/expl001.json` |
 | **FR-SYS-1** | Invariant State Precedence | `src/brain_tumor/contracts.py` | `tests/unit/test_contracts.py` |
 | **NFR-REPRO-1**| Cryptographic Manifest Audit | `scripts/release/build_manifest.py` | `docs/release_manifest.md` (30 tracked files) |
-| **NFR-DET-1**| Same-Environment Determinism | Pipeline Execution Engines | `tests/integration/test_determinism.py` |
+| **NFR-DET-1**| Same-Environment Determinism | Pipeline Execution Engines | `tests/integration/test_system.py` |
 | **NFR-CPU-1**| Universal CPU Baseline | Pure PyTorch FP32 Subsystem | 49 passed CI unit/integration tests |
 | **NFR-GPU-1**| FP16 Mixed Precision Parity | `service.py::_autocast()` | `outputs/SYSINT/fp16_check.json` |
 | **NFR-OFF-1**| Offline-First Integrity | Application Socket Interceptor | `docs/off/OFF-001.md` |
@@ -255,7 +255,7 @@ The project represents an applied capstone in **Electronics and Communication En
 | **3. Probability & Random Processes** | Controlled Additive Perturbation, Calibration, Confidence Bounds | Perturbation Observer (`UNC-001`), Temperature Scaling (`service.py`) | Controlled additive Gaussian perturbation $x' = x + \eta, \eta \sim \mathcal{N}(0, \sigma^2)$; Temperature scaling $P(Y=c \mid \mathbf{z}, T)$; Clopper-Pearson exact bounds | `outputs/UNC-001/unc001_locked.json` |
 | **4. Communication & Networks** | Client-Server Architecture, Stream Marshaling, Network Isolation | FastAPI REST API (`main.py`), Ingestion Guards, Socket Interceptor | Multipart binary serialization, HTTP/1.1 REST contracts, payload bounds ($\le 10\text{MB}$), socket interceptor (`OFF-001`) | `tests/integration/test_error_envelopes.py` |
 | **5. Computer Architecture** | Heterogeneous Compute, Instruction SIMD, Precision Profiles | Hardware Profiles (`profiles.md`), CUDA AMP Autocast (`service.py`) | IEEE 754 FP32 vs. FP16 mixed precision execution, Host-to-Device transfer, VRAM footprint ($370.1\text{ MB}$ alloc / $578.0\text{ MB}$ res) | `outputs/SYSINT/fp16_check.json` |
-| **6. Numerical Systems & Computing** | Floating-Point Stability, Overflow Prevention, Determinism | Numerically Stable Softmax, Determinism Hooks | Log-sum-exp formulation $\log \sum \exp(z_i) = m + \log \sum \exp(z_i - m)$; seeded PRNG execution (`torch.use_deterministic_algorithms`) | `tests/integration/test_determinism.py` |
+| **6. Numerical Systems & Computing** | Floating-Point Stability, Overflow Prevention, Determinism | Numerically Stable Softmax, Determinism Hooks | Log-sum-exp formulation $\log \sum \exp(z_i) = m + \log \sum \exp(z_i - m)$; seeded PRNG execution (`torch.use_deterministic_algorithms`) | `tests/integration/test_system.py` |
 | **7. Fault-Tolerant Instrumentation** | Fail-Safe State Machines, Defensive Interlocking, Integrity Checks | Precedence State Machine, Quality Gates `Q01`–`Q09`, Pydantic Schema | Priority precedence: $\text{degraded} \succ \text{uncertain} \succ \text{unlocalized} \succ \text{localized} \succ \text{healthy}$; exception containment | `src/brain_tumor/contracts.py` |
 
 ---

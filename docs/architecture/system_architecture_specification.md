@@ -22,6 +22,7 @@
 | **0.2** | July 2026 | Systems Architecture Team (`ENG-002`) | Observer-boundary decoupling, reliability synthesis (`REL-001`), and offline verification (`OFF-001`). |
 | **1.0** | September 2026 | Core Engineering Baseline (`FINAL-001`, `48dd3ae`) | Authoritative production baseline release; frozen `CLS-001` and `SEG-001` models. |
 | **1.1** | September 2026 | Documentation Maintenance (`CORRECTION-002`, `ad01b73`) | Cryptographic manifest synchronization, forensic precision updates, and failure-mode analysis. |
+| **1.2** | September 2026 | Documentation Maintenance (`final-001` branch HEAD) | ECE engineering curriculum mapping reconciliation (§31) against frozen FINAL-001 artifacts, exact Q01–Q09 specification, and hardware profiling alignment. |
 
 ---
 
@@ -176,11 +177,11 @@ The system architecture is derived from twelve functional requirements (FR) and 
 | **FR-QLT-1** | Quality Gate (Observer) | `src/brain_tumor/quality/gate.py` | `outputs/QUALITY/gate_validation.json` |
 | **FR-QLT-2** | Quality Gate (Boundary) | `app/api/main.py` | `tests/integration/test_error_envelopes.py` |
 | **FR-EXP-1** | Explainability Hook | `src/brain_tumor/explain/gradcam.py` | `outputs/EXPL-001/expl001.json` |
-| **FR-API-1** | RESTful Interface | `app/api/main.py` | `tests/integration/test_api.py` |
+| **FR-API-1** | RESTful Interface | `app/api/main.py` | `tests/integration/test_system.py` |
 | **FR-UI-1** | Streamlit Web App | `app/streamlit/app.py` | `tests/integration/test_streamlit.py` |
 | **FR-SYS-1** | State Machine Engine | `src/brain_tumor/contracts.py` | `tests/unit/test_contracts.py` |
 | **NFR-REPRO-1**| Build Tooling | `scripts/release/build_manifest.py` | `docs/release_manifest.md` |
-| **NFR-DET-1** | Inference Pipeline | `service.py` / `engine.py` | `tests/integration/test_determinism.py` |
+| **NFR-DET-1** | Inference Pipeline | `service.py` / `engine.py` | `tests/integration/test_system.py` |
 | **NFR-CPU-1** | Tensor Runtime | PyTorch CPU Execution Subsystem | 49 passed CI tests on CPU |
 | **NFR-GPU-1** | Mixed Precision Context| `service.py::_autocast()` | `outputs/SYSINT/fp16_check.json` |
 | **NFR-PERF-1** | Deployment Profiler | `scripts/bench/` | `outputs/SYSINT/gpu_latency_fp32.json` |
@@ -1361,12 +1362,12 @@ The following matrix formally cross-references standard ECE syllabus subjects to
 
 | ECE Curriculum Domain | Core Theoretical Principle | Implemented System Component | Mathematical / Algorithmic Realization | Verification & Evidence Artifact |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Digital Image Processing (DIP)** | 2D Spatial Sampling, Intensity Normalization, Affine Mapping, Connected Components | Ingestion pipeline, U-Net thresholding, Localization Engine (`extract.py`) | Forward/inverse bilinear coordinate scaling: $(\hat{x}, \hat{y}) = (x \cdot \frac{W}{256}, y \cdot \frac{H}{256})$; Centroid: $(c_x, c_y) = \left(\frac{\sum x M}{\sum M}, \frac{\sum y M}{\sum M}\right)$ | `tests/unit/test_localization.py`, `outputs/SEG-001/metrics.json` |
+| **1. Digital Image Processing (DIP)** | 2D Spatial Sampling, Intensity Normalization, Affine Mapping, Connected Components | Ingestion pipeline, U-Net thresholding, Localization Engine (`extract.py`) | Forward/inverse bilinear coordinate scaling: $(\hat{x}, \hat{y}) = (x \cdot \frac{W}{256}, y \cdot \frac{H}{256})$; Centroid: $(c_x, c_y) = \left(\frac{\sum x M}{\sum M}, \frac{\sum y M}{\sum M}\right)$; 8-conn labeling via `scipy.ndimage.label` | `tests/unit/test_localization.py`, `outputs/SEG-001/metrics.json` |
 | **2. Digital Signal Processing (DSP)** | 2D Spatial Convolution, Spatial Filter Banks, Statistical Signal Moments | ConvNeXt-Tiny stem/stages (`CLS-001`), Quality Gate (`gate.py`) | 2D discrete spatial convolution: $y[i, j] = \sum_m \sum_n x[i-m, j-n] h[m, n]$; $7 \times 7$ depthwise spatial FIR filtering; zero/first/second moments | `src/brain_tumor/quality/gate.py`, `outputs/QUALITY/gate_validation.json` |
 | **3. Probability & Random Processes** | Controlled Additive Perturbation, Calibration, Confidence Bounds | Perturbation Observer (`UNC-001`), Temperature Calibrator (`service.py`) | Controlled additive Gaussian perturbation: $x' = x + \eta, \eta \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$; Temperature scaling: $P(Y=c \mid \mathbf{z}, T) = \frac{\exp(z_c/T)}{\sum \exp(z_j/T)}$; Clopper-Pearson exact binomial bounds | `outputs/UNC-001/unc001_locked.json`, `outputs/CLS-001/calibration_frozen.json` |
 | **4. Communication & Network Interfaces** | Client-Server Architecture, Data Marshaling, Transport Security, Network Isolation | FastAPI REST API (`app/api/main.py`), Payload Ingestion Guards | Multipart stream serialization, HTTP/1.1 REST contracts, payload bounds ($\le 10\text{MB}$), socket interceptor (`OFF-001`) | `tests/integration/test_error_envelopes.py`, `docs/off/OFF-001.md` |
 | **5. Computer Architecture & Hardware-Aware Computing** | Heterogeneous Compute, Instruction Pipelines, Mixed-Precision Arithmetic, Memory Hierarchy | Hardware profiles (`profiles.md`), CUDA AMP autocast (`service.py`) | IEEE 754 FP32 vs. FP16 mixed precision execution, Host-to-Device PCI-e transfer, VRAM allocation ($370.1\text{ MB}$ alloc / $578.0\text{ MB}$ res) | `outputs/SYSINT/fp16_check.json`, `outputs/SYSINT/gpu_latency_fp32.json` |
-| **6. Digital Computing & Numerical Systems** | Floating-Point Roundoff, Numerical Overflow Prevention, Algorithmic Determinism | Softmax normalization, PyTorch determinism hooks | Log-sum-exp formulation: $\log \sum \exp(z_i) = m + \log \sum \exp(z_i - m)$; seeded PRNG execution (`torch.use_deterministic_algorithms`) | `tests/integration/test_determinism.py`, `src/brain_tumor/contracts.py` |
+| **6. Digital Computing & Numerical Systems** | Floating-Point Roundoff, Numerical Overflow Prevention, Algorithmic Determinism | Softmax normalization, PyTorch determinism hooks | Log-sum-exp formulation: $\log \sum \exp(z_i) = m + \log \sum \exp(z_i - m)$; seeded PRNG execution (`torch.use_deterministic_algorithms`) | `tests/integration/test_system.py`, `src/brain_tumor/contracts.py` |
 | **7. Systems & Fault-Tolerant Instrumentation** | Fail-Safe State Machines, Defensive Interlocking, Input Signal Integrity Checks | Precedence State Machine, Quality Gates `Q01`–`Q09`, Pydantic Schema | Priority precedence: $\text{degraded} \succ \text{uncertain} \succ \text{unlocalized} \succ \text{localized} \succ \text{healthy}$; exception containment | `src/brain_tumor/contracts.py`, `tests/unit/test_contracts.py` |
 
 ---
@@ -1376,9 +1377,11 @@ The following matrix formally cross-references standard ECE syllabus subjects to
 Magnetic Resonance Imaging produces 2D spatial cross-sections representing spatial distributions of nuclear magnetic resonance radio-frequency signals. In `BrainTumor-MajorProject`, image processing principles are implemented across every stage:
 
 1. **Discrete Matrix Representation & Dynamic Range Transformation:**  
-   The raw input is ingested as an 8-bit discrete spatial matrix $I(x, y) \in \{0, \dots, 255\}^{H \times W}$. In `src/brain_tumor/data/transforms.py`, the image is cast to a continuous single-precision floating-point tensor $I_{\text{norm}}(x, y) \in [0.0, 1.0]$ via intensity range transformation, followed by channel-wise standardization:
-   $$I_{\text{std}}(x, y) = \frac{I_{\text{norm}}(x, y) - \mu}{\sigma}$$
-   where $\mu = 0.485$ and $\sigma = 0.229$ match standard pre-trained convolutional receptive field expectations.
+   The raw input is ingested as an 8-bit discrete spatial matrix $I(x, y) \in \{0, \dots, 255\}^{H \times W}$. In `src/brain_tumor/preprocessing/pipeline.py`, the image is cast to a continuous single-precision floating-point tensor $I_{\text{norm}}(x, y) \in [0.0, 1.0]$ via intensity range transformation, followed by pipeline-specific normalization:
+   - **`CLS-001` (Classification):** Grayscale input is replicated across 3 channels for ConvNeXt-Tiny and normalized using standard ImageNet channel statistics:
+     $$\mathbf{\mu}_{\text{ImageNet}} = [0.485, 0.456, 0.406], \quad \mathbf{\sigma}_{\text{ImageNet}} = [0.229, 0.224, 0.225]$$
+   - **`SEG-001` (Segmentation):** Retains native single-channel grayscale and applies dataset-specific standardization computed over the training partition (`outputs/SEG-001/metrics.json`):
+     $$\mu_{\text{seg}} \approx 0.10168, \quad \sigma_{\text{seg}} \approx 0.14064$$
 
 2. **Multi-Scale Spatial Resampling & Coordinate Mapping:**  
    Because real-world scans arrive at arbitrary spatial dimensions, the pipeline applies bilinear spatial interpolation to map $I(x, y)$ to $224 \times 224$ for classification (`CLS-001`) and $256 \times 256$ for segmentation (`SEG-001`). Crucially, to satisfy engineering requirement **FR-LOC-1**, the localization engine (`src/brain_tumor/localization/extract.py`) applies an exact inverse affine transformation mapping segmented coordinates back to the original physical matrix:
@@ -1388,23 +1391,26 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
 3. **Binary Morphological Processing and Connected Components:**  
    The continuous posterior probability map $\hat{P}(x, y) \in [0, 1]$ generated by the U-Net is binarized using a decision threshold $\tau_{\text{seg}} = 0.5$:
    $$\hat{M}(x, y) = \begin{cases} 1 & \text{if } \hat{P}(x, y) \ge 0.5 \\ 0 & \text{otherwise} \end{cases}$$
-   The resulting binary matrix is processed using 8-connectivity connected-component labeling (`cv2.connectedComponentsWithStats`). The system extracts the zeroth-order spatial moment (area $A = \sum_{x, y} \hat{M}(x, y)$) and the first-order spatial moments to calculate the spatial centroid of the dominant mass:
-   $$c_x = \frac{\sum_{x, y} x \cdot \hat{M}(x, y)}{A}, \quad c_y = \frac{\sum_{x, y} y \cdot \hat{M}(x, y)}{A}$$
-   If $\hat{M}(x, y)$ contains disconnected prediction islands ($81$ cases identified in §24.4), the system detects multi-component fragmentation, computes the aggregate area across all components, and extracts the centroid of the largest connected region.
+   The resulting binary matrix is processed using 8-connectivity connected-component labeling (`from scipy import ndimage; lab, n = ndimage.label(binary)` in `src/brain_tumor/localization/extract.py`). Components are filtered by a minimum area threshold ($\ge 10\text{ pixels}$). If multiple qualifying components exist (81 cases identified in §24.4), the system flags the `multiple_components` warning, records the aggregate area of all qualifying components ($A_{\text{total}} = \sum_{k} A_k$), and isolates the largest connected component $L$ to compute its spatial centroid and bounding box:
+   $$c_x = \frac{1}{|L|} \sum_{(x, y) \in L} x, \quad c_y = \frac{1}{|L|} \sum_{(x, y) \in L} y$$
+   If no components satisfy the area threshold (or if the mask is entirely zero), the engine returns `bbox=None, centroid=None, area_pixels=0` in strict conformance with contract invariants.
 
 ---
 
 ### 31.4 Pillar 2: Digital Signal Processing (DSP)
 
 1. **2D Spatial Convolution as Discrete Filtering:**  
-   In DSP theory, a linear time-invariant (or space-invariant) system is governed by 2D discrete convolution between an input signal $x[i, j]$ and an impulse response $h[i, j]$:
+   In classical DSP theory, a linear space-invariant system is governed by 2D discrete convolution between an input signal $x[i, j]$ and an impulse response $h[i, j]$:
    $$y[i, j] = (x * h)[i, j] = \sum_{m=-\infty}^{\infty} \sum_{n=-\infty}^{\infty} x[m, n] \cdot h[i - m, j - n]$$
-   The ConvNeXt-Tiny classification backbone (`CLS-001`) modernizes this principle by employing $7 \times 7$ depthwise spatial convolutions. These operate as non-separable 2D Finite Impulse Response (FIR) spatial filters that extract localized bandpass features (edges, textures, gradients), followed by $1 \times 1$ pointwise convolutions that perform linear cross-channel signal combinations.
+   Modern deep learning implementations (specifically PyTorch's `nn.Conv2d`) compute discrete cross-correlation without spatial kernel reflection:
+   $$y[i, j] = \sum_{m} \sum_{n} x[i + m, j + n] \cdot w[m, n]$$
+   Because kernel weights $w$ are optimized directly via gradient descent, the spatial reflection is absorbed into the learned parameters, functionally realizing 2D Finite Impulse Response (FIR) spatial filter banks. The ConvNeXt-Tiny classification backbone (`CLS-001`) utilizes $7 \times 7$ depthwise spatial convolutions to extract localized spatial bandpass representations (edges, textures, gradients), followed by $1 \times 1$ pointwise convolutions that perform linear cross-channel signal combinations.
 
 2. **Statistical Moment Estimation in Real-Time Quality Gates:**  
-   Input-quality gate `Q02` acts as a digital signal integrity detector by estimating the sample mean $\bar{x}$ and sample variance $s^2$ across spatial samples:
-   $$\bar{x} = \frac{1}{HW} \sum_{i=1}^{H} \sum_{j=1}^{W} x[i, j], \quad s^2 = \frac{1}{HW - 1} \sum_{i=1}^{H} \sum_{j=1}^{W} (x[i, j] - \bar{x})^2$$
-   If $s^2 < 10^{-4}$ or if the dynamic range $\max(x) - \min(x) < 10^{-3}$, the gate flags an uninformative or collapsed signal (such as an all-black detector failure or saturated RF pulse sequence), preventing downstream arithmetic faults.
+   Input-quality screening gates `Q05` and `Q06` (`src/brain_tumor/quality/gate.py`) operate as real-time signal integrity monitors by computing discrete spatial moments over the ingested 8-bit image:
+   $$\bar{x} = \frac{1}{HW} \sum_{i=1}^{H} \sum_{j=1}^{W} x[i, j], \quad s = \sqrt{\frac{1}{HW} \sum_{i=1}^{H} \sum_{j=1}^{W} (x[i, j] - \bar{x})^2}$$
+   - **`Q05` (`blank_or_uniform`):** Rejects signals where sample standard deviation $s < 1.0$ or dynamic range $(\max - \min) < 8.0$, catching flat fields or disconnected sensor feeds.
+   - **`Q06` (`intensity_out_of_range`):** Flags inputs where zeroth/first moment $\bar{x} < 2.0$ or $\bar{x} > 253.0$, trapping complete sensor blackouts or extreme amplifier saturation before downstream tensor computation.
 
 3. **Spatial Feature Attribution (Grad-CAM):**  
    The explainability engine (`src/brain_tumor/explain/gradcam.py`) computes the spatial gradient of the winning class score $y^c$ with respect to feature activation maps $A^k$:
@@ -1445,10 +1451,10 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
    Input bitstreams are decoded into memory buffers without persistent disk writes, minimizing physical I/O overhead. The computational results are serialized into RFC 8259 JSON objects governed by strict Pydantic schemas (`BrainTumorResult`). High-dimensional binary masks and Grad-CAM spatial heatmaps are base64-encoded to enable seamless presentation over text-based network protocols.
 
 3. **Transport Boundary Protection:**  
-   Defensive transport guards intercept ill-formed payloads before they reach the tensor computation graph. Boundary rule `Q01` enforces a maximum payload ceiling of $10\text{ MB}$, rejecting oversized files with HTTP 413 (Payload Too Large). Boundary rule `Q08` validates MIME types and verifies that byte buffers can be decoded into valid 2D image matrices, rejecting corrupted streams with HTTP 422 (Unprocessable Entity).
+   Defensive transport guards intercept ill-formed payloads before they reach the tensor computation graph. Boundary rule `Q08` enforces a maximum payload ceiling of $10\text{ MB}$ ($10,485,760\text{ B}$), rejecting oversized files with HTTP 413 (`file_too_large`). Boundary rule `Q01` verifies that incoming byte streams can be decoded into valid 2D image matrices via PIL, rejecting corrupted streams with HTTP 422 (`undecodable_image`).
 
 4. **Application-Layer Offline Operation (`OFF-001`):**  
-   In accordance with medical data privacy protocols, the system implements an offline-first architecture. Verification protocol `OFF-001` deploys a custom socket interceptor that monitors all network system calls during model loading and inference. The test suite confirms that the platform performs zero outbound HTTP/DNS requests and zero external telemetry transmissions, operating entirely within local compute environments.
+   In accordance with research data governance, the system implements an offline-first architecture. Verification protocol `OFF-001` (`scripts/off/verify_offline.py` and `docs/off/OFF-001.md`) validates offline-first application-layer operation by instrumenting Python's socket interface. Non-loopback `connect`/`connect_ex` calls raise immediate exceptions and increment a violation counter, while local loopback remains available for in-process asyncio teardown. A live control probe to `8.8.8.8:53` proves the guard actively traps outbound traffic. Under this guard, service initialization, model checkpoint loading, and inference execution are verified to perform zero external HTTP/TCP network calls. This protocol establishes application-layer network independence; it does not claim OS-level physical/radio isolation.
 
 ---
 
@@ -1456,13 +1462,17 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
 
 1. **Heterogeneous Compute Workloads:**  
    The system is engineered to execute across heterogeneous compute architectures:
-   - **Host CPU (x86_64):** Executes scalar orchestration, image decoding, morphological connected-component labeling, and state machine validation. Supports complete end-to-end inference via AVX2 vector SIMD instructions as a universal deployment baseline ($1.4\text{s}$ per scan).
-   - **Target GPU (NVIDIA T4):** Offloads parallel 2D tensor contractions to GPU execution units under FP16 autocast, reducing total analysis latency to $30.1\text{ms}$ ($33\times$ speedup).
+   - **Host CPU (x86_64):** Executes scalar orchestration, image decoding, morphological connected-component labeling, and state machine validation. Supports complete end-to-end inference via vector SIMD instructions as a universal deployment baseline ($\approx 1.40\text{s}$ per scan core analysis, 512px laptop reference).
+   - **Target GPU (NVIDIA T4):** Offloads parallel 2D tensor contractions to GPU execution units under FP16 autocast, executing core analysis (`analyze`) in a median of $30.1\text{ms}$ ($P_{95}: 31.4\text{ms}$). Compared against the $1.40\text{s}$ CPU reference environment, this represents an approximate $46.5\times$ lower measured latency profile across deployment tiers.
 
 2. **IEEE 754 Floating-Point Precision Profiles (FP32 vs. FP16):**  
    The inference service supports dual arithmetic execution paths:
    - **Full Precision (FP32):** Standard IEEE 754 single-precision (1 sign bit, 8 exponent bits, 23 mantissa bits), providing maximum dynamic range and zero gradient/activation underflow.
-   - **Mixed Precision (FP16 Autocast):** Offloads matrix multiplications to half-precision (1 sign bit, 5 exponent bits, 10 mantissa bits) via `torch.cuda.amp.autocast()`. Empirical benchmarking (`outputs/SYSINT/fp16_check.json`) confirms that FP16 reduces classification latency from $11.1\text{ms}$ to $12.5\text{ms}$ and segmentation latency from $24.2\text{ms}$ to $17.8\text{ms}$, while preserving exact top-1 classification predictions and bounding box coordinates with zero numerical drift.
+   - **Mixed Precision (FP16 Autocast):** Offloads matrix multiplications to half-precision (1 sign bit, 5 exponent bits, 10 mantissa bits) via `torch.cuda.amp.autocast()`. Empirical benchmarking (`outputs/SYSINT/fp16_check.json` and `outputs/SYSINT/gpu_latency_fp32.json`) reveals distinct, stage-dependent execution dynamics:
+     - *Classification (`CLS-001`, 224px):* Median latency shifts from $11.1\text{ms}$ (FP32) to $12.5\text{ms}$ (FP16), as CUDA kernel launch and dynamic type-casting overhead slightly exceed arithmetic speedup on small batch-size-1 feature tensors.
+     - *Segmentation (`SEG-001`, 256px):* Median latency drops from $24.2\text{ms}$ (FP32) to $17.8\text{ms}$ (FP16), where higher arithmetic intensity fully leverages Tensor Core throughput.
+     - *Core Pipeline (`analyze`):* Overall median latency decreases from $34.9\text{ms}$ (FP32) to $30.1\text{ms}$ (FP16).
+     - *Precision Parity:* Validation evaluation confirms exact macro-F1 parity ($\Delta = 0.0$) and negligible Dice variance ($\Delta = -2.9 \times 10^{-5}$), preserving top-1 predictions and bounding box coordinates with zero numerical drift.
 
 3. **VRAM Footprint and Memory Hierarchy Management:**  
    In constrained edge or clinical workstation environments, graphics memory is a strictly bounded resource. The production pipeline is engineered for extreme memory efficiency:
@@ -1486,7 +1496,7 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
    torch.backends.cudnn.deterministic = True
    torch.backends.cudnn.benchmark = False
    ```
-   Cross-run determinism testing (`tests/integration/test_determinism.py`) proves that repeated inference calls on the same physical hardware produce bitwise identical output tensors and floating-point confidence scores.
+   Cross-run determinism testing (`tests/integration/test_system.py`) validates non-functional requirement `NFR-DET-1`: repeated inference invocations on the same physical hardware and software runtime environment produce bitwise-identical output tensors and confidence scores. Cross-hardware behavior is validated at defined numerical tolerances.
 
 ---
 
@@ -1500,16 +1510,18 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
    - If a confident tumor class is predicted but the segmentation engine produces an empty mask (10 test cases), the system captures the discrepancy under `tumor_unlocalized`.
 
 2. **Automated Defensive Quality Gates (`Q01`–`Q09`):**  
-   Functioning as digital instrumentation sanity checks, the quality gate subsystem screens all inputs prior to tensor ingestion:
-   - `Q01`: Byte size ceiling verification ($\le 10\text{MB}$).
-   - `Q02`: Dynamic range and non-zero spatial variance check ($s^2 \ge 10^{-4}$).
-   - `Q03`: Non-trivial resolution check ($\min(H, W) \ge 32\text{px}$).
-   - `Q04`: Aspect ratio distortion check ($0.2 \le H/W \le 5.0$).
-   - `Q05`: Channel topology verification (rejecting unexpected 4-channel alpha layers).
-   - `Q06`: Intensity saturation check (detecting over-exposed detector readouts).
-   - `Q07`: Structural contrast check (detecting extreme low-contrast slices).
-   - `Q08`: Image file format validation (JPEG/PNG decoding integrity).
-   - `Q09`: Content entropy check (detecting corrupted random-noise files).
+   Functioning as digital instrumentation sanity checks, the quality gate subsystem (`src/brain_tumor/quality/gate.py`, detailed in §13) evaluates raw input bytes and pixels against nine canonical criteria:
+   - **`Q01` (`undecodable`):** PIL fails to open byte stream; catches corrupted file headers or truncated network transmissions.
+   - **`Q02` (`unreadable_pixels`):** NumPy array conversion fails; catches corrupted or unreadable image payloads.
+   - **`Q03` (`too_small`):** Minimum dimension $\min(W, H) < 64\text{ px}$; prevents processing thumbnails or icons.
+   - **`Q04` (`nonfinite`):** Any pixel value is `NaN` or `Inf`; traps numerical floating-point corruption before tensor ingestion.
+   - **`Q05` (`blank_or_uniform`):** Sample standard deviation $\sigma_{\text{img}} < 1.0 \lor (\max - \min) < 8.0$; catches blank, flat, or uniform sensor readouts.
+   - **`Q06` (`intensity_out_of_range`):** Mean intensity $\mu_{\text{img}} < 2.0 \lor \mu_{\text{img}} > 253.0$; catches all-black detector failures or saturated RF pulse readouts.
+   - **`Q07` (`insufficient_content`):** Fraction of foreground pixels $(> 10.0) < 0.02$; rejects slices lacking sufficient anatomical tissue.
+   - **`Q08` (`size_limit`):** Payload size exceeds $10\text{ MB}$ ($10,485,760\text{ B}$); guards against memory exhaustion and denial-of-service.
+   - **`Q09` (`extreme_aspect`):** Aspect ratio $\max(W, H) / \min(W, H) > 8.0$; rejects severe stripe or panoramic distortions.
+
+   As specified in §13, these gates operate in dual mode: `Q08` and `Q01` enforce hard rejections at the HTTP transport boundary (`app/api/main.py`), while `Q01`–`Q09` attach descriptive non-blocking quality metadata to the payload during pipeline execution (`service.analyze`).
 
 3. **Contract-Enforced Fault Containment:**  
    Every pipeline boundary is governed by immutable Pydantic schemas (`src/brain_tumor/contracts.py`). Contradictory states (e.g., claiming `healthy` while providing a non-null tumor bounding box) are trapped at instantiation time by cross-field validators, raising explicit `ValidationError` exceptions and preventing corrupted state propagation.
