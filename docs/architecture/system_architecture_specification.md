@@ -427,6 +427,7 @@ flowchart TD
 ### 9.2 Training Hyperparameters and Regularization
 - **Weight Initialization:** ImageNet-1K pretrained weights loaded prior to fine-tuning.
 - **Loss Function:** Cross-Entropy Loss with Label Smoothing ($\epsilon = 0.1$):
+  $$\mathcal{L}_{\text{CE}}(\mathbf{y}, \hat{\mathbf{y}}) = -\sum_{c=1}^C \left( (1 - \epsilon) y_c + \frac{\epsilon}{C} \right) \log \hat{y}_c$$
 - **Class Balance & Reweighting Decision:** Class imbalance in the frozen 4,000-image production training partition was modest (maximum/minimum class count ratio $\approx 1.37$, spanning 1,167 pituitary, 1,064 meningioma, 917 glioma, and 852 non-tumor slices). In accordance with the frozen baseline configuration (`configs/experiment/CLS-001.yaml`), no explicit inverse-frequency loss weighting was applied; unweighted cross-entropy with uniform label smoothing ($\epsilon=0.1$) was retained.
 - **Optimization:** AdamW ($\beta_1 = 0.9, \beta_2 = 0.999, \text{weight decay} = 0.05$).
 - **Learning Rate Schedule:** Initial learning rate $\eta_0 = 3 \times 10^{-4}$ with a 3-epoch linear warmup, followed by cosine annealing decay toward $1 \times 10^{-6}$.
