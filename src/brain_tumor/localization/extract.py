@@ -2,6 +2,12 @@
 
 threshold 0.5, component_policy largest_plus_total, min_area_pixels 10.
 bbox xyxy ints + centroid floats in ORIGINAL input pixels; empty -> None/None/0.
+
+Note: the contract reserves a warning code "oversized_component_filtered"
+(contracts.py WarningCode). It is intentionally NEVER emitted by this frozen
+extractor — no size-based component filtering is implemented here. Adding
+filtering would change frozen localization outputs (which components qualify
+for bbox/centroid/area), so the code remains reserved/dead vocabulary.
 """
 
 from __future__ import annotations

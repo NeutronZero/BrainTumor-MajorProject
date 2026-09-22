@@ -168,12 +168,19 @@ def _index(root: Path, exp_id: str, metrics: dict):
     import csv
     p = root / "outputs" / "index.csv"
     new = not p.exists()
+    # Schema matches the curated index (one row per experiment; metric
+    # columns blank where unrecoverable — see outputs/CLS-001/provenance.md).
+    fields = ["experiment", "metric_name", "metric_value", "device", "smoke",
+              "evidence"]
     with open(p, "a", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["experiment", "val_metric", "device", "smoke"])
+        w = csv.DictWriter(f, fieldnames=fields)
         if new:
             w.writeheader()
-        w.writerow({"experiment": exp_id, "val_metric": metrics.get("val_macro_f1"),
-                    "device": metrics.get("device"), "smoke": metrics.get("smoke")})
+        w.writerow({"experiment": exp_id, "metric_name": "val_macro_f1",
+                    "metric_value": metrics.get("val_macro_f1"),
+                    "device": metrics.get("device"),
+                    "smoke": metrics.get("smoke"),
+                    "evidence": "metrics.json"})
 
 
 def _assert_pool_counts(manifest) -> None:

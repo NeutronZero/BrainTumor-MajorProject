@@ -13,8 +13,8 @@
 
 | Evaluation Metric | Primary Cohort ($N=1000$) | Sensitivity Cohort ($N=993$) | Contamination Delta ($\Delta$) | Primary Cohort 95% Confidence Interval |
 | :--- | :--- | :--- | :--- | :--- |
-| **Accuracy** | **0.995000** ($995/1000$) | **0.994965** ($988/993$) | $+0.000035$ | **$[0.988371, 0.998375]$** (Exact Clopper-Pearson Binomial) |
-| **Macro-Averaged F1** | **0.995167** | **0.995142** | $+0.000025$ | **$[0.990400, 0.999101]$** (10,000-Replicate Percentile Bootstrap) |
+| **Accuracy** | **0.995000** ($995/1000$) | **0.994965** ($988/993$) | $+0.000035$ | **$[0.988371, 0.998375]$** (Exact Clopper-Pearson Binomial; `scripts/evaluate/bootstrap_ci.py`) |
+| **Macro-Averaged F1** | **0.995167** | **0.995142** | $+0.000025$ | **$[0.990400, 0.999101]$** (10,000-Replicate Percentile Bootstrap; `scripts/evaluate/bootstrap_ci.py`, artifact `outputs/PBA-001/bootstrap_ci.json`) |
 | **ROC-AUC (OvR)** | **0.999936** | **0.999936** | $0.000000$ | Point estimate |
 | **Expected Calibration Error**| **0.002655** | **0.002657** | $-0.000002$ | Calibrated via $T=0.5116$ (Uncalibrated: $0.00760$) |
 | **Uncertain Predictions** | **4** ($0.4\%$) | **4** ($0.4\%$) | $0$ | Trapped by thresholds $\tau_1=0.95, \tau_2=0.05$ |

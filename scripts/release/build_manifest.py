@@ -68,7 +68,8 @@ def main() -> int:
     lines += ["## Status",
               "- SB-1 submission-ready fallback: CLS-001 + SEG-001 + UNC-001 "
               "(descriptive) + ROB-001 (documented variant) + FP16/autocast.",
-              "- CPU CI: 49 passed (48 unit+integration + 1 data-gate; synthetic images only).",
+              "- CPU CI: 85 passed (84 unit+integration+regression + 1 "
+              "data-gate; synthetic images only).",
               "- Locked evaluations closed; no tuning/re-cut permitted.",
               "- NOT included: optimizer-state `last.pt` files (remain on kernels), "
               "Kaggle HTML logs, tmp snapshots, `__pycache__`.",

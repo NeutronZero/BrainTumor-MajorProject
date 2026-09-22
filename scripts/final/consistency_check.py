@@ -84,6 +84,33 @@ def main() -> int:
     check("manifest", "UTF-8 readable + 0 MISSING", ("MISSING" not in man)
           and ("451e4fc4" in man), True)
 
+    # ---- Evidence-freshness guards (post-audit): VV / UNC / EXPL artifacts
+    # must reference the CURRENT checkpoint + code hashes, not pre-release
+    # derivatives. Catches the stale-evidence drift class permanently.
+    vv = J("outputs/VV/gate45_deploy_evidence.json")
+    cls_now = sha(root / "checkpoints/CLS-001/best.pt")[:16]
+    seg_now = sha(root / "checkpoints/SEG-001/best.pt")[:16]
+    check("vv_gate45", "VV gate45 hashes current",
+          (vv["failed"] == []
+           and vv["checks"]["hash:checkpoints/CLS-001/best.pt"]["detail"].startswith(cls_now)
+           and vv["checks"]["hash:checkpoints/SEG-001/best.pt"]["detail"].startswith(seg_now)),
+          True)
+    unc = J("outputs/UNC-001/test_freeze.json")
+    check("unc_test_freeze", "UNC-001 freeze hash current",
+          unc["frozen"]["checkpoint_sha256"][:16] == cls_now, True)
+    exp = J("outputs/EXPL-001/expl001.json")
+    check("expl001", "EXPL-001 module hashes current",
+          (exp["module_hashes"]["inference/service.py"]
+           == sha(root / "src/brain_tumor/inference/service.py")[:16]
+           and exp["module_hashes"]["explain/gradcam.py"]
+           == sha(root / "src/brain_tumor/explain/gradcam.py")[:16]
+           and exp["module_hashes"]["explain/report.py"]
+           == sha(root / "src/brain_tumor/explain/report.py")[:16]),
+          True)
+    g3 = J("outputs/VV/gate3_cross_interface.json")
+    check("vv_gate3", "cross-interface equivalence holds",
+          (g3["service_vs_api"] is True and g3["service_vs_streamlit"] is True), True)
+
     failed = [c for c in checks if not c["pass"]]
     (out / "consistency.json").write_text(json.dumps(
         {"n": len(checks), "failed": failed}, indent=1))

@@ -1,9 +1,12 @@
 """Grad-CAM observer for CLS-001 (Workstream 2, EXPL-001).
 
 Strict observer contract: hooks only, no weight/architecture change, no
-retraining. Target layer = last nn.Conv2d under model.features, resolved
-programmatically and recorded (torchvision ConvNeXt-Tiny layout). Eval mode,
-deterministic given identical input (no RNG in this path).
+retraining. Target layer = last nn.Conv2d under model.features when the
+architecture has one (torchvision ConvNeXt-Tiny layout => features.7.2.block.0);
+architectures without a Conv2d under `features` fall back to the last
+nn.Conv2d anywhere in the model (multi-arch robustness). Resolved
+programmatically and recorded. Eval mode, deterministic given identical
+input (no RNG in this path).
 
 Boundary: the heatmap visualizes regions contributing to the classification
 output. It does NOT prove the model "looks at the tumor" and carries no
@@ -20,11 +23,24 @@ import torch.nn as nn
 
 
 def resolve_target_layer(model: nn.Module) -> tuple[str, nn.Module]:
-    """Last Conv2d under `features`. Returns (dotted name, module)."""
+    """Resolve the Grad-CAM target layer: last Conv2d under `features`.
+
+    Priority: (1) last nn.Conv2d whose dotted name starts with `features`
+    — the frozen ConvNeXt-Tiny path (resolves to features.7.2.block.0);
+    (2) if the architecture has no Conv2d under `features`, fall back to
+    the last nn.Conv2d anywhere in the model; (3) raise RuntimeError only
+    when the model contains zero nn.Conv2d modules.
+    """
     found = [(n, m) for n, m in model.named_modules()
              if n.startswith("features") and isinstance(m, nn.Conv2d)]
-    assert found, "no Conv2d under features — architecture changed, aborting"
-    return found[-1]
+    if found:
+        return found[-1]
+    any_conv = [(n, m) for n, m in model.named_modules()
+                if isinstance(m, nn.Conv2d)]
+    if not any_conv:
+        # Real exception (not assert): must survive `python -O` deployment.
+        raise RuntimeError("model has no nn.Conv2d — cannot resolve Grad-CAM target layer")
+    return any_conv[-1]
 
 
 def gradcam_heatmap(model: nn.Module, target: tuple[str, nn.Module], x: torch.Tensor,

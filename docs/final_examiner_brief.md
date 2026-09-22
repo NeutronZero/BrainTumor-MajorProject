@@ -89,7 +89,7 @@ flowchart TD
 | **FR-SYS-1** | Invariant State Precedence | `src/brain_tumor/contracts.py` | `tests/unit/test_contracts.py` |
 | **NFR-REPRO-1**| Cryptographic Manifest Audit | `scripts/release/build_manifest.py` | `docs/release_manifest.md` (30 tracked files) |
 | **NFR-DET-1**| Same-Environment Determinism | Pipeline Execution Engines | `tests/integration/test_system.py` |
-| **NFR-CPU-1**| Universal CPU Baseline | Pure PyTorch FP32 Subsystem | 49 passed CI unit/integration tests |
+| **NFR-CPU-1**| Universal CPU Baseline | Pure PyTorch FP32 Subsystem | 85 passed CI tests (84 unit+integration+regression + 1 data-gate) |
 | **NFR-GPU-1**| FP16 Mixed Precision Parity | `service.py::_autocast()` | `outputs/SYSINT/fp16_check.json` |
 | **NFR-OFF-1**| Offline-First Integrity | Application Socket Interceptor | `docs/off/OFF-001.md` |
 
@@ -124,7 +124,7 @@ All metrics represent **locked, single-pass evaluations** with zero post-hoc tun
 | **Expected Calibration Error**| **0.002655** | **0.002657** | $-0.000002$ | Calibrated via $T=0.5116$ (Uncalibrated: 0.0076) |
 | **Uncertain Predictions** | 4 ($0.4\%$) | 4 ($0.4\%$) | $0$ | Filtered by $\tau_1=0.95, \tau_2=0.05$ |
 
-- **Headline Uncertainty Interpretation:** The 95% Clopper-Pearson binomial interval on accuracy ($98.84\% - 99.84\%$) and 10,000-replicate bootstrap percentile interval on macro-F1 ($0.9904 - 0.9991$) quantify statistical uncertainty associated with resampling the evaluated cohort.
+- **Headline Uncertainty Interpretation:** The 95% Clopper-Pearson binomial interval on accuracy ($98.84\% - 99.84\%$) and 10,000-replicate bootstrap percentile interval on macro-F1 ($0.9904 - 0.9991$) quantify statistical uncertainty associated with resampling the evaluated cohort. Both are reproduced bit-exactly by the committed producer `scripts/evaluate/bootstrap_ci.py` (fixed seed 42; artifact `outputs/PBA-001/bootstrap_ci.json`).
 - **Deterministic Sensitivity Comparison:** The 7-case contamination sensitivity delta ($+3.5 \times 10^{-5}$ accuracy, $+2.5 \times 10^{-5}$ macro-F1) is an exact descriptive difference resulting from deterministic exclusion of the seven duplicate files; it is not treated as a random variable. The negligible magnitude confirms that cross-split duplicates do not inflate generalization.
 
 ### 4.2 Segmentation Performance (`SEG-001`: Vanilla U-Net)

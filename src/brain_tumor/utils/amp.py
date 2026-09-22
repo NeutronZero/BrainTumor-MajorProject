@@ -65,10 +65,12 @@ def require_cuda_arch(min_major: int = 7, min_minor: int = 0) -> str:
 
 @contextmanager
 def inference_no_grad():
+    """no_grad on CUDA-or-CPU torch runs; hard error when torch is absent
+    (inference without torch is meaningless — never fall through unguarded,
+    and never double-yield, which corrupted caller error handling)."""
     try:
         import torch
-
-        with torch.no_grad():
-            yield
-    except ImportError:
+    except ImportError as e:
+        raise RuntimeError("inference_no_grad requires torch") from e
+    with torch.no_grad():
         yield

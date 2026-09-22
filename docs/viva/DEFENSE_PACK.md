@@ -113,8 +113,8 @@ attention — the boundary is demonstrated, not merely asserted.
 Pure fusion (confidence + consistency + quality + seg/localization):
 stable iff confident + 1.0 agreement + quality accept + (notumor OR
 localized), else review with basis list. No score, no override,
-clinical_meaning always false. Combination matrix + 49-test CI on file
-(48 unit+integration + 1 data-gate fail-open).
+clinical_meaning always false. Combination matrix + 85-test CI on file
+(84 unit+integration+regression + 1 data-gate fail-open).
 
 ## 16. ROB-001
 
@@ -191,8 +191,10 @@ engineering method, not medical utility.
   preferability is a requirements decision, both documented.
 - "What if inputs are garbage?" → Q01–Q09 gate + error envelopes + degraded
   paths, all tested.
-- "Isn't 49 tests thin?" → Each test pins a contract/invariant; suite
-  grew with every bug found (healthy path, overlay size, degraded paths).
+- "Isn't 85 tests thin?" → Each test pins a contract/invariant; suite
+  grew with every bug found (healthy path, overlay size, degraded paths,
+  None-confidence, Grad-CAM fallback, response models, bootstrap,
+  seeding/config/registry).
 
 ## 26. Short explanations
 
@@ -226,7 +228,7 @@ engineering method, not medical utility.
 | EXPL-001 observer-safe | outputs/EXPL-001/expl001.json |
 | REL-001 descriptive | outputs/REL-001/rel001.json |
 | SB-1 integrity | docs/release_manifest.md (recomputable hashes) |
-| CI 49 green | tests/unit + tests/integration + tests/data (synthetic only) |
+| CI 85 green | tests/unit + tests/integration + tests/regression + tests/data (synthetic only) |
 
 ## Overclaiming interrogation (examiner-grade)
 

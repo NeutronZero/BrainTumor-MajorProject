@@ -37,15 +37,15 @@ Runtime here: torch 2.13.0+cpu; python 3.14.7.
 - `outputs/SYSINT/batchk8_check.json` `bdcad54122e297d18e9aa7172963361c8cf1f685cc76fb9c13a3bf0eaf21c45f` (978 bytes)
 
 ## contract_code
-- `src/brain_tumor/contracts.py` `38433c75b1561c2d980e71c85e18eca609f085ff70981073b4ae8b1add2d280b` (7586 bytes)
-- `src/brain_tumor/inference/service.py` `a1ecee1a670645f6dc1c6da73572364849ea88c25394034bcab799ab67e14145` (14415 bytes)
+- `src/brain_tumor/contracts.py` `37d6e560b568309ae51bca136d73a75e6bed094f9f9d0827d313acd63125340d` (9063 bytes)
+- `src/brain_tumor/inference/service.py` `be0f467bdf283a7ebdedbbbb0c6c9dd3d918e319151d7f03beadb7178daeca65` (16195 bytes)
 - `src/brain_tumor/preprocessing/pipeline.py` `a0bdfff9c28f0a1dbfac642819dc955eecd6a750b57292f62439328e45a7f77e` (3146 bytes)
-- `app/api/main.py` `674ef6d71cabb9f0c3c33ed3b732fc42ec33ba8d481377320bd60d36437ad48d` (6936 bytes)
-- `app/streamlit/app.py` `ecb4bf2d8ec029f813e4d46ef2124e996813060986a9512ac3e8c7d1ef6eed70` (6048 bytes)
+- `app/api/main.py` `cc4cceba844335c2e26ee85b247f8943cdb68d2efacaeb6162735dc173240cbd` (12178 bytes)
+- `app/streamlit/app.py` `42286dbe70c4589867d9eb26e36f20d77d7f7a552c4559d6e9f3aee850b80441` (7022 bytes)
 
 ## Status
 - SB-1 submission-ready fallback: CLS-001 + SEG-001 + UNC-001 (descriptive) + ROB-001 (documented variant) + FP16/autocast.
-- CPU CI: 49 passed (48 unit+integration + 1 data-gate; synthetic images only).
+- CPU CI: 85 passed (84 unit+integration+regression + 1 data-gate; synthetic images only).
 - Locked evaluations closed; no tuning/re-cut permitted.
 - NOT included: optimizer-state `last.pt` files (remain on kernels), Kaggle HTML logs, tmp snapshots, `__pycache__`.
 - Claim boundary: measured BRISC-regime engineering results; not clinical diagnostic accuracy.

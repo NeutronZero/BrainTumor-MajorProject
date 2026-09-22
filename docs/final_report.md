@@ -34,7 +34,8 @@ Grad-CAM hooks on `features.7.2.block.0`; REL-001 fixed stable/review rule.
 
 Gate-0 with disclosed conditional pass (7 cross-split identities; N=993
 sensitivity deltas 3.5e-05/2.5e-05); PBA-001..005 failure analysis;
-49-test CPU CI (synthetic only); V&V-001 five gates PASS; OFF-001 socket-guard
+85-test CPU CI (84 unit+integration+regression + 1 data-gate, synthetic
+only); V&V-001 five gates PASS; OFF-001 socket-guard
 PASS; two independent forensic audits with all findings corrected
 (CORRECTION-001); quality gate 0/1000 + 8/9; observer-equivalence proofs.
 

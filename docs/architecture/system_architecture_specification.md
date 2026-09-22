@@ -24,6 +24,7 @@
 | **1.1** | September 2026 | Documentation Maintenance (`CORRECTION-002`, `ad01b73`) | Cryptographic manifest synchronization, forensic precision updates, and failure-mode analysis. |
 | **1.2** | September 2026 | Documentation Maintenance (`final-001` branch) | ECE engineering curriculum mapping reconciliation (§31) against frozen FINAL-001 artifacts, exact Q01–Q09 specification, and hardware profiling alignment. |
 | **1.3** | September 2026 | Documentation Maintenance (`final-001` branch HEAD) | Final forensic verification pass: §31 diagram terminology alignment, §24.2 cross-reference correction, T5/T7 test suite consolidation clarification (§23.2), and maintenance lineage header refinement. |
+| **1.4** | September 2026 | Documentation Maintenance (`final-001` branch) | Forensic correction pass, zero code/weight/config/interface changes: localization threshold/connectivity/bbox/area semantics (§11, §31.3); Dice smoothing, scheduler floor, AdamW betas, epoch provenance (§9–§10); softmax, UNC F1, OFF exception, REL None nuance, healthy invariant, EXPL dynamic target (§12, §14–§17); CI/test counts/tolerance/env, validation provenance, §31 hardware/numerics notes (§23–§24, §31). |
 
 ---
 
@@ -183,7 +184,7 @@ The system architecture is derived from twelve functional requirements (FR) and 
 | **FR-SYS-1** | State Machine Engine | `src/brain_tumor/contracts.py` | `tests/unit/test_contracts.py` |
 | **NFR-REPRO-1**| Build Tooling | `scripts/release/build_manifest.py` | `docs/release_manifest.md` |
 | **NFR-DET-1** | Inference Pipeline | `service.py` / `engine.py` | `tests/integration/test_system.py` |
-| **NFR-CPU-1** | Tensor Runtime | PyTorch CPU Execution Subsystem | 49 passed CI tests on CPU |
+| **NFR-CPU-1** | Tensor Runtime | PyTorch CPU Execution Subsystem | 85 passed CI tests on CPU (84 unit+integration+regression + 1 data-gate) |
 | **NFR-GPU-1** | Mixed Precision Context| `service.py::_autocast()` | `outputs/SYSINT/fp16_check.json` |
 | **NFR-PERF-1** | Deployment Profiler | `scripts/bench/` | `outputs/SYSINT/gpu_latency_fp32.json` |
 | **NFR-PORT-1** | Packaging Framework | Repository Structure & Lockfile | Clean Git clone verification |
@@ -238,17 +239,18 @@ flowchart TD
     WebUI -->|"Direct In-Process Call (Zero HTTP Loopback)"| ServiceEntry
     LocalDisk -.->|"Weight & Metadata Loading"| ServiceEntry
 
-    ServiceEntry --> QualityGate
-    QualityGate --> Classifier
-    Classifier --> Calibrator
-    Calibrator --> Segmenter
+    ServiceEntry --> Classifier
+    Calibrator -.->|"Inline sub-step of classify()<br/>(service.py:113-115)"| Classifier
+    Classifier --> Segmenter
     Segmenter --> Localization
     Classifier -.-> Consistency
     Classifier -.-> Explainability
+    Classifier --> Reliability
     Localization --> Reliability
     Consistency --> Reliability
     QualityGate --> Reliability
-    Reliability --> StateMachine
+    ServiceEntry --> StateMachine
+    QualityGate -.->|"Called by API/Streamlit wrappers<br/>(not by analyze())"| ServiceEntry
 ```
 
 ### 5.2 End-to-End Inference Data Flow
@@ -267,9 +269,10 @@ sequenceDiagram
     participant STATE as Contract Validator
 
     User->>UI: Upload MRI Image (JPEG/PNG/TIFF)
-    UI->>SVC: analyze(image_bytes)
-    SVC->>QLT: assess(image_bytes)
-    QLT-->>SVC: Quality Report {verdict: accept/reject, failed: [codes]}
+    UI->>SVC: analyze(PIL image)
+    Note over SVC,QLT: Quality assess() is NOT inside analyze();<br/>API/Streamlit call it separately post-analyze
+    UI->>QLT: assess(raw bytes) [wrapper layer]
+    QLT-->>UI: Quality Report {verdict: accept/reject, failed: [codes]}
     
     SVC->>CLS: classify(normalized_tensor)
     CLS-->>SVC: Raw Logits -> Scaled Softmax(T=0.5116) -> Probabilities
@@ -279,16 +282,16 @@ sequenceDiagram
     else Predicted Class != 'notumor'
         SVC->>SEG: segment(normalized_gray_tensor)
         SEG-->>SVC: Continuous Probability Map (256x256)
-        SVC->>LOC: extract(prob_map >= 0.5, original_shape)
+        SVC->>LOC: extract(prob_map > 0.5, original_shape)
         LOC-->>SVC: LocalizationResult {bbox, centroid, area_pixels}
     end
 
-    opt Observers Enabled
-        SVC->>OBS: consistency(K=8) + reliability_report() + gradcam()
-        OBS-->>SVC: Observer Diagnostics (Descriptive Only)
-    end
+    SVC->>STATE: derive_system_state(class, classification_state, seg_state, warnings)
 
-    SVC->>STATE: derive_system_state(class, conf, seg_state, warnings)
+    opt Observers Enabled (outside analyze())
+        UI->>OBS: consistency(K=8) + reliability_report() + gradcam()
+        OBS-->>UI: Observer Diagnostics (Descriptive Only)
+    end
     STATE-->>SVC: SystemState (degraded / uncertain / tumor_unlocalized / tumor_localized / healthy)
     SVC->>STATE: BrainTumorResult(**payload) [Pydantic Invariant Check]
     STATE-->>SVC: Validated Canonical Result
@@ -429,10 +432,10 @@ flowchart TD
 - **Loss Function:** Cross-Entropy Loss with Label Smoothing ($\epsilon = 0.1$):
   $$\mathcal{L}_{\text{CE}}(\mathbf{y}, \hat{\mathbf{y}}) = -\sum_{c=1}^C \left( (1 - \epsilon) y_c + \frac{\epsilon}{C} \right) \log \hat{y}_c$$
 - **Class Balance & Reweighting Decision:** Class imbalance in the frozen 4,000-image production training partition was modest (maximum/minimum class count ratio $\approx 1.37$, spanning 1,167 pituitary, 1,064 meningioma, 917 glioma, and 852 non-tumor slices). In accordance with the frozen baseline configuration (`configs/experiment/CLS-001.yaml`), no explicit inverse-frequency loss weighting was applied; unweighted cross-entropy with uniform label smoothing ($\epsilon=0.1$) was retained.
-- **Optimization:** AdamW ($\beta_1 = 0.9, \beta_2 = 0.999, \text{weight decay} = 0.05$).
-- **Learning Rate Schedule:** Initial learning rate $\eta_0 = 3 \times 10^{-4}$ with a 3-epoch linear warmup, followed by cosine annealing decay toward $1 \times 10^{-6}$.
+- **Optimization:** AdamW ($\text{weight decay} = 0.05$). The frozen config (`configs/experiment/CLS-001.yaml`) does not pin $\beta_1/\beta_2$; training code (`scripts/train/train_classifier.py`) constructs `AdamW` without a `betas` argument, so effective PyTorch defaults $(0.9, 0.999)$ apply.
+- **Learning Rate Schedule:** Initial learning rate $\eta_0 = 3 \times 10^{-4}$ with a 3-epoch linear warmup, followed by cosine annealing (`LinearLR` + `CosineAnnealingLR(T_max)` in `scripts/train/train_classifier.py:145-155`). The `cosine_to: 1.0e-6` entry in `CLS-001.yaml` is not plumbed to `eta_min`, so the effective scheduler floor is $0$, not $1 \times 10^{-6}$.
 - **Numerical Safeguards:** Gradient clipping at a maximum $L_2$ norm of $1.0$; Automatic Mixed Precision (AMP) with finite-value checks trapping non-finite gradients.
-- **Early Stopping:** Monitored on validation macro-F1 with a patience of 8 epochs. Training terminated at epoch 14 of 30, selecting the epoch-14 checkpoint (`checkpoints/CLS-001/best.pt`).
+- **Early Stopping:** Monitored on validation macro-F1 with a patience of 8 epochs (`epochs_max: 30`). The epoch-14 best checkpoint (`checkpoints/CLS-001/best.pt`) is recorded in `docs/experiments.md` only; `outputs/CLS-001/` contains solely `calibration_frozen.json` (no `metrics.json`/`run_config.json` provenance artifact).
 
 ---
 
@@ -473,10 +476,10 @@ flowchart TD
         Cat4 --> D4["DoubleConv (128 -> 64)"]
     end
 
-    D4 --> FinalConv["Conv2d (64 -> 1, kernel=1)"]
-    FinalConv --> Sigmoid["Sigmoid Activation"]
+    D4 --> FinalConv["Conv2d (64 -> 1, kernel=1)<br/>(UNet returns logits)"]
+    FinalConv --> Sigmoid["Sigmoid in InferenceService._segment_prob<br/>(not in UNet)"]
     Sigmoid --> ProbMap["Probability Map in [0, 1]^(256x256)"]
-    ProbMap --> Threshold["Hard Thresholding (>= 0.5)"]
+    ProbMap --> Threshold["Hard Thresholding (> 0.5)"]
     Threshold --> BinaryMask["Binary Mask {0, 1}^(256x256)"]
 ```
 
@@ -484,8 +487,9 @@ flowchart TD
 - **Total Parameters:** Exactly 31,036,481 parameters (all finite floating-point values).
 - **Loss Formulation:** Equal-weighted sum of Soft Dice Loss and Binary Cross-Entropy (BCE):
   $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{BCE}}(p, y) + \mathcal{L}_{\text{Dice}}(p, y)$$
-  $$\mathcal{L}_{\text{Dice}}(p, y) = 1 - \frac{2 \sum_{i} p_i y_i + \epsilon}{\sum_{i} p_i + \sum_{i} y_i + \epsilon}, \quad \epsilon = 1.0$$
-- **Convergence:** Trained across 30 complete epochs on an NVIDIA T4; optimal validation Dice achieved at epoch 27.
+  $$\mathcal{L}_{\text{Dice}}(p, y) = 1 - \frac{2 \sum_{i} p_i y_i + \epsilon}{\sum_{i} p_i + \sum_{i} y_i + \epsilon}, \quad \epsilon = 10^{-6}$$
+  The equal-weighted loss weights are $w_{\text{BCE}} = 1.0, w_{\text{Dice}} = 1.0$ (`configs/experiment/SEG-001.yaml`, `src/brain_tumor/segmentation/unet.py:60-66` with `smooth=1e-6`).
+- **Convergence:** Trained across 30 complete epochs on an NVIDIA T4 (`epochs_max: 30`, `outputs/SEG-001/metrics.json: epochs_run=30`); the epoch-27 optimum is recorded in `docs/experiments.md` only (`outputs/SEG-001/metrics.json` carries no `best_epoch` field).
 - **Normalization Invariant:** Standardized using exact channel statistics calculated across the segmentation training partition ($\mu = 0.10168, \sigma = 0.14064$).
 
 ---
@@ -496,8 +500,8 @@ Localization in this system is strictly derived from the output of the segmentat
 
 ```mermaid
 flowchart TD
-    ProbMap["Segmentation Probability Map<br/>(256x256, Float32)"] --> Binarize["Thresholding:<br/>Binary Mask = (Prob >= 0.5)"]
-    Binarize --> CCL["Connected Component Labeling<br/>(scipy.ndimage.label, 8-connectivity)"]
+    ProbMap["Segmentation Probability Map<br/>(256x256, Float32)"] --> Binarize["Thresholding:<br/>Binary Mask = (Prob > 0.5)"]
+    Binarize --> CCL["Connected Component Labeling<br/>(scipy.ndimage.label, default 4-connectivity)"]
     CCL --> Filter{"Component Area >= 10 px?"}
     
     Filter -->|No Qualifying Components| EmptyResult["Return Empty Localization:<br/>bbox = None<br/>centroid = None<br/>area_pixels = 0"]
@@ -509,19 +513,18 @@ flowchart TD
     Largest --> Centroid["Compute Centroid of Largest Component:<br/>cx = Mean(X), cy = Mean(Y)"]
     Largest --> Bbox["Compute Enclosing Bounding Box:<br/>[x_min, y_min, x_max, y_max]"]
     
-    Centroid --> Scale["Coordinate Scaling:<br/>Map from (256x256) to Original (W, H)"]
+    Centroid --> Scale["Coordinate Scaling:<br/>Bbox + Centroid mapped from (256x256) to Original (W, H)"]
     Bbox --> Scale
-    Area --> ScaleArea["Area Scaling:<br/>area_orig = area_256 * (W/256) * (H/256)"]
+    Area --> NoScale["No Area Rescaling:<br/>area_pixels = unscaled count in 256x256 network pixels"]
     
     Scale --> Contract["Instantiate LocalizationResult<br/>(Pydantic Validated)"]
-    ScaleArea --> Contract
+    NoScale --> Contract
 ```
 
 ### 11.1 Coordinate Translation Mathematics
-Given an input MRI slice of original dimensions $(W, H)$ processed at network resolution $(W_{\text{net}}, H_{\text{net}}) = (256, 256)$, coordinate mapping occurs as follows:
+Given an input MRI slice of original dimensions $(W, H)$ processed at network resolution $(W_{\text{net}}, H_{\text{net}}) = (256, 256)$, coordinate mapping occurs as follows (`src/brain_tumor/localization/extract.py:19-20,30-36`):
 $$x_{\text{orig}} = x_{\text{net}} \times \left( \frac{W}{W_{\text{net}}} \right), \quad y_{\text{orig}} = y_{\text{net}} \times \left( \frac{H}{H_{\text{net}}} \right)$$
-Bounding boxes are clamped to image boundaries and cast to standard integers:
-$$\text{bbox} = \left[ \lfloor x_{\min} \rfloor, \lfloor y_{\min} \rfloor, \lceil x_{\max} \rceil, \lceil y_{\max} \rceil \right]$$
+Binarization is strict (`prob_map > 0.5`); connectivity is `scipy.ndimage.label` default (4-connectivity, no explicit structuring element). Bounding boxes are computed as `[int(x_min*sx), int(y_min*sy), int((x_max+1)*sx), int((y_max+1)*sy)]` with no boundary clamping. `area_pixels` is the unscaled sum of qualifying ($\ge 10\text{ px}$) component areas counted in $256 \times 256$ network pixels; only bbox and centroid are rescaled to original input pixels. Locked by `tests/unit/test_localization.py:18-20` (e.g. $3 \times 4$ block at $2\times$ scale yields `area=12`, not $48$).
 
 ---
 
@@ -536,7 +539,7 @@ The one-dimensional temperature parameter was optimized using L-BFGS optimizatio
 $$T^* = \arg\min_T \left( -\sum_{k=1}^{N_{\text{val}}} \log \hat{p}_{y_k}(T) \right) \implies \mathbf{T = 0.511595 \approx 0.5116}$$
 
 #### Numerical Softmax Stability
-In runtime execution (`src/brain_tumor/inference/service.py`), softmax probabilities are computed using a numerically stable log-sum-exp formulation (subtracting the maximum scaled logit prior to exponentiation) to prevent floating-point overflow or underflow when logits are scaled by $1/T \approx 1.9547$.
+In runtime execution (`src/brain_tumor/inference/service.py:113-115,177-179`), softmax probabilities are computed via `torch.softmax(logits / T)` (internally numerically stable in libtorch; no explicit subtract-max / log-sum-exp code in `src/`). Stability when logits are scaled by $1/T \approx 1.9547$ therefore relies on the framework kernel, not a hand-written log-sum-exp block.
 
 #### Probability Sharpening Interpretation ($T < 1$)
 In classical literature, temperature scaling often yields $T > 1$ when models are overconfident, flattening the softmax distribution. In contrast, $T = 0.511595 < 1$ represents **probability sharpening**. Validation NLL minimization selected a temperature less than unity because the raw uncalibrated logits were under-concentrated relative to empirical validation frequencies. Scaling logits by $1/T \approx 1.9547$ sharpens the softmax output distribution so that high-confidence predictions reflect true empirical accuracy. This reduced validation Expected Calibration Error (ECE) to $0.00205$, which generalized to an ECE of $0.002655$ on the locked test set. 
@@ -643,7 +646,7 @@ The detection fidelity of UNC-001 was evaluated against the locked test set unde
 #### Detector Performance Characteristics
 - **Precision:** $25 / 36 = \mathbf{69.44\%}$
 - **Recall (Error Sensitivity):** $25 / 27 = \mathbf{92.59\%}$
-- **Detector F1-Score:** $\mathbf{79.49\%}$
+- **Detector F1-Score:** $\mathbf{79.37\%}$ ($2PR/(P+R)$ with $P=25/36, R=25/27$)
 - **False Positive Rate (FPR):** $11 / 973 = \mathbf{1.13\%}$
 - **Confident-But-Wrong (CBW) Capture:** For 25 instances where the perturbed model was confident yet produced an incorrect label, the observer flagged **24 out of 25** ($96.0\%$).
 - **Comparison Against Softmax Thresholding:** Conventional unperturbed confidence thresholding caught only **5 out of 27** errors ($18.52\%$), demonstrating that empirical perturbation probes expose decision boundary proximity that single-pass confidence fails to detect.
@@ -660,11 +663,11 @@ flowchart TD
     subgraph Signal Ingestion
         S1["Classification State<br/>('confident' vs. 'uncertain')"]
         S2["Perturbation Consistency<br/>(agreement == 1.0)"]
-        S3["Quality Gate Verdict<br/>('accept' vs. 'reject')"]
+        S3["Quality Gate Verdict<br/>('accept' vs. 'reject'<br/>or None = not assessed)"]
         S4["Segmentation Status<br/>('notumor' OR 'nonempty + localized')"]
     end
 
-    S1 & S2 & S3 & S4 --> RuleEngine{"Deterministic Rule Check:<br/>Are ALL 4 Conditions Satisfied?"}
+    S1 & S2 & S3 & S4 --> RuleEngine{"Deterministic Rule Check:<br/>Are ALL 4 Conditions Satisfied?<br/>(None quality = basis note only)"}
     
     RuleEngine -->|YES| StableVerdict["Reliability Summary: 'stable'<br/>clinical_meaning: false"]
     RuleEngine -->|NO| ReviewVerdict["Reliability Summary: 'review'<br/>clinical_meaning: false"]
@@ -681,7 +684,7 @@ The summary is marked `stable` if and only if:
 2. Consistency probe agreement is $1.0$ ($8/8$ match);
 3. Input-quality verdict is `accept`; and
 4. Either the predicted class is `notumor`, or the mask is `nonempty` with spatial area $> 0\text{ px}$.
-Failure on any condition yields a `review` status, with specific failing mechanisms recorded in an explicit `basis` array. `clinical_meaning` is permanently hardcoded to `False`.
+Failure on any condition yields a `review` status, with specific failing mechanisms recorded in an explicit `basis` array. `clinical_meaning` is permanently hardcoded to `False`. Boundary nuance (`src/brain_tumor/reliability/engine.py:40-41`): when `quality is None` (e.g. `service.reliability(image)` without raw bytes), the engine appends `input quality not assessed` without flipping `ok` to `False`; the four-rule `stable` verdict therefore applies strictly when a quality dict is supplied.
 
 ---
 
@@ -697,7 +700,7 @@ The strict ordering is designed around **software contract-level capability prio
 2. **`uncertain` (Classification Calibration Boundary):** Triggered when calibrated primary confidence or top-2 margin falls below operational thresholds ($c < 0.95 \lor \Delta < 0.05$). If classification validity cannot be assured, downstream spatial delineation cannot be verified. Prioritizing `uncertain` over tumor detection prevents downstream consumers from trusting uncalibrated predictions.
 3. **`tumor_unlocalized` (Cross-Model Discrepancy Containment):** Handles instances where the classifier predicts a neoplastic pathology with high confidence ($c \ge 0.95, \Delta \ge 0.05$), but the segmentation model produces an empty mask ($\text{area} = 0$). Emitting `tumor_unlocalized` explicitly flags this structural disagreement rather than masking the failure.
 4. **`tumor_localized` (Verified Spatial Agreement):** Assigned when both stages agree: confident neoplastic classification accompanied by a qualifying, non-empty segmentation mask ($\text{area} \ge 10\text{ px}$).
-5. **`healthy` (Lowest Precedence — Baseline Negative Invariant):** Represents the non-pathological state. Strictly requires `predicted_class == 'notumor'`, zero segmented area, and null localization coordinates. Any active segmentation or classification uncertainty strictly invalidates a `healthy` verdict.
+5. **`healthy` (Lowest Precedence — Baseline Negative Invariant):** Represents the non-pathological state. Design intent requires `predicted_class == 'notumor'` with zero segmented area and null localization coordinates; the frozen `BrainTumorResult` validator enforces the class half of this invariant (`predicted_class == 'notumor'`, `contracts.py:138-139`), with area/bbox coherence enforced only through the generic `segmentation_state↔area` checks (`:158-161`).
 
 ```mermaid
 flowchart TD
@@ -729,8 +732,8 @@ flowchart TD
 ```
 
 ### Pydantic Contract Invariant Rules
-The `BrainTumorResult` contract enforces the following validations:
-- **`healthy`:** Requires `predicted_class == 'notumor'`, zero area, and `None` bounding boxes.
+The `BrainTumorResult` contract enforces the following validations (`src/brain_tumor/contracts.py:138-162`):
+- **`healthy`:** Requires `predicted_class == 'notumor'` only (`contracts.py:138-139`); unlike the design intent, the frozen validator does **not** additionally reject non-zero area or non-null bboxes on a `healthy` verdict (generic `empty↔area` checks in `:158-161` still apply via `segmentation_state`).
 - **`tumor_localized`:** Requires `predicted_class != 'notumor'`, `segmentation_state == 'nonempty'`, and `area_pixels > 0`.
 - **`tumor_unlocalized`:** Requires `predicted_class != 'notumor'`, `segmentation_state == 'empty'`, and `area_pixels == 0`.
 - **`degraded`:** Requires the presence of the `segmentation_unavailable` warning flag.
@@ -763,7 +766,7 @@ flowchart LR
 ```
 
 ### Explainability Operational Invariants
-1. **Mathematical Grounding:** Computes the gradient of score $y^c$ with respect to feature activation maps $A^k$ of layer `features.7.2.block.0`:
+1. **Mathematical Grounding:** Computes the gradient of score $y^c$ with respect to feature activation maps $A^k$ of the dynamically resolved target layer (last `nn.Conv2d` under `features` per `src/brain_tumor/explain/gradcam.py:22-27`; empirically `features.7.2.block.0` on the frozen ConvNeXt-Tiny, asserted in `tests/integration/test_explain.py` and recorded in `outputs/EXPL-001/expl001.json`):
    $$\alpha_k^c = \frac{1}{Z} \sum_{i} \sum_{j} \frac{\partial y^c}{\partial A_{i, j}^k}, \quad L_{\text{Grad-CAM}}^c = \text{ReLU}\left( \sum_k \alpha_k^c A^k \right)$$
 2. **Hook Lifecycle Management:** PyTorch forward and backward hooks are registered dynamically and guaranteed to detach via `finally` blocks, preventing memory leaks.
 3. **Inference Invariance:** To maintain determinism and prevent numerical drift from half-precision gradient approximations, Grad-CAM operations execute in FP32 on all hardware targets. Model predictions remain identical whether explainability hooks are active or inactive.
@@ -847,8 +850,8 @@ flowchart TD
     Router -->|POST /explain| H_Explain["explain(UploadFile) -> Heatmaps & Base64 PNGs"]
 
     subgraph Error Handling Boundary
-        H_Classify & H_Segment & H_Localize & H_Analyze --> ErrCheck{"Upload Validation"}
-        ErrCheck -->|> 10MB| E413["HTTP 413: file_too_large"]
+        H_Classify & H_Segment & H_Localize & H_Quality & H_Consistency & H_Analyze & H_Reliability & H_Explain --> ErrCheck{"Upload Validation"}
+        ErrCheck -->|Over 10MB| E413["HTTP 413: file_too_large"]
         ErrCheck -->|Invalid MIME| E415["HTTP 415: unsupported_type"]
         ErrCheck -->|Corrupted Bytes| E422["HTTP 422: undecodable_image"]
         ErrCheck -->|Internal Exception| E500["HTTP 500: inference_failed (No Traceback)"]
@@ -863,7 +866,7 @@ flowchart TD
 | `/classify` | `POST` | Multipart image file | Class probabilities, predicted label, confidence, state | `200`, `413`, `415`, `422`, `500` |
 | `/segment` | `POST` | Multipart image file | Mask state (`empty`/`nonempty`), localization, warnings | `200`, `413`, `415`, `422`, `500` |
 | `/localize` | `POST` | Multipart image file | Integer bbox coordinates, centroid, pixel area | `200`, `413`, `415`, `422`, `500` |
-| `/quality` | `POST` | Multipart image file | Verdict (`accept`/`reject`), failed checks (`Q01`–`Q09`) | `200`, `413`, `415`, `500` |
+| `/quality` | `POST` | Multipart image file | Verdict (`accept`/`reject`), failed checks (`Q01`–`Q09`) | `200`, `415`, `500` (oversize/undecodable returned as `200 reject` with `Q08`/`Q01`, never `413`/`422`) |
 | `/consistency` | `POST` | Multipart image file | $K=8$ agreement fraction, probe stability flag | `200`, `413`, `415`, `422`, `500` |
 | `/analyze` | `POST` | Multipart image file | Complete canonical payload (`BrainTumorResult`) | `200`, `413`, `415`, `422`, `500` |
 | `/reliability` | `POST` | Multipart image file | Structured reliability status and explicit basis array | `200`, `413`, `415`, `422`, `500` |
@@ -910,19 +913,19 @@ The system is designed for offline-first application-layer operation with extern
 ```mermaid
 flowchart LR
     subgraph Host Process Runtime
-        Script["verify_offline.py"] --> MonkeyPatch["Install Socket Guard<br/>(socket.socket.connect Interceptor)"]
+        Script["verify_offline.py"] --> MonkeyPatch["Install Socket Guard<br/>(socket.socket.connect/connect_ex Interceptor)"]
         MonkeyPatch --> Probe["Diagnostic Probe:<br/>Attempt connect to 8.8.8.8:53"]
-        Probe --> Trapped["Guard Traps Attempt -> Raises RuntimeError<br/>(Confirms Guard is Active)"]
+        Probe --> Trapped["Guard Traps Attempt -> connect raises OSError,<br/>connect_ex returns 1 (Confirms Guard is Active)"]
         
         Trapped --> SvcLoad["InferenceService Initialization<br/>- Load ConvNeXt Weights<br/>- Load U-Net Weights<br/>- Read Calibration JSON"]
         
-        SvcLoad --> Infer["Execute Full Inference Cycle<br/>(classify, segment, consistency, analyze)"]
+        SvcLoad --> Infer["Execute Full Inference Cycle<br/>(analyze, consistency, quality)"]
         Infer --> API["In-Process HTTP API Transport<br/>(/health, /analyze)"]
     end
 
     API --> Verdict{"Network Calls Attempted?"}
     Verdict -->|Zero Remote Calls| Pass["Verdict: OFF-001 PASS<br/>(Application-Layer Offline Verified)"]
-    Verdict -->|> 0 Remote Calls| Fail["Verdict: FAIL"]
+    Verdict -->|More Than 0 Remote Calls| Fail["Verdict: FAIL"]
 ```
 
 ### Scope and Boundary of Offline Verification
@@ -978,43 +981,43 @@ The platform's verification strategy ensures that implemented software component
 ```mermaid
 flowchart TD
     subgraph CI Test Suite (49 Tests - Pure CPU)
-        T1["Unit Tests: Contracts & Invariants (12 Tests)"]
-        T2["Unit Tests: Preprocessing Transforms (8 Tests)"]
-        T3["Unit Tests: Localization Geometry (6 Tests)"]
-        T4["Unit Tests: Quality Gate Codes Q01-Q09 (9 Tests)"]
-        T5["Integration Tests: API Endpoints & Envelopes (6 Tests)"]
-        T6["Integration Tests: Streamlit Direct Ingestion (4 Tests)"]
-        T7["Integration Tests: Determinism Across Runs (3 Tests)"]
+        T1["Unit Tests: Contracts & Invariants (3 Tests<br/>test_contracts.py)"]
+        T2["Unit Tests: Preprocessing Transforms (4 Tests<br/>test_preprocessing.py)"]
+        T3["Unit Tests: Localization Geometry (4 Tests<br/>test_localization.py)"]
+        T4["Unit Tests: Quality Gate Codes Q01-Q09 (5 Tests<br/>test_quality.py)"]
+        T5["Integration Tests: API Endpoints & Envelopes<br/>(10 Tests in test_system.py)"]
+        T6["Integration Tests: Streamlit Direct Ingestion (3 Tests<br/>test_streamlit.py)"]
+        T7["Integration Tests: Determinism Across Runs<br/>(in test_system.py + test_reliability.py/test_explain.py)"]
         T8["Data Gate: Fail-Open Regression Protection (1 Test)"]
+        TX["Adjacent Units: amp/datasets/models/explain/reliability<br/>(remaining tests to 49 total)"]
     end
 
     subgraph Automated CI Gates
-        CIStart([Git Push / PR]) --> Linter["Static Code Analysis & Linting"]
-        Linter --> TestRunner["Pytest Execution (Synthetic Fixtures Only)"]
-        TestRunner --> T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8
-        T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 --> ManifestAudit["Cryptographic Manifest Audit<br/>(build_manifest.py)"]
-        ManifestAudit --> CIPass([CI Pipeline PASS - Exit Code 0])
+        CIStart([Git Push / PR]) --> ReproCheck["Reproducibility Check<br/>(scripts/reproducibility_check.py)"]
+        ReproCheck --> TestRunner["Pytest Execution (Synthetic Fixtures Only)<br/>.github/workflows/ci.yml: windows-latest, py3.11"]
+        TestRunner --> T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & TX
+        T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & TX --> CIPass([CI Pipeline PASS - Exit Code 0])
     end
 ```
 
 ### 23.1 Reference Verification Environment
 All verification tests, regression suites, and latency benchmarks were executed against an explicitly recorded reference software and hardware environment:
 
-| Specification Layer | Production / Verification Reference Specification | Continuous Integration (CI) Baseline |
+| Specification Layer | Production / Verification Reference Specification | Continuous Integration (CI) Baseline (`.github/workflows/ci.yml`) |
 | :--- | :--- | :--- |
-| **Operating System** | Microsoft Windows 11 / Linux x86_64 | Linux x86_64 (Ubuntu 22.04 LTS container) |
-| **Python Runtime** | Python 3.10.12 (CPython) | Python 3.10.x / 3.11.x |
-| **Deep Learning Framework**| PyTorch 2.10.0+cu128 (CUDA 12.8 runtime) | PyTorch 2.10.0 (CPU-only distribution) |
-| **Acceleration Hardware** | NVIDIA T4 Tensor Core GPU (16 GB GDDR6) | Headless GitHub Actions Runner (2-core x86_64) |
-| **Key Scientific Stack** | `numpy` 1.24.3, `scipy` 1.10.1, `pillow` 9.5.0 | Same locked semantic dependencies |
-| **Application Framework** | `fastapi` 0.104.1, `pydantic` 2.5.2, `streamlit` 1.28.2 | Same locked semantic dependencies |
-| **Automated Test Runner** | `pytest` 7.4.3 (49 passing test cases) | `pytest` 7.4.3 (Execution time: $\approx 18.5\text{s}$) |
+| **Operating System** | Microsoft Windows 11 / Linux x86_64 | `windows-latest` GitHub Actions Runner |
+| **Python Runtime** | Python 3.10.12 (CPython) for locked GPU benchmarks | Python 3.11 (`setup-python@v5`) |
+| **Deep Learning Framework**| PyTorch 2.10.0+cu128 (CUDA 12.8 runtime, recorded in `outputs/SYSINT/gpu_latency_fp32.json`) | CPU wheel from `requirements.lock` (live envs drift, e.g. torch 2.13, numpy 2.4) |
+| **Acceleration Hardware** | NVIDIA T4 Tensor Core GPU (16 GB GDDR6) | Headless runner (CPU-only) |
+| **Key Scientific Stack** | `numpy` 1.24.3, `scipy` 1.10.1, `pillow` 9.5.0 (reference) | Versions resolved from `requirements.lock` at CI time |
+| **Application Framework** | `fastapi` 0.104.1, `pydantic` 2.5.2, `streamlit` 1.28.2 (reference) | Versions resolved from `requirements.lock` at CI time |
+| **Automated Test Runner** | `pytest` 7.4.3 (85 tests collected; reference timing $\approx 18.5\text{s}$ unreproduced on current hardware) | `python -m pytest -q` after `scripts/reproducibility_check.py` (no separate lint or manifest-audit gate) |
 
 ### 23.2 Verification Principles
 - **Zero Locked-Test Contact:** CI test suites execute exclusively using synthetic, programmatically generated test images (tensors generated via `torch.randn` or PIL shapes), preventing test-set exposure during automated runs.
 - **Strict Error Envelopes:** Negative tests verify that malformed uploads trigger structured HTTP error codes (`413`, `415`, `422`, `500`) without leaking internal file paths or stack traces.
-- **Cross-Hardware Validation Tolerances:** Rather than asserting bit-identical floating-point equality between CPU and GPU architectures, continuous integration enforces numerical equivalence within defined tolerances: probability distributions match within absolute tolerance $\epsilon \le 10^{-4}$ and binary masks are evaluated for bounding-box congruence.
-- **Test Suite Consolidation (T5 & T7):** The API-contract and determinism integration checks are consolidated in `tests/integration/test_system.py`; they remain separately identified as T5 and T7 for traceability purposes.
+- **Cross-Hardware Validation Tolerances:** Rather than asserting bit-identical floating-point equality between CPU and GPU architectures, integration tests enforce numerical equivalence at `1e-3` (`tests/integration/test_system.py:60,66`); no `1e-4` assertion exists in the test suite. Bounding boxes are checked as structural invariants (`test_system.py:74-80`, `test_localization.py`), not as a cross-hardware congruence gate.
+- **Test Suite Consolidation (T5 & T7):** The API-contract and determinism integration checks are consolidated in `tests/integration/test_system.py` (which holds 10 tests, covering both envelopes and determinism); they remain separately identified as T5 and T7 for traceability purposes only.
 
 ---
 
@@ -1046,7 +1049,7 @@ pie title Locked Test Confusion Matrix Distribution (N=1000)
 *Note: Contamination difference ($\Delta$) is an exact descriptive comparison resulting from deterministic file exclusion, not a sampling estimand.*
 
 #### Uncertainty Quantification of Headline Metrics
-To quantify sampling uncertainty of the locked primary evaluation on the target test cohort, the 1,000 test cases are resampled with replacement for 10,000 bootstrap replicates. Each replicate recomputes the macro-F1 metric from the resampled per-case predictions (`outputs/PBA-001/per_case_test.json`), yielding a 95% bootstrap percentile confidence interval of $[0.990400, 0.999101]$. For classification accuracy, because the primary evaluation yielded exactly 995 of 1,000 correct predictions, an exact Clopper-Pearson binomial 95% confidence interval is computed as $[0.988371, 0.998375]$ ($98.84\% - 99.84\%$). These intervals describe statistical uncertainty associated with resampling the evaluated cohort; they do not establish clinical generalization or patient-level independence.
+To quantify sampling uncertainty of the locked primary evaluation on the target test cohort, the 1,000 test cases are resampled with replacement for 10,000 bootstrap replicates. Each replicate recomputes the macro-F1 metric from the resampled per-case predictions (`outputs/PBA-001/per_case_test.json`), yielding a 95% bootstrap percentile confidence interval of $[0.990400, 0.999101]$ (producer committed: `scripts/evaluate/bootstrap_ci.py`, fixed seed `RandomState(42)`; artifact `outputs/PBA-001/bootstrap_ci.json`, bit-reproducible). For classification accuracy, because the primary evaluation yielded exactly 995 of 1,000 correct predictions, an exact Clopper-Pearson binomial 95% confidence interval is computed as $[0.988371, 0.998375]$ ($98.84\% - 99.84\%$, recomputable via `scipy.beta.ppf`; same producer/artifact). These intervals describe statistical uncertainty associated with resampling the evaluated cohort; they do not establish clinical generalization or patient-level independence.
 
 #### Deterministic Contamination Sensitivity Comparison
 The 7-case contamination sensitivity comparison is not itself treated as a bootstrap estimand. The $N=1000$ versus $N=993$ differences are reported as exact descriptive changes caused by deterministic exclusion of the seven contaminated test files. Because both cohorts represent a fixed evaluation population evaluated under identical deterministic inference, $\Delta$ is an observed consequence of data curation rather than a random variable. The negligible magnitudes of these deltas ($+3.5 \times 10^{-5}$ accuracy, $+2.5 \times 10^{-5}$ macro-F1) verify empirically that the presence of the seven cross-split hashes does not materially impact reported system performance.
@@ -1097,7 +1100,7 @@ To identify systemic engineering weaknesses in the segmentation subsystem, the l
 
 #### 3. Segmentation Performance Stratified by Lesion-Area Quartile
 
-| Lesion Area Quartile | Pixel Range ($A$) | Sample Count ($N$) | Mean Dice | Median Dice | $P_{10}$ Dice | Empty Predictions |
+| Lesion Area Quartile | Pixel Range ($A$, idealized labels; actual cuts 441/442, 803/806, 1470/1480) | Sample Count ($N$) | Mean Dice | Median Dice | $P_{10}$ Dice | Empty Predictions |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Quartile 1 (Smallest)**| $A \le 442\text{ px}$ | 215 | **0.7877** | 0.9215 | 0.3182 | **10 ($4.65\%$)** |
 | **Quartile 2** | $443 \le A \le 804\text{ px}$ | 215 | **0.8695** | 0.9214 | 0.7219 | 0 ($0.0\%$) |
@@ -1120,15 +1123,15 @@ To maintain rigorous engineering discipline, non-model software subsystems are e
 | **Temperature Calibrator ($T=0.5116$)** | Logit probability sharpening | Raw network logits $\mathbf{z} \in \mathbb{R}^4$ | Scaled probabilities sum to $1.0 \pm 0.01$; maps logits to empirical accuracy | Reduced validation ECE to 0.00205; test ECE = 0.002655 |
 | **Perturbation Observer (`UNC-001`)** | Empirical stability stress-test observer | Clean image + $K=8$ noise probes ($\sigma=0.05$) | Emits agreement fraction $\alpha$ and descriptive flag (`perturbation_inconsistency`) | Detected 25/27 noise errors ($92.59\%$ recall); 1.13% false positive rate |
 | **Reliability Engine (`REL-001`)** | Multi-signal heuristic diagnostic fusion | Calibrated state, $\alpha$, quality verdict, mask area | Emits structured JSON summary (`stable`/`review`) with explicit basis list | Verified in `outputs/REL-001/rel001.json`; clinical_meaning hardcoded False |
-| **Explainability Hook (`EXPL-001`)** | Penultimate convolutional attribution | Feature maps at `features.7.2.block.0` | Generates 2D Grad-CAM heatmap; executes in FP32; zero prediction drift | Verified hook detachment; cam_mass_in_bbox reported descriptively |
-| **Precedence State Machine** | Contract-level semantic contradiction resolver | Calibrated state, segmenter mask, warning list | Enforces priority: $\text{degraded} > \text{uncertain} > \text{unlocalized} > \text{localized} > \text{healthy}$ | Validated via 12 Pydantic contract unit tests (`test_contracts.py`) |
+| **Explainability Hook (`EXPL-001`)** | Penultimate convolutional attribution | Feature maps at dynamically resolved last `Conv2d` under `features` (empirically `features.7.2.block.0`) | Generates 2D Grad-CAM heatmap; executes in FP32; zero prediction drift | Verified hook detachment; cam_mass_in_bbox reported descriptively |
+| **Precedence State Machine** | Contract-level semantic contradiction resolver | Calibrated state, segmenter mask, warning list | Enforces priority: $\text{degraded} > \text{uncertain} > \text{unlocalized} > \text{localized} > \text{healthy}$ | Validated via Pydantic contract unit tests (`tests/unit/test_contracts.py`, 3 tests) |
 
 ### 24.6 Counterfactual Subsystem Contribution
 Extending the verification matrix above (§24.5), which establishes concrete subsystem functional roles and empirical verification evidence, this section documents architectural counterfactuals for each subsystem under hypothetical component removal or bypass. These counterfactual analyses evaluate structural dependencies rather than functioning as controlled model ablation experiments; no new experimental run is claimed where no executable evidence artifact exists.
 
 | Subsystem | Counterfactual Condition | Observable Affected | Existing Evidence Sufficient? | New Execution Required? |
 | :--- | :--- | :--- | :--- | :--- |
-| **Calibration** | Replace frozen $T$ with uncalibrated $T=1.0$ | Calibrated probabilities, confidence, ECE | **Yes** (Recorded in `outputs/CLS-001/calibration_frozen.json`) | No (Uncalibrated ECE 0.007604 vs Calibrated ECE 0.002655) |
+| **Calibration** | Replace frozen $T$ with uncalibrated $T=1.0$ | Calibrated probabilities, confidence, ECE | **Partial** (Calibrated ECE 0.002655 in `outputs/test_evaluation_7b860dca72ea.json`; uncalibrated 0.007604 is spec-reported with no committed JSON producer) | No (Uncalibrated ECE 0.007604 vs Calibrated ECE 0.002655) |
 | **UNC-001** | Disable perturbation observer | Observer consistency flags, reliability basis, latency | **Yes for functional behavior** | No (Primary predictions invariant; eliminates 318ms probe overhead) |
 | **REL-001** | Disable reliability synthesis | `stable`/`review` diagnostic envelope and basis list | **Yes** | No (Primary predictions and system state invariant; removes diagnostic envelope) |
 | **State Machine** | Bypass state precedence derivation | Canonical `system_state` contract | **Contract Analysis** | No performance metric exists (governs schema validity and contradiction suppression) |
@@ -1196,6 +1199,7 @@ gitGraph
     branch final-001
     checkout final-001
     commit id: "ad01b73" tag: "CORRECTION-002"
+    commit id: "docs-only commits omitted (HEAD beyond CORRECTION-002)"
     checkout main
     branch gen-001
     checkout gen-001
@@ -1205,6 +1209,7 @@ gitGraph
     commit id: "90e49df"
     commit id: "051487b" tag: "GEN-001 (Unmerged)"
 ```
+%% Simplified lineage: frozen at CORRECTION-002; docs-only commits omitted. gen-001 branches from 48dd3ae; main HEAD differs.
 
 ### 26.2 Lineage Node Registry
 - **`FINAL-001` (`48dd3aeb757ecda15a9bf53665ef7f0adad118c2`):** Authoritative production release baseline containing frozen models `CLS-001` and `SEG-001`.
@@ -1234,14 +1239,14 @@ Runtime metrics were benchmarked on an **NVIDIA T4 GPU (16GB VRAM, CUDA 12.8, to
 gantt
     title T4 GPU FP16 Execution Latency Profile (Median Times in ms)
     dateFormat X
-    axisFormat %s ms
+    axisFormat %s
     section Forward Passes
-    Classification (ConvNeXt-Tiny) :0, 13
-    Segmentation (Vanilla U-Net)    :13, 30
+    Classification (ConvNeXt-Tiny, 12.5ms) :0, 13
+    Segmentation (Vanilla U-Net, 17.8ms)    :13, 30
     section Observers (Optional)
-    Consistency Probe (K=8 Probes) :30, 348
+    Consistency Probe (K=8 Probes, 318.2ms) :30, 348
 ```
-*Figure shows the production FP16 execution path. FP32 reference measurements are provided in the table for comparison.*
+*Figure shows the production FP16 execution path (X values are ms-mapped-to-seconds for rendering; axis ticks are not literal ms). FP32 reference measurements are provided in the table for comparison.*
 
 ### Empirical Hardware Latency Registry
 
@@ -1312,7 +1317,7 @@ The Brain Tumor Major Project represents a complete academic engineering prototy
 - Replaces duplicate interface logic with a single `InferenceService`, ensuring that FastAPI and Streamlit share identical execution paths and model instances.
 - Incorporates extensive automated safeguards, from deterministic input-quality checks (`Q01`–`Q09`) and temperature scaling to perturbation consistency checks (`UNC-001`) and multi-signal reliability summaries (`REL-001`).
 - Operates under a strict state precedence machine that prevents contradictory diagnostic outputs.
-- Backed by automated verification (49 unit and integration tests passing on CPU) and fully documented across 30 cryptographically tracked release artifacts.
+- Backed by automated verification (85 tests passing on CPU: 84 unit+integration+regression + 1 data-gate) and fully documented across 30 cryptographically tracked release artifacts.
 
 ### 30.2 Project Guide Review Checklist
 
@@ -1365,12 +1370,12 @@ The following matrix formally cross-references standard ECE syllabus subjects to
 
 | ECE Curriculum Domain | Core Theoretical Principle | Implemented System Component | Mathematical / Algorithmic Realization | Verification & Evidence Artifact |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Digital Image Processing (DIP)** | 2D Spatial Sampling, Intensity Normalization, Affine Mapping, Connected Components | Ingestion pipeline, U-Net thresholding, Localization Engine (`extract.py`) | Forward/inverse bilinear coordinate scaling: $(\hat{x}, \hat{y}) = (x \cdot \frac{W}{256}, y \cdot \frac{H}{256})$; Centroid: $(c_x, c_y) = \left(\frac{\sum x M}{\sum M}, \frac{\sum y M}{\sum M}\right)$; 8-conn labeling via `scipy.ndimage.label` | `tests/unit/test_localization.py`, `outputs/SEG-001/metrics.json` |
+| **1. Digital Image Processing (DIP)** | 2D Spatial Sampling, Intensity Normalization, Affine Mapping, Connected Components | Ingestion pipeline, U-Net thresholding, Localization Engine (`extract.py`) | Forward/inverse bilinear coordinate scaling: $(\hat{x}, \hat{y}) = (x \cdot \frac{W}{256}, y \cdot \frac{H}{256})$; Centroid: $(c_x, c_y) = \left(\frac{\sum x M}{\sum M}, \frac{\sum y M}{\sum M}\right)$; default 4-conn labeling via `scipy.ndimage.label` (no structuring element) | `tests/unit/test_localization.py`, `outputs/SEG-001/metrics.json` |
 | **2. Digital Signal Processing (DSP)** | 2D Spatial Convolution, Spatial Filter Banks, Statistical Signal Moments | ConvNeXt-Tiny stem/stages (`CLS-001`), Quality Gate (`gate.py`) | 2D discrete spatial convolution: $y[i, j] = \sum_m \sum_n x[i-m, j-n] h[m, n]$; $7 \times 7$ depthwise spatial FIR filtering; zero/first/second moments | `src/brain_tumor/quality/gate.py`, `outputs/QUALITY/gate_validation.json` |
 | **3. Probability & Random Processes** | Controlled Additive Perturbation, Calibration, Confidence Bounds | Perturbation Observer (`UNC-001`), Temperature Calibrator (`service.py`) | Controlled additive Gaussian perturbation: $x' = x + \eta, \eta \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$; Temperature scaling: $P(Y=c \mid \mathbf{z}, T) = \frac{\exp(z_c/T)}{\sum \exp(z_j/T)}$; Clopper-Pearson exact binomial bounds | `outputs/UNC-001/unc001_locked.json`, `outputs/CLS-001/calibration_frozen.json` |
 | **4. Communication & Network Interfaces** | Client-Server Architecture, Data Marshaling, Transport Security, Network Isolation | FastAPI REST API (`app/api/main.py`), Payload Ingestion Guards | Multipart stream serialization, HTTP/1.1 REST contracts, payload bounds ($\le 10\text{MB}$), socket interceptor (`OFF-001`) | `tests/integration/test_system.py`, `docs/off/OFF-001.md` |
 | **5. Computer Architecture & Hardware-Aware Computing** | Heterogeneous Compute, Instruction Pipelines, Mixed-Precision Arithmetic, Memory Hierarchy | Hardware profiles (`profiles.md`), CUDA AMP autocast (`service.py`) | IEEE 754 FP32 vs. FP16 mixed precision execution, Host-to-Device PCI-e transfer, VRAM allocation ($370.1\text{ MB}$ alloc / $578.0\text{ MB}$ res) | `outputs/SYSINT/fp16_check.json`, `outputs/SYSINT/gpu_latency_fp32.json` |
-| **6. Digital Computing & Numerical Systems** | Floating-Point Roundoff, Numerical Overflow Prevention, Algorithmic Determinism | Softmax normalization, PyTorch determinism hooks | Log-sum-exp formulation: $\log \sum \exp(z_i) = m + \log \sum \exp(z_i - m)$; seeded PRNG execution (`torch.use_deterministic_algorithms`) | `tests/integration/test_system.py`, `src/brain_tumor/contracts.py` |
+| **6. Digital Computing & Numerical Systems** | Floating-Point Roundoff, Numerical Overflow Prevention, Algorithmic Determinism | Softmax normalization, PyTorch determinism hooks | `torch.softmax` framework kernel (no hand-written log-sum-exp in `src/`; formula shown in §31.8 as background); seeded PRNG execution (`src/brain_tumor/utils/seed.py`, cuDNN flags; no `torch.use_deterministic_algorithms(True)` string in `src/`) | `tests/integration/test_system.py`, `src/brain_tumor/contracts.py` |
 | **7. Systems & Fault-Tolerant Instrumentation** | Fail-Safe State Machines, Defensive Interlocking, Input Signal Integrity Checks | Precedence State Machine, Quality Gates `Q01`–`Q09`, Pydantic Schema | Priority precedence: $\text{degraded} \succ \text{uncertain} \succ \text{unlocalized} \succ \text{localized} \succ \text{healthy}$; exception containment | `src/brain_tumor/contracts.py`, `tests/unit/test_contracts.py` |
 
 ---
@@ -1392,9 +1397,9 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
    All bounding boxes $[x_{\min}, y_{\min}, x_{\max}, y_{\max}]$ are cast to integer pixel coordinates, guaranteeing strict dimensional conformance with the ingested physical slice.
 
 3. **Binary Morphological Processing and Connected Components:**  
-   The continuous posterior probability map $\hat{P}(x, y) \in [0, 1]$ generated by the U-Net is binarized using a decision threshold $\tau_{\text{seg}} = 0.5$:
-   $$\hat{M}(x, y) = \begin{cases} 1 & \text{if } \hat{P}(x, y) \ge 0.5 \\ 0 & \text{otherwise} \end{cases}$$
-   The resulting binary matrix is processed using 8-connectivity connected-component labeling (`from scipy import ndimage; lab, n = ndimage.label(binary)` in `src/brain_tumor/localization/extract.py`). Components are filtered by a minimum area threshold ($\ge 10\text{ pixels}$). If multiple qualifying components exist (81 cases identified in §24.2), the system flags the `multiple_components` warning, records the aggregate area of all qualifying components ($A_{\text{total}} = \sum_{k} A_k$), and isolates the largest connected component $L$ to compute its spatial centroid and bounding box:
+   The continuous posterior probability map $\hat{P}(x, y) \in [0, 1]$ generated by the U-Net is binarized using a strict decision threshold $\tau_{\text{seg}} = 0.5$:
+    $$\hat{M}(x, y) = \begin{cases} 1 & \text{if } \hat{P}(x, y) > 0.5 \\ 0 & \text{otherwise} \end{cases}$$
+    The resulting binary matrix is processed using default 4-connectivity connected-component labeling (`from scipy import ndimage; lab, n = ndimage.label(binary)` in `src/brain_tumor/localization/extract.py`, no structuring element). Components are filtered by a minimum area threshold ($\ge 10\text{ pixels}$). If multiple qualifying components exist (81 cases identified in §24.2), the system flags the `multiple_components` warning, records the unscaled aggregate area of all qualifying components in $256 \times 256$ network pixels ($A_{\text{total}} = \sum_{k} A_k$), and isolates the largest connected component $L$ to compute its spatial centroid and bounding box (bbox/centroid rescaled to original pixels; area not rescaled):
    $$c_x = \frac{1}{|L|} \sum_{(x, y) \in L} x, \quad c_y = \frac{1}{|L|} \sum_{(x, y) \in L} y$$
    If no components satisfy the area threshold (or if the mask is entirely zero), the engine returns `bbox=None, centroid=None, area_pixels=0` in strict conformance with contract invariants.
 
@@ -1436,12 +1441,12 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
    $$\hat{p}_c(T) = \frac{\exp(z_c / T)}{\sum_{j=1}^{C} \exp(z_j / T)}$$
    The scalar temperature parameter $T$ is optimized on the frozen validation cohort ($N=1000$) by minimizing the continuous cross-entropy loss (Kullback-Leibler divergence to empirical labels):
    $$T^* = \arg\min_T \left[ -\frac{1}{N_{\text{val}}} \sum_{i=1}^{N_{\text{val}}} \log \hat{p}_{y_i}(T) \right]$$
-   Solving via L-BFGS yielded $T^* = 0.5116$, shrinking Expected Calibration Error from $0.00760$ to $0.002655$ and providing well-calibrated confidence estimates.
+    Solving via L-BFGS yielded $T^* = 0.5116$, shrinking validation Expected Calibration Error to $0.00205$ (`outputs/CLS-001/calibration_frozen.json`) and generalizing to $0.002655$ on the locked test set. The uncalibrated reference ($\approx 0.00760$) is spec-reported with no committed JSON producer.
 
 3. **Rigorous Interval Estimation and Hypothesis Bounds:**  
    Rather than reporting point estimates alone, the project reports exact statistical bounds. For classification accuracy ($k=995, n=1000$), the system calculates the exact two-sided Clopper-Pearson confidence interval based on the Beta distribution:
    $$\text{Beta}\left(\frac{\alpha}{2}; k, n - k + 1\right) \le p \le \text{Beta}\left(1 - \frac{\alpha}{2}; k + 1, n - k\right)$$
-   yielding $[0.988371, 0.998375]$ at $95\%$ confidence. For non-linear macro-averaged F1, an empirical percentile bootstrap ($B=10,000$ resamples) establishes the interval $[0.990400, 0.999101]$.
+    yielding $[0.988371, 0.998375]$ at $95\%$ confidence. For non-linear macro-averaged F1, the reported empirical percentile bootstrap ($B=10{,}000$ resamples) interval $[0.990400, 0.999101]$ is produced by the committed script `scripts/evaluate/bootstrap_ci.py` (fixed seed `RandomState(42)`) with artifact `outputs/PBA-001/bootstrap_ci.json`.
 
 ---
 
@@ -1481,25 +1486,20 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
    In constrained edge or clinical workstation environments, graphics memory is a strictly bounded resource. The production pipeline is engineered for extreme memory efficiency:
    - *Peak Allocated VRAM:* Exactly **$370.1\text{ MB}$** under FP16 autocast.
    - *Peak Reserved VRAM:* Exactly **$578.0\text{ MB}$** managed by PyTorch's caching allocator.
-   - *Memory Transfer Optimization:* Pinned memory (`pin_memory=True`) and non-blocking asynchronous host-to-device transfers (`cudaStream`) eliminate PCI-e bus synchronization stalls during batch consistency probing ($K=8$).
+    - *Memory Transfer Optimization:* No `pin_memory` / `cudaStream` transfer code exists in `src/`; host-to-device movement uses default synchronous PyTorch transfers. The $K=8$ sequential probe loop is retained because the batched alternative was slower (`outputs/SYSINT/batchk8_check.json`).
 
 ---
 
 ### 31.8 Pillar 6: Digital Computing and Numerical Systems
 
 1. **Numerical Stability Formulations:**  
-   Floating-point arithmetic is inherently susceptible to underflow and overflow when computing exponential functions on deep feature logits. To guarantee numerical stability, all probability computations utilize the numerically stable log-sum-exp formulation:
-   $$\log \sum_{i=1}^{C} \exp(z_i) = m + \log \sum_{i=1}^{C} \exp(z_i - m), \quad \text{where } m = \max_{1 \le i \le C} z_i$$
-   This prevents arithmetic overflow in IEEE 754 registers even when raw logits attain large positive magnitudes.
+   Floating-point arithmetic is inherently susceptible to underflow and overflow when computing exponential functions on deep feature logits. As background, the numerically stable log-sum-exp identity is:
+    $$\log \sum_{i=1}^{C} \exp(z_i) = m + \log \sum_{i=1}^{C} \exp(z_i - m), \quad \text{where } m = \max_{1 \le i \le C} z_i$$
+    The frozen implementation does not hand-code this identity; `service.py` calls `torch.softmax` whose kernel is internally stable. This prevents arithmetic overflow in IEEE 754 registers even when raw logits are scaled by $1/T$.
 
 2. **Algorithmic Determinism and Reproducibility:**  
-   To eliminate non-deterministic floating-point accumulation across parallel CUDA thread blocks, the inference service configures explicit numerical determinism controls:
-   ```python
-   torch.use_deterministic_algorithms(True)
-   torch.backends.cudnn.deterministic = True
-   torch.backends.cudnn.benchmark = False
-   ```
-   Cross-run determinism testing (`tests/integration/test_system.py`) validates non-functional requirement `NFR-DET-1`: repeated inference invocations on the same physical hardware and software runtime environment produce bitwise-identical output tensors and confidence scores. Cross-hardware behavior is validated at defined numerical tolerances.
+   To eliminate non-deterministic floating-point accumulation across parallel CUDA thread blocks, seeding/determinism helpers live in `src/brain_tumor/utils/seed.py` (cuDNN flags); the literal string `torch.use_deterministic_algorithms(True)` does not appear in `src/`.
+    Cross-run determinism testing (`tests/integration/test_system.py`) validates non-functional requirement `NFR-DET-1`: repeated inference invocations on the same physical hardware and software runtime environment produce identical output tensors and confidence scores at `1e-3` tolerance. Cross-hardware behavior is validated at defined numerical tolerances.
 
 ---
 
@@ -1527,7 +1527,7 @@ Magnetic Resonance Imaging produces 2D spatial cross-sections representing spati
    As specified in §13, these gates operate in dual mode: `Q08` and `Q01` enforce hard rejections at the HTTP transport boundary (`app/api/main.py`), while `Q01`–`Q09` attach descriptive non-blocking quality metadata to the payload during pipeline execution (`service.analyze`).
 
 3. **Contract-Enforced Fault Containment:**  
-   Every pipeline boundary is governed by immutable Pydantic schemas (`src/brain_tumor/contracts.py`). Contradictory states (e.g., claiming `healthy` while providing a non-null tumor bounding box) are trapped at instantiation time by cross-field validators, raising explicit `ValidationError` exceptions and preventing corrupted state propagation.
+   Every pipeline boundary is governed by immutable Pydantic schemas (`src/brain_tumor/contracts.py`). Contradictory states are trapped at instantiation time by cross-field validators (e.g. `tumor_localized` with null/empty geometry, `empty↔area` mismatch), raising explicit `ValidationError` exceptions. Boundary case: `healthy` enforces `predicted_class == 'notumor'` only, so a `healthy` verdict with stale non-null geometry is constrained only via the generic `segmentation_state↔area` checks, not a dedicated `healthy↔bbox` rule.
 
 ---
 *End of System Architecture Specification — BrainTumor-MajorProject (Release FINAL-001)*

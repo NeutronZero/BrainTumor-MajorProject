@@ -1,8 +1,8 @@
 {
  "rule": "stable iff confident + agreement==1.0 + quality accept + (notumor OR nonempty+localized); else review. Fixed, untuned.",
  "module_hashes": {
-  "reliability/engine.py": "9f5d375289ea66e4",
-  "inference/service.py": "a1ecee1a670645f6"
+  "reliability/engine.py": "dcc3e37c402affa6",
+  "inference/service.py": "be0f467bdf283a7e"
  },
  "combination_matrix_synthetic": {
   "textured": {

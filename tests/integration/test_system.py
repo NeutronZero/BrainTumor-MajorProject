@@ -70,7 +70,8 @@ def test_classify_contract(client, noise_img):
 def test_segment_localize_invariants(client, noise_img):
     seg = _post(client, "/segment", noise_img).json()
     assert seg["segmentation_state"] in ("empty", "nonempty")
-    loc = _post(client, "/localize", noise_img).json()
+    loc = {k: v for k, v in _post(client, "/localize", noise_img).json().items()
+           if k != "disclaimer"}  # envelope notice is not part of the result
     if seg["segmentation_state"] == "empty":
         assert loc == {"bbox": None, "centroid": None, "area_pixels": 0}
     else:
@@ -164,16 +165,72 @@ def test_healthy_path_no_validation_error():
 
 
 def test_degraded_paths_without_checkpoints(noise_img):
-    """Missing weights: classifier raises, segmenter reports unavailable."""
+    """Missing weights: classifier raises, segmenter reports unavailable —
+    with the FULL contract shape (localization + warnings), matching
+    analyze()'s degraded path and the /segment endpoint contract."""
     import io
     from PIL import Image
     import pytest
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from brain_tumor.contracts import LocalizationResult
     from brain_tumor.inference import service as svc_mod
     svc = svc_mod.InferenceService(classifier_ckpt=Path("none"), segmenter_ckpt=Path("none"))
     assert svc.segmentation_available is False
-    assert svc.segment(Image.open(io.BytesIO(noise_img))) == {"segmentation_state": "unavailable"}
+    assert svc.segment(Image.open(io.BytesIO(noise_img))) == {
+        "segmentation_state": "unavailable",
+        "localization": LocalizationResult(bbox=None, centroid=None, area_pixels=0),
+        "warnings": ["segmentation_unavailable"]}
     with pytest.raises(RuntimeError, match="classifier_unavailable"):
         svc.classify(Image.open(io.BytesIO(noise_img)))
     with pytest.raises(RuntimeError, match="classifier_unavailable"):
         svc.consistency(Image.open(io.BytesIO(noise_img)))
+
+
+def test_segment_endpoint_degraded_contract(noise_img):
+    """H1 regression: /segment with unavailable segmenter must return 200
+    with the frozen contract shape — never KeyError -> 500."""
+    from unittest.mock import patch
+    import main as api_main
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from brain_tumor.contracts import LocalizationResult
+    from brain_tumor.inference import service as svc_mod
+    svc = svc_mod.InferenceService(classifier_ckpt=Path("none"), segmenter_ckpt=Path("none"))
+    client = TestClient(api_main.app)
+    with patch.object(api_main, "_service", svc):
+        r = _post(client, "/segment", noise_img)
+    assert r.status_code == 200, r.status_code
+    body = r.json()
+    assert body["segmentation_state"] == "unavailable"
+    assert body["localization"] == {"bbox": None, "centroid": None, "area_pixels": 0}
+    assert "segmentation_unavailable" in body["warnings"]
+    assert "disclaimer" in body
+    # And the payload is a constructible BrainTumorResult localization.
+    LocalizationResult(**body["localization"])
+
+
+def test_disclaimer_on_all_endpoints(noise_img):
+    """H2 regression: every API payload must carry the non-diagnosis notice."""
+    import main as api_main
+    client = TestClient(api_main.app)
+    for path in ("/health", "/classify", "/segment", "/localize", "/quality",
+                 "/consistency", "/analyze", "/reliability", "/explain"):
+        if path == "/health":
+            r = client.get(path)
+        else:
+            r = _post(client, path, noise_img)
+        assert r.status_code == 200, (path, r.status_code)
+        body = r.json()
+        assert "disclaimer" in body, path
+        assert "not a medical diagnosis" in body["disclaimer"], path
+    # Error envelopes stay machine-readable without the notice (documented).
+    assert "disclaimer" not in _post(client, "/analyze", noise_img, "text/plain").json()
+
+
+def test_truncated_image_is_422():
+    """M8 regression: header-valid but truncated uploads must surface as 422
+    at decode time, not as a 500 deep inside inference."""
+    import main as api_main
+    client = TestClient(api_main.app)
+    truncated = _png(_rng.rand(256, 256) * 255)[:40]
+    r = _post(client, "/classify", truncated)
+    assert r.status_code == 422, r.status_code

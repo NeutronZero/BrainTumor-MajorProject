@@ -23,7 +23,10 @@ validation, not clinical diagnostic accuracy claims.
   (`1d0986ec…`): grayscale→3ch, resize 224, ImageNet normalize; train-only
   hflip/rotation/affine; loss CE label-smoothing 0.1; AdamW 3e-4 cosine,
   AMP, clip 1.0, early-stop patience 8 on val Macro-F1.
-- Checkpoint `checkpoints/CLS-001/best.pt` (`0fa58033…`), best epoch 14/30.
+- Checkpoint `checkpoints/CLS-001/best.pt` (`451e4fc4…`, state-only release
+  build per `scripts/release/strip_cls_checkpoint.py`; weights bit-identical
+  to training output `0fa58033…`, lineage recorded in-checkpoint), best
+  epoch 14/30.
 - Validation (project val N=1000): Macro-F1 0.9950. Frozen calibration (val
   NLL/val criterion, test never touched): T=0.5116, τ1=0.95, τ2=0.05
   (`outputs/CLS-001/calibration_frozen.json`, `2d4bd736…`).
@@ -81,7 +84,7 @@ validation, not clinical diagnostic accuracy claims.
   ONNX accurate-but-no-faster (closed); K=8 batching exact-but-slower
   (rejected); quantization not opened. T4 FP16 medians: classify 0.0125s /
   segment 0.0178s / K8 0.318s / analyze 0.0301s; 370/578MB. CPU fallback
-  verified; 49-test CI green (48 unit+integration + 1 data-gate).
+  verified; 85-test CI green (84 unit+integration+regression + 1 data-gate).
 
 ## Known limitations (summary; see Limitations & Validation Report)
 

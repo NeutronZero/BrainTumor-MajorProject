@@ -30,6 +30,11 @@ WarningCode = Literal[
     "segmentation_empty",
     "low_confidence",
     "multiple_components",
+    # "oversized_component_filtered" is a RESERVED code: the frozen extractor
+    # (localization/extract.py) implements no oversized-component filtering and
+    # never emits it. Adding such filtering would alter the frozen localization
+    # semantics (largest_plus_total at threshold 0.5, min_area 10), so it stays
+    # dead vocabulary here — accepted by the contract, produced by nothing.
     "oversized_component_filtered",
 ]
 
@@ -137,6 +142,12 @@ class BrainTumorResult(BaseModel):
         # Precedence + invariants (§24)
         if ss == "healthy" and pc != "notumor":
             raise ValueError("healthy requires predicted_class == notumor")
+        if ss == "healthy" and cs != "confident":
+            raise ValueError("healthy requires confident classification")
+        if ss != "degraded" and (seg == "unavailable"
+                                 or "segmentation_unavailable" in w):
+            raise ValueError(
+                "segmentation unavailable must derive system_state == degraded")
         if ss == "tumor_localized":
             if pc == "notumor":
                 raise ValueError("tumor_localized requires tumor class")
@@ -159,6 +170,12 @@ class BrainTumorResult(BaseModel):
             raise ValueError("empty segmentation requires area_pixels == 0")
         if seg == "nonempty" and area <= 0:
             raise ValueError("nonempty segmentation requires area_pixels > 0")
+        # argmax/confidence invariant — same guarantee ClassificationResult
+        # carries (M1): 6-dp wire rounding stays within the 1e-6 tolerance.
+        if abs(max(self.probabilities.values()) - self.confidence) > 1e-6:
+            raise ValueError("confidence must equal max(probabilities)")
+        if max(self.probabilities, key=lambda k: self.probabilities[k]) != pc:
+            raise ValueError("predicted_class must be argmax(probabilities)")
         return self
 
 
@@ -175,7 +192,11 @@ def derive_system_state(
         return "uncertain"
     if predicted_class != "notumor" and segmentation_state == "empty":
         return "tumor_unlocalized"
-    if predicted_class != "notumor" and segmentation_state in ("nonempty", "available"):
+    # "nonempty" only: seg=="available" (mask not computed) has no
+    # contract-constructible tumor state — deriving tumor_localized here would
+    # contradict the BrainTumorResult validator. Such inputs now derive
+    # "uncertain" (fall-through), which IS constructible.
+    if predicted_class != "notumor" and segmentation_state == "nonempty":
         return "tumor_localized"
     if predicted_class == "notumor":
         return "healthy"

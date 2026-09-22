@@ -30,14 +30,14 @@ API / Streamlit (contract-validated outputs)
 | Component | Implementation | Frozen record |
 | --- | --- | --- |
 | Quality | src/brain_tumor/quality/gate.py | QUALITY validation |
-| Classifier | ConvNeXt-Tiny, ckpt hash 0fa58033 | locked N=1000 |
+| Classifier | ConvNeXt-Tiny, ckpt hash 451e4fc4 (state-only release build; weights identical to training output 0fa58033, lineage recorded in-checkpoint) | locked N=1000 |
 | Calibration | T=0.5116, τ1=0.95, τ2=0.05 | calibration_frozen.json |
 | Segmenter | U-Net, ckpt hash ce29df5e | locked N=860 |
 | Localization | extract(), thr 0.5, min-area 10 | 785-pair invariants |
 | Consistency | K=8, σ=0.05, seeds 7003+k | UNC-001 val + locked |
 | Reliability | engine.py stable/review rule | REL-001 evidence |
 | Explanation | Grad-CAM features.7.2.block.0 | EXPL-001 evidence |
-| Service/API/UI | service.py, main.py, app.py | 49-test CI + live checks |
+| Service/API/UI | service.py, main.py, app.py | 85-test CI (84 unit+integration+regression + 1 data-gate) + live checks |
 | Deployment | FP16/autocast CUDA-gated | T4 floors + medians |
 
 ROB-001 (noise U-Net) is a documented non-default variant, outside the

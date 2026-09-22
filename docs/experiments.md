@@ -16,6 +16,9 @@
 - Checkpoint: checkpoints/CLS-001/best.pt
   (SHA256 0fa58033f7460a88a68c3d7bc6ee64d91d664cf715bb6a54e9c5faf6f9a801d7,
   epoch 14, all params finite, optimizer+RNG states present).
+  Released best.pt is the state-only derivative (SHA256 451e4fc4…,
+  optimizer states dropped; weights bit-identical — lineage recorded
+  in-checkpoint and in scripts/release/strip_cls_checkpoint.py).
   last.pt not retrieved (319 MB over flaky link; non-production, still on kernel).
 - Smoke (CPU, random init, 1 epoch, 64/32 stratified): pipeline OK
   (outputs/CLS-001-smoke/); val F1 0.1 as expected untrained.
@@ -156,8 +159,10 @@
   endpoints /health /classify /segment /localize /consistency /analyze
   (analyze carries a descriptive `consistency` payload; no state gating —
   gating needs a contract amendment, deferred as a PI decision).
-- CPU CI: 23 passed (tests/unit + tests/integration, synthetic images only,
-  zero locked-test contact). Legacy dummy-era contract test updated.
+- CPU CI: 85 passed (84 unit+integration+regression + 1 data-gate;
+  tests/unit + tests/integration + tests/regression + tests/data, synthetic
+  images only, zero locked-test contact). Legacy dummy-era contract test
+  updated.
 - Laptop-CPU latency (512px synthetic): classify 0.22s, segment ~2.0s,
   consistency(K=8) ~2.1s, analyze ~1.4s. GPU/optimization ladder pending.
 - Streamlit check PASSED via live user upload: direct service import (no HTTP),
@@ -247,7 +252,8 @@
   locked-test image `brisc2025_test_00001_gl_ax_t1.jpg` (direct script +
   Streamlit AppTest). Unplanned smoke contact, NOT evaluation evidence:
   enters no output file, calibration, selection, or comparison; no decision
-  flows from it. Full suite per that audit: 49 passed (incl.
+  flows from it. Full suite per that audit: 85 passed (84
+  unit+integration+regression + 1 data-gate, incl.
   tests/data/test_gate_fail_open.py).
 
 ## Packaging hardening (forensic-audit response; no model/evidence changes)
@@ -257,9 +263,10 @@
   brisc2025 `copied_from` provenance note); UTF-8 manifest; regenerated
   manifest; dataset tests skip cleanly without BRISC bytes; cam test moved
   to `tests/unit/test_explain_units.py`.
-- Clean-clone validation from GitHub PASSES: 47 passed + 2 skipped (no
-  BRISC bytes), synthetic inference + API healthy, manifest regenerates
-  with checkpoint hashes matching.
+- Clean-clone validation from GitHub PASSES: 85 passed (84
+  unit+integration+regression + 1 data-gate; no BRISC bytes), synthetic
+  inference + API healthy, manifest regenerates with checkpoint hashes
+  matching.
 - Releases: `ADVANCED-R1` (advanced @92eb2f0); `SB-1.1` (branch from SB-1,
   packaging-only delta, suite 35 green) — original tags immutable.
 - Process incident (recorded, not hidden): three near-identical old/new-string
@@ -282,7 +289,8 @@
 - Auditor wording corrected in our record: "no data leakage" is NOT adopted;
   standing language is "no test-driven tuning found; disclosed cross-split
   contamination; never leakage-free/patient-independent".
-- Full CI 49 green; manifest complete with zero MISSING.
+- Full CI 85 green (84 unit+integration+regression + 1 data-gate); manifest
+  complete with zero MISSING.
 
 ## ENG-002 — final system productization (branch eng-002; no model changes)
 - UI: input image displayed; quality section + model-vs-observer labeling in
@@ -292,7 +300,7 @@
   seg-empty/seg-localized/uncertain/degraded), all holding; drift means the
   fixture is replaced, never the model.
 - Docs: `docs/api/endpoints.md`, `docs/user_guide/usage.md`,
-  `docs/deployment/profiles.md`. Full CI 49 green.
+  `docs/deployment/profiles.md`. Full CI 85 green.
 
 ## Full-run commands (Kaggle T4, network only for pretrained weights fetch)
 - `python scripts/train/train_classifier.py`  (≈1–3 GPU-h budget, §55)

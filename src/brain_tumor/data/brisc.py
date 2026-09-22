@@ -45,11 +45,13 @@ class ClsDataset(Dataset):
 
     def __init__(self, project_root: Path, manifest_rows: list[dict], split: str,
                  transform=None):
-        assert split in ("train", "val")
+        if split not in ("train", "val"):
+            raise ValueError(f"unknown split {split!r} (expected train|val)")
         self.root = project_root
         self.rows = [r for r in manifest_rows
                      if r["population"] == "official_train_pool" and r["project_split"] == split]
-        assert self.rows, f"empty {split} set"
+        if not self.rows:
+            raise ValueError(f"empty {split} set")
         self.transform = transform
 
     def __len__(self) -> int:
@@ -72,7 +74,8 @@ class SegDataset(Dataset):
 
     def __init__(self, project_root: Path, manifest_rows: list[dict], split: str,
                  pair_transform=None, subset_stems: set[str] | None = None):
-        assert split in ("train", "val")
+        if split not in ("train", "val"):
+            raise ValueError(f"unknown split {split!r} (expected train|val)")
         stem_to_split = {Path(r["path"]).stem: r["project_split"] for r in manifest_rows
                          if r["population"] == "official_train_pool"}
         release = project_root / "data" / "brisc2025"
@@ -93,7 +96,8 @@ class SegDataset(Dataset):
                 skipped["wrong_split"] += 1
                 continue
             pairs.append((img_p, m_p))
-        assert pairs, f"empty seg {split} set"
+        if not pairs:
+            raise ValueError(f"empty seg {split} set")
         print(f"SegDataset({split}): pairs={len(pairs)} skipped={skipped}")
         self.pairs = pairs
         self.pair_transform = pair_transform

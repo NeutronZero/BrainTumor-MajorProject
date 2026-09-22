@@ -6,7 +6,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with: { python-version: "3.14" }  # matches requirements.lock baseline (recorded on 3.14)
       - run: pip install -r requirements.lock
+      - run: pip install pytest-cov  # coverage gate tooling (not part of the runtime lock)
       - run: python scripts/reproducibility_check.py
-      - run: python -m pytest -q
+      # fail_under=70 comes from [tool.coverage.report] in pyproject.toml
+      - run: python -m pytest -q --cov=brain_tumor --cov-report=term-missing

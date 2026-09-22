@@ -227,12 +227,13 @@ def _cls_block(records: list[dict], tag: str) -> dict:
                                  roc_auc_score)
     y = [c["true"] for c in records]
     p = [c["pred"] for c in records]
+    # AUC needs integer targets; labels arrive as class strings.
+    y_idx = [CLASSES.index(v) for v in y]
     prec, rec, f1, _ = precision_recall_fscore_support(y, p, labels=CLASSES, zero_division=0)
-    try:
-        auc = float(roc_auc_score(y, [c["probs"] for c in records],
-                                  multi_class="ovr", labels=list(range(4))))
-    except Exception as e:  # noqa: BLE001
-        auc = None
+    # Fail loud on AUC failure: a silently-null metric in a frozen artifact
+    # is evidence corruption, not a graceful degradation.
+    auc = float(roc_auc_score(y_idx, [c["probs"] for c in records],
+                              multi_class="ovr", labels=list(range(4))))
     import torch as _t
     ece = calibrate.ece(_t.tensor([c["probs"] for c in records]),
                         _t.tensor([CLASSES.index(v) for v in y]))

@@ -16,6 +16,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from brain_tumor.inference.service import InferenceService  # noqa: E402
 
 LIMIT_BYTES = 10 * 1024 * 1024
+DISCLAIMER = ("Engineering prototype output — not a medical diagnosis. "
+              "Not a certified medical device; never use for clinical "
+              "diagnosis, triage, or therapy planning. Research use only.")
 
 
 def build_payload(svc: InferenceService, data: bytes) -> dict:
@@ -29,10 +32,17 @@ def build_payload(svc: InferenceService, data: bytes) -> dict:
     except Exception:  # noqa: BLE001
         return {"error": "undecodable_image", "detail": "cannot decode upload"}
     try:
-        payload = svc.analyze(img).model_dump()
-        payload["quality"] = svc.quality(data)
-        payload["consistency"] = svc.consistency(img)
-        payload["reliability"] = svc.reliability(img, raw=data)
+        # Same threading as API /analyze: compute once, pass down. Outputs
+        # are bit-identical to the pre-threading implementation (every stage
+        # is deterministic); this only removes redundant forward passes.
+        result = svc.analyze(img)
+        payload = result.model_dump()
+        qual = svc.quality(data)
+        payload["quality"] = qual
+        con = svc.consistency(img, clean_pred=result.predicted_class)
+        payload["consistency"] = con
+        payload["reliability"] = svc.reliability(
+            img, raw=data, result=result, con=con, qual=qual)
         return payload
     except Exception as e:  # noqa: BLE001 — never leak stack/paths
         return {"error": "inference_failed", "detail": str(type(e).__name__)}
@@ -83,6 +93,9 @@ def render_result(st, payload: dict, image_bytes: bytes | None = None) -> None:
         st.warning("Segmentation unavailable — system degraded.")
     if payload.get("warnings"):
         st.write(f"Warnings: {', '.join(payload['warnings'])}")
+    # Standing non-diagnosis footer on every result render (usage.md promise:
+    # non-clinical status travels with every result, not just the title).
+    st.caption(DISCLAIMER)
 
 
 def render_explanation(st, payload: dict, image_bytes: bytes | None = None) -> None:
@@ -124,6 +137,10 @@ if __name__ == "__main__":
                           image_bytes=up.getvalue())
         if st.button("Explain") and up is not None:
             from PIL import Image
+            if len(up.getvalue()) > LIMIT_BYTES:
+                # Same limit as the Analyze path / API contract (10MB).
+                st.error("file_too_large: limit 10MB")
+                st.stop()
             try:
                 render_explanation(st, svc.explain(Image.open(io.BytesIO(up.getvalue())),
                                                   raw=up.getvalue()),

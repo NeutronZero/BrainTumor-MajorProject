@@ -40,6 +40,12 @@ def main() -> int:
     results["masks"] = inspect_masks.main()
     results["split_overlap"] = audit_split_overlap.main()
 
+    # M11: "near_duplicates" is intentionally NOT in the hard list — it is
+    # report-only per configs/data/gate_thresholds.yaml:18
+    # (near_duplicate_policy: report_only). audit_near_duplicates.py always
+    # returns pass: True, so including it here would be dead weight; the
+    # near-duplicate report is written for human review but can never fail
+    # the gate. Hard checks remain fail-closed (any failure => FAIL).
     hard = ["source", "hashes", "characterize", "exact_duplicates", "split_overlap"]
     hard_fail = [k for k in hard if not results[k].get("pass")]
     masks_ok = results["masks"].get("pass")

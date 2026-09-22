@@ -24,6 +24,7 @@ import torch
 
 from brain_tumor.classification.models import build_classifier
 from brain_tumor.contracts import (
+    CANONICAL_CLASSES,
     BrainTumorResult,
     LocalizationResult,
     derive_system_state,
@@ -35,7 +36,7 @@ from brain_tumor.preprocessing.pipeline import (
 )
 from brain_tumor.segmentation.unet import UNet
 
-CLASSES = ("glioma", "meningioma", "pituitary", "notumor")
+CLASSES = CANONICAL_CLASSES
 CONSISTENCY_K = 8
 CONSISTENCY_SEED_BASE = 7003
 CONSISTENCY_SIGMA = 0.05
@@ -64,8 +65,10 @@ class InferenceService:
         self.clf = None
         if classifier_ckpt is not None and Path(classifier_ckpt).exists():
             clf = build_classifier("convnext_tiny")
+            # weights_only=True: no pickle execution surface (own frozen file,
+            # state_dict-only content — verified loadable under the restriction).
             clf.load_state_dict(torch.load(classifier_ckpt, map_location=device,
-                                           weights_only=False)["state"])
+                                           weights_only=True)["state"])
             clf.eval()
             clf.to(device)
             self.clf = clf
@@ -75,7 +78,7 @@ class InferenceService:
         if segmenter_ckpt is not None and Path(segmenter_ckpt).exists():
             seg = UNet()
             seg.load_state_dict(torch.load(segmenter_ckpt, map_location=device,
-                                           weights_only=False)["state"])
+                                           weights_only=True)["state"])
             seg.eval()
             seg.to(device)
             self.seg = seg
@@ -135,7 +138,12 @@ class InferenceService:
 
     def segment(self, image: Any = None) -> dict:
         if not self.segmentation_available:
-            return {"segmentation_state": "unavailable"}
+            # Frozen contract (endpoints.md /segment): the degraded branch still
+            # carries localization + warnings, exactly like analyze()'s path.
+            return {"segmentation_state": "unavailable",
+                    "localization": LocalizationResult(
+                        bbox=None, centroid=None, area_pixels=0),
+                    "warnings": ["segmentation_unavailable"]}
         from PIL import Image as _Image
         pil = image if isinstance(image, _Image.Image) else _Image.open(image)
         prob, ow, oh = self._segment_prob(pil.convert("L"))
@@ -152,13 +160,19 @@ class InferenceService:
             return self.segment(image)["localization"]
         return LocalizationResult(bbox=None, centroid=None, area_pixels=0)
 
-    def consistency(self, image: Any = None, k: int = CONSISTENCY_K) -> dict:
+    def consistency(self, image: Any = None, k: int = CONSISTENCY_K,
+                    clean_pred: str | None = None) -> dict:
         """UNC-001 frozen rule, descriptive only. Fixed seeds (base + k).
 
         Deployment rung BENCH-004 tested a batched single-forward execution:
         numerically identical (0 mismatches, N=1000) but SLOWER on T4
         (0.258s vs 0.159s sequential), so the sequential loop is retained.
         Same seeds, same rule either way.
+
+        clean_pred: optional precomputed clean prediction. When supplied the
+        internal classify() call is skipped (callers that already ran
+        analyze/classify thread it through to avoid a redundant forward);
+        when None, behavior is identical to the original implementation.
         """
         if self.clf is None:
             raise RuntimeError("classifier_unavailable")
@@ -166,7 +180,8 @@ class InferenceService:
         import numpy as _np
         pil = image if isinstance(image, _Image.Image) else _Image.open(image)
         base = pil.convert("RGB")
-        clean_pred = self.classify(base)["predicted_class"]
+        if clean_pred is None:
+            clean_pred = self.classify(base)["predicted_class"]
         agree = 0
         with torch.no_grad(), self._autocast():
             for kk in range(k):
@@ -189,19 +204,30 @@ class InferenceService:
         from brain_tumor.quality.gate import assess
         return assess(data)
 
-    def reliability(self, image: Any = None, raw: bytes | None = None) -> dict:
+    def reliability(self, image: Any = None, raw: bytes | None = None,
+                    result: BrainTumorResult | None = None,
+                    con: dict | None = None, qual: dict | None = None) -> dict:
         """REL-001 descriptive fusion (observer only).
 
         Runs the identical analyze()/consistency()/quality() paths and fuses
         their already-computed outputs via reliability_report(). Cannot alter
         predictions, probabilities, segmentation, localization, or
         system_state — disabling it leaves every SB-1 output bit-identical.
+
+        result/con/qual: optional precomputed outputs of analyze(),
+        consistency(), and quality(). Any argument left as None is computed
+        internally exactly as before, so the default call path is unchanged;
+        threaded arguments only skip redundant recomputation (bit-identical
+        outputs — determinism covered by tests).
         """
         from brain_tumor.reliability.engine import reliability_report
-        result = self.analyze(image)
+        if result is None:
+            result = self.analyze(image)
         payload = result.model_dump()
-        con = self.consistency(image)
-        qual = self.quality(raw) if raw is not None else None
+        if con is None:
+            con = self.consistency(image)
+        if qual is None:
+            qual = self.quality(raw) if raw is not None else None
         return reliability_report(
             classification={"predicted_class": payload["predicted_class"],
                             "confidence": payload["confidence"],
@@ -211,7 +237,9 @@ class InferenceService:
             localization=payload["localization"],
             system_state=payload["system_state"])
 
-    def explain(self, image: Any = None, raw: bytes | None = None) -> dict:
+    def explain(self, image: Any = None, raw: bytes | None = None,
+                result: BrainTumorResult | None = None,
+                con: dict | None = None) -> dict:
         """EXPL-001 unified explanation (observer only).
 
         Runs the identical analyze() path (outputs/system_state provably
@@ -220,6 +248,10 @@ class InferenceService:
         quality (when raw bytes supplied), and the text report.
         Explanation forwards run FP32 on all devices (fidelity choice,
         documented in EXPL-001 evidence).
+
+        result/con: optional precomputed analyze()/consistency() outputs
+        (API-symmetric with reliability(); None => computed internally,
+        default path unchanged).
         """
         import base64
         import io as _io
@@ -229,13 +261,14 @@ class InferenceService:
             upsample_cam)
         from brain_tumor.explain.report import build_report
 
-        result = self.analyze(image)
+        if result is None:
+            result = self.analyze(image)
         payload = result.model_dump()
         pil = image if isinstance(image, _Image.Image) else _Image.open(image)
         base = pil.convert("RGB")
         gray = pil.convert("L")
         ow, oh = pil.size
-        payload["consistency"] = self.consistency(base)
+        payload["consistency"] = con if con is not None else self.consistency(base)
         if raw is not None:
             payload["quality"] = self.quality(raw)
 

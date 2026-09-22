@@ -22,9 +22,18 @@ def reliability_report(classification: dict, consistency: dict,
     basis: list[str] = []
     ok = True
 
-    if classification.get("classification_state") == "confident":
-        basis.append(f"calibrated confidence {classification.get('confidence'):.4f} "
+    conf = classification.get("confidence")
+    conf_numeric = isinstance(conf, (int, float)) and not isinstance(conf, bool)
+    if classification.get("classification_state") == "confident" and conf_numeric:
+        basis.append(f"calibrated confidence {conf:.4f} "
                      f"({classification.get('predicted_class')})")
+    elif classification.get("classification_state") == "confident":
+        # Confident state but non-numeric/missing confidence (e.g. None):
+        # never crash on the format string — degrade to review with a clear
+        # basis entry stating the inconsistency.
+        ok = False
+        basis.append(f"confidence {conf!r} non-numeric despite confident "
+                     "classification_state — review")
     else:
         ok = False
         basis.append("classification uncertain — review")

@@ -1,0 +1,32 @@
+{
+ "source": "outputs/PBA-001/per_case_test.json",
+ "n": 1000,
+ "accuracy": {
+  "k_correct": 995,
+  "point": 0.995,
+  "method": "clopper_pearson_exact_binomial",
+  "confidence": 0.95,
+  "ci95": [
+   0.988371,
+   0.998375
+  ]
+ },
+ "macro_f1": {
+  "point": 0.995167,
+  "method": "percentile_bootstrap_case_resample",
+  "confidence": 0.95,
+  "B": 10000,
+  "seed": 42,
+  "rng": "numpy.random.RandomState",
+  "percentile": [
+   2.5,
+   97.5
+  ],
+  "ci95": [
+   0.9904,
+   0.999101
+  ]
+ },
+ "producer": "scripts/evaluate/bootstrap_ci.py",
+ "note": "Sampling uncertainty on the evaluated BRISC 2025 locked-test cohort only; not a clinical-generalization bound. Research prototype \u2014 not a medical diagnosis."
+}

@@ -3,7 +3,7 @@
  "engineering_note": "engineering verification of a failure-detection mechanism; not a replacement classifier; no research-novelty claim",
  "frozen": {
   "checkpoint": "checkpoints/CLS-001/best.pt",
-  "checkpoint_sha256": "0fa58033f7460a88a68c3d7bc6ee64d91d664cf715bb6a54e9c5faf6f9a801d7",
+  "checkpoint_sha256": "451e4fc4b12446764262c159253e7550b5a08db49bb2956059f71613e268095e",
   "preprocessing": "build_cls_transform(False), image_size 224",
   "T": 0.5115954875946045,
   "tau1": 0.95,

@@ -70,8 +70,12 @@ def main() -> int:
           and bk8["latency_s"]["consistency_batched"]["median"]
           > bk8["latency_s"]["consistency_seq"]["median"])
 
-    # Gate 5: hashes + locked numbers
-    for p, pre in (("checkpoints/CLS-001/best.pt", "0fa58033"),
+    # Gate 5: hashes + locked numbers.
+    # CLS-001 best.pt is the C3 state-only release derivative (451e4fc4):
+    # identical weights to the original 0fa58033 file (key removal only,
+    # lineage recorded inside the checkpoint); locked eval attribution is the
+    # original file, documented in scripts/release/strip_cls_checkpoint.py.
+    for p, pre in (("checkpoints/CLS-001/best.pt", "451e4fc4"),
                    ("checkpoints/SEG-001/best.pt", "ce29df5e"),
                    ("checkpoints/ROB-001/best.pt", "36091d63")):
         check(f"hash:{p}", sha(root / p).startswith(pre), sha(root / p)[:16])

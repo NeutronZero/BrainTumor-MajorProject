@@ -3,11 +3,11 @@
  "checks": {
   "cpu_load": {
    "pass": true,
-   "detail": "4.9s"
+   "detail": "4.7s"
   },
   "cpu_inference": {
    "pass": true,
-   "detail": "2.18s -> tumor_unlocalized"
+   "detail": "2.00s -> tumor_unlocalized"
   },
   "cpu_determinism": {
    "pass": true,
@@ -27,7 +27,7 @@
   },
   "hash:checkpoints/CLS-001/best.pt": {
    "pass": true,
-   "detail": "0fa58033f7460a88"
+   "detail": "451e4fc4b1244676"
   },
   "hash:checkpoints/SEG-001/best.pt": {
    "pass": true,
