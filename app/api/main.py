@@ -11,23 +11,88 @@ MIME sniffing via filetype provides defense-in-depth against content-type spoofi
 
 from __future__ import annotations
 
+import hashlib
 import io
+import sys
+import time
 from pathlib import Path
 from typing import Any
 
 import filetype
-from fastapi import FastAPI, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, UploadFile
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
+from PIL import ImageFile
+from prometheus_client import Counter, Histogram, generate_latest
+from starlette.middleware.base import BaseHTTPMiddleware
 
-import sys
+# Harden PIL: disable truncated image loading, decompression bomb guard
+ImageFile.LOAD_TRUNCATED_IMAGES = False
+
+# ---- Prometheus metrics -------------------------------------------------------
+INFERENCE_REQUESTS = Counter(
+    "inference_requests_total", "Total inference requests", ["endpoint", "status"]
+)
+INFERENCE_LATENCY = Histogram(
+    "inference_latency_seconds", "Inference latency in seconds", ["stage"]
+)
+REQUEST_LATENCY = Histogram(
+    "http_request_latency_seconds", "HTTP request latency in seconds", ["endpoint"]
+)
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-from brain_tumor.inference.service import InferenceService  # noqa: E402
+from brain_tumor.inference.service import InferenceService, get_request_id, set_request_id, _request_id_var  # noqa: E402
 
-API_DISCLAIMER = ("Engineering prototype output — not a medical diagnosis. "
-                  "Not a certified medical device; never use for clinical "
-                  "diagnosis, triage, or therapy planning. Research use only "
-                  "(retrospective BRISC 2025 data).")
+# ---- request ID propagation ---------------------------------------------------
+
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """Extract or generate request ID, propagate via context var and response header."""
+
+    async def dispatch(self, request: Request, call_next):
+        req_id = request.headers.get("x-request-id") or set_request_id()
+        token = _request_id_var.set(req_id)
+        try:
+            response = await call_next(request)
+        finally:
+            _request_id_var.reset(token)
+        response.headers["x-request-id"] = req_id
+        return response
+
+# ---- integrity verification --------------------------------------------------
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_INTEGRITY_FILES = {
+    "clf_checkpoint": "checkpoints/CLS-001/best.pt",
+    "seg_checkpoint": "checkpoints/SEG-001/best.pt",
+    "clf_calibration": "outputs/CLS-001/calibration_frozen.json",
+    "seg_norm": "outputs/SEG-001/metrics.json",
+    "cls_config": "configs/experiment/CLS-001.yaml",
+    "seg_config": "configs/experiment/SEG-001.yaml",
+}
+
+
+def _sha256_file(path: Path) -> str | None:
+    """Return SHA256 hex digest or None if file missing."""
+    full = _PROJECT_ROOT / path
+    if not full.exists():
+        return None
+    h = hashlib.sha256()
+    with full.open("rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _integrity_report() -> dict[str, str | None]:
+    """Compute integrity hashes for all tracked artifacts."""
+    return {k: _sha256_file(v) for k, v in _INTEGRITY_FILES.items()}
+
+API_DISCLAIMER = (
+    "Engineering prototype output — not a medical diagnosis. "
+    "Not a certified medical device; never use for clinical "
+    "diagnosis, triage, or therapy planning. Research use only "
+    "(retrospective BRISC 2025 data)."
+)
 
 
 # ---- response models (one per endpoint) -----------------------------------
@@ -99,8 +164,7 @@ class AnalyzePayload(_Payload):
     quality: dict[str, Any]
     # Absent (not null) when consistency_probes=false — exclude_if preserves
     # the pre-response_model wire shape exactly; OpenAPI still documents it.
-    consistency: dict[str, Any] | None = Field(
-        default=None, exclude_if=lambda v: v is None)
+    consistency: dict[str, Any] | None = Field(default=None, exclude_if=lambda v: v is None)
     reliability: dict[str, Any]
     disclaimer: str
 
@@ -127,21 +191,38 @@ class ExplainPayload(_Payload):
     system_state: str
     consistency: dict[str, Any]
     # Present when raw bytes supplied; absent otherwise (service omits the key).
-    quality: dict[str, Any] | None = Field(
-        default=None, exclude_if=lambda v: v is None)
+    quality: dict[str, Any] | None = Field(default=None, exclude_if=lambda v: v is None)
     gradcam: dict[str, Any]
     segmentation_vis: dict[str, Any] | None
     report_text: str
     disclaimer: str
 
 
-app = FastAPI(title="BrainTumor-MajorProject", version="0.1.0",
-              description=API_DISCLAIMER
-              + " Every inference payload embeds this notice in `disclaimer`.")
+app = FastAPI(
+    title="BrainTumor-MajorProject",
+    version="0.1.0",
+    description=API_DISCLAIMER + " Every inference payload embeds this notice in `disclaimer`.",
+)
+app.add_middleware(RequestIDMiddleware)
+
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(content=generate_latest(), media_type="text/plain")
+
+
+@app.middleware("http")
+async def _request_latency_middleware(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    REQUEST_LATENCY.labels(endpoint=request.url.path).observe(time.perf_counter() - start)
+    return response
+
+
 _service = InferenceService.from_registry()
 
 _ALLOWED = ("image/jpeg", "image/png", "image/bmp", "image/tiff")
-_ALLOWED_EXTS = {"jpg", "jpeg", "png", "bmp", "tif", "tiff"}
 _LIMIT = 10 * 1024 * 1024
 # Decompression-bomb guard: project inputs are ≤1024²; 32 MP leaves a wide
 # margin while rejecting pathological declares (PIL default ≈ 89 MP).
@@ -153,12 +234,8 @@ def _with_disclaimer(result: dict) -> dict:
     return {**result, "disclaimer": API_DISCLAIMER}
 
 
-def _check_type(file: UploadFile):
-    if file.content_type not in _ALLOWED:
-        return JSONResponse({"error": "unsupported_type",
-                             "detail": f"content-type {file.content_type} not supported"},
-                            status_code=415)
-    return None
+_ALLOWED_MIME = {"jpeg", "png", "bmp", "tiff"}
+_ALLOWED_EXTS = {"jpg", "jpeg", "png", "bmp", "tif", "tiff"}
 
 
 async def _upload_size(file: UploadFile) -> int:
@@ -178,38 +255,57 @@ async def _upload_size(file: UploadFile) -> int:
 async def _read_bounded(file: UploadFile):
     """415 type check + 413 size check BEFORE any full read; then sniff bytes
     via filetype + return the (<=10MB) bytes. Returns (data, None) or
-    (None, error_response). Sniff is an additional gate, not a PIL replacement:
-    positive mismatches (known non-image signatures) => 415; unidentifiable
-    bytes fall through to PIL => 422, preserving the envelope contract."""
-    if (r := _check_type(file)) is not None:
-        return None, r
+    (None, error_response). Sniff is an additional gate, not a PIL replacement."""
+    # 1. Declared content-type check (fast, no body read) - frozen contract
+    if file.content_type not in _ALLOWED:
+        return None, JSONResponse(
+            {
+                "error": "unsupported_type",
+                "detail": f"content-type {file.content_type} not supported",
+            },
+            status_code=415,
+        )
+    # 2. Size check (fast, uses file.size or seek) - frozen contract
     if await _upload_size(file) > _LIMIT:
-        return None, JSONResponse({"error": "file_too_large",
-                                   "detail": "limit 10MB"}, status_code=413)
+        return None, JSONResponse(
+            {"error": "file_too_large", "detail": "limit 10MB"}, status_code=413
+        )
+    # 3. Read the data (bounded) then sniff actual signature.
+    # Positive-mismatch only: known non-image signatures (exe, pdf, …)
+    # => 415 here; unidentifiable bytes fall through to PIL => 422,
+    # preserving the frozen 415/413/422 envelope contract.
     data = file.file.read()
     try:
         kind = filetype.guess(data)
     except Exception:  # noqa: BLE001 — sniff failure => let PIL decide (422)
         kind = None
     if kind is not None and (kind.mime not in _ALLOWED or kind.extension not in _ALLOWED_EXTS):
-        return None, JSONResponse({"error": "unsupported_type",
-                                   "detail": f"sniffed {kind.mime} not supported"},
-                                  status_code=415)
+        return None, JSONResponse(
+            {
+                "error": "unsupported_type",
+                "detail": f"sniffed {kind.mime} not supported",
+            },
+            status_code=415,
+        )
     return data, None
 
 
 def _decode(data: bytes):
     """Decode image bytes fully (img.load) so truncated files surface as 422
     here rather than as a 500 deep inside inference. Applies the
-    decompression-bomb guard."""
+    decompression-bomb guard + verify() for early bomb detection."""
     from PIL import Image
+
     Image.MAX_IMAGE_PIXELS = _MAX_PIXELS
     try:
         img = Image.open(io.BytesIO(data))
+        img.verify()  # Early detection of decompression bombs / malformed headers
+        img = Image.open(io.BytesIO(data))  # Re-open after verify()
         img.load()
-    except Exception:  # noqa: BLE001 — includes DecompressionBombError
-        return None, JSONResponse({"error": "undecodable_image",
-                                   "detail": "cannot decode upload"}, status_code=422)
+    except Exception:  # noqa: BLE001 — includes DecompressionBombError, SyntaxError
+        return None, JSONResponse(
+            {"error": "undecodable_image", "detail": "cannot decode upload"}, status_code=422
+        )
     return img, None
 
 
@@ -225,38 +321,58 @@ def health():
     seg = "loaded" if _service.segmentation_available else "unavailable"
     clf = "loaded" if _service.clf is not None else "unavailable"
     status = "ok" if (seg == "loaded" and clf == "loaded") else "degraded"
+    integrity = _integrity_report()
+    integrity_ok = all(v is not None for v in integrity.values())
     return _with_disclaimer(
-        {"status": status,
-         "models": {"classifier": clf, "segmenter": seg},
-         "calibration": {"T": _service.T, "tau1": _service.tau1, "tau2": _service.tau2}
-         if clf == "loaded" else "unavailable",
-         "version": "0.1.0"})
+        {
+            "status": status,
+            "models": {"classifier": clf, "segmenter": seg},
+            "calibration": {"T": _service.T, "tau1": _service.tau1, "tau2": _service.tau2}
+            if clf == "loaded"
+            else "unavailable",
+            "version": "0.1.0",
+            "integrity": {
+                "artifacts": integrity,
+                "all_present": integrity_ok,
+            },
+        }
+    )
 
 
 @app.post("/classify", response_model=ClassifyPayload)
 async def classify(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
+        INFERENCE_REQUESTS.labels(endpoint="/classify", status=err.status_code).inc()
         return err
     try:
-        return _with_disclaimer(_service.classify(img))
+        result = _with_disclaimer(_service.classify(img))
+        INFERENCE_REQUESTS.labels(endpoint="/classify", status=200).inc()
+        return result
     except Exception as e:  # noqa: BLE001 — never leak stack/paths (§64)
-        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
-                            status_code=500)
+        INFERENCE_REQUESTS.labels(endpoint="/classify", status=500).inc()
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
 
 
 @app.post("/segment", response_model=SegmentPayload)
 async def segment(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
+        INFERENCE_REQUESTS.labels(endpoint="/segment", status=err.status_code).inc()
         return err
     try:
         s = _service.segment(img)
         s["localization"] = s["localization"].model_dump()
-        return _with_disclaimer(s)
+        result = _with_disclaimer(s)
+        INFERENCE_REQUESTS.labels(endpoint="/segment", status=200).inc()
+        return result
     except Exception as e:  # noqa: BLE001
-        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
-                            status_code=500)
+        INFERENCE_REQUESTS.labels(endpoint="/segment", status=500).inc()
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
 
 
 @app.post("/localize", response_model=LocalizePayload)
@@ -267,8 +383,9 @@ async def localize(file: UploadFile):
     try:
         return _with_disclaimer(_service.localize(img).model_dump())
     except Exception as e:  # noqa: BLE001
-        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
-                            status_code=500)
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
 
 
 @app.post("/quality", response_model=QualityPayload)
@@ -279,8 +396,9 @@ async def quality(file: UploadFile):
     try:
         return _with_disclaimer(_service.quality(data))
     except Exception as e:  # noqa: BLE001
-        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
-                            status_code=500)
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
 
 
 @app.post("/consistency", response_model=ConsistencyPayload)
@@ -291,17 +409,20 @@ async def consistency(file: UploadFile):
     try:
         return _with_disclaimer(_service.consistency(img))
     except Exception as e:  # noqa: BLE001
-        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
-                            status_code=500)
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
 
 
 @app.post("/analyze", response_model=AnalyzePayload)
 async def analyze(file: UploadFile, consistency_probes: bool = True):
     data, err = await _read_bounded(file)
     if err is not None:
+        INFERENCE_REQUESTS.labels(endpoint="/analyze", status=err.status_code).inc()
         return err
     img, err = _decode(data)
     if err is not None:
+        INFERENCE_REQUESTS.labels(endpoint="/analyze", status=err.status_code).inc()
         return err
     try:
         # Compute each stage once; thread precomputed outputs into the
@@ -319,11 +440,15 @@ async def analyze(file: UploadFile, consistency_probes: bool = True):
         # consistency_probes=False => con=None => reliability computes its
         # consistency internally (matches pre-threading behavior exactly).
         payload["reliability"] = _service.reliability(
-            img, raw=data, result=result, con=con, qual=qual)
+            img, raw=data, result=result, con=con, qual=qual
+        )
+        INFERENCE_REQUESTS.labels(endpoint="/analyze", status=200).inc()
         return _with_disclaimer(payload)
     except Exception as e:  # noqa: BLE001 — never leak stack/paths (§64)
-        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
-                            status_code=500)
+        INFERENCE_REQUESTS.labels(endpoint="/analyze", status=500).inc()
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
 
 
 @app.post("/reliability", response_model=ReliabilityPayload)
@@ -338,8 +463,9 @@ async def reliability(file: UploadFile):
     try:
         return _with_disclaimer(_service.reliability(img, raw=data))
     except Exception as e:  # noqa: BLE001
-        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
-                            status_code=500)
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
 
 
 @app.post("/explain", response_model=ExplainPayload)
@@ -354,5 +480,52 @@ async def explain(file: UploadFile):
     try:
         return _with_disclaimer(_service.explain(img, raw=data))
     except Exception as e:  # noqa: BLE001
-        return JSONResponse({"error": "inference_failed", "detail": str(type(e).__name__)},
-                            status_code=500)
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
+
+
+@app.post("/analyze_batch", response_model=list[AnalyzePayload])
+async def analyze_batch(files: list[UploadFile], consistency_probes: bool = True):
+    """Batch analyze multiple images with tensor-level batching.
+
+    Accepts multiple files in a single request. Returns list of results
+    in the same order as input files. Uses true GPU batching for classification.
+    """
+    if not files:
+        return []
+
+    # Read and decode all images first
+    images = []
+    raw_bytes_list = []
+    for file in files:
+        data, err = await _read_bounded(file)
+        if err is not None:
+            return err
+        img, err = _decode(data)
+        if err is not None:
+            return err
+        images.append(img)
+        raw_bytes_list.append(data)
+
+    try:
+        results = _service.analyze_batch(images, consistency_probes)
+        payloads = []
+        for i, result in enumerate(results):
+            payload = result.model_dump()
+            # Add quality for each result
+            payload["quality"] = _service.quality(raw_bytes_list[i])
+            if consistency_probes:
+                payload["consistency"] = _service.consistency(
+                    images[i], clean_pred=result.predicted_class
+                )
+            payload["reliability"] = _service.reliability(
+                images[i], raw=raw_bytes_list[i], result=result,
+                con=payload.get("consistency"), qual=payload["quality"]
+            )
+            payloads.append(_with_disclaimer(payload))
+        return payloads
+    except Exception as e:  # noqa: BLE001 — never leak stack/paths
+        return JSONResponse(
+            {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
+        )
