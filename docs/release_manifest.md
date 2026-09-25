@@ -40,7 +40,7 @@ Runtime here: torch 2.13.0+cpu; python 3.14.7.
 - `src/brain_tumor/contracts.py` `37d6e560b568309ae51bca136d73a75e6bed094f9f9d0827d313acd63125340d` (9063 bytes)
 - `src/brain_tumor/inference/service.py` `be0f467bdf283a7ebdedbbbb0c6c9dd3d918e319151d7f03beadb7178daeca65` (16195 bytes)
 - `src/brain_tumor/preprocessing/pipeline.py` `a0bdfff9c28f0a1dbfac642819dc955eecd6a750b57292f62439328e45a7f77e` (3146 bytes)
-- `app/api/main.py` `cc4cceba844335c2e26ee85b247f8943cdb68d2efacaeb6162735dc173240cbd` (12178 bytes)
+- `app/api/main.py` `0c026d66063e6e0e641fb9e0f5ef4ecb028594b61fbfd23240bbd5394ed73920` (13025 bytes)
 - `app/streamlit/app.py` `42286dbe70c4589867d9eb26e36f20d77d7f7a552c4559d6e9f3aee850b80441` (7022 bytes)
 
 ## Status

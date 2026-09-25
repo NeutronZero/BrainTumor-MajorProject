@@ -6,6 +6,7 @@ medical diagnosis). Error envelopes (415/413/422/500) are machine-readable
 and carry no result payload. Uploads are size-checked BEFORE any full-body
 decode, truncated/truncated-claim bodies surface as 422, and PIL's
 decompression-bomb guard is set explicitly (M7/M8 hardening).
+MIME sniffing via filetype provides defense-in-depth against content-type spoofing.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ import io
 from pathlib import Path
 from typing import Any
 
+import filetype
 from fastapi import FastAPI, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
@@ -139,6 +141,7 @@ app = FastAPI(title="BrainTumor-MajorProject", version="0.1.0",
 _service = InferenceService.from_registry()
 
 _ALLOWED = ("image/jpeg", "image/png", "image/bmp", "image/tiff")
+_ALLOWED_EXTS = {"jpg", "jpeg", "png", "bmp", "tif", "tiff"}
 _LIMIT = 10 * 1024 * 1024
 # Decompression-bomb guard: project inputs are ≤1024²; 32 MP leaves a wide
 # margin while rejecting pathological declares (PIL default ≈ 89 MP).
@@ -173,14 +176,26 @@ async def _upload_size(file: UploadFile) -> int:
 
 
 async def _read_bounded(file: UploadFile):
-    """415 type check + 413 size check BEFORE any full read; then return the
-    (≤10MB) bytes. Returns (data, None) or (None, error_response)."""
+    """415 type check + 413 size check BEFORE any full read; then sniff bytes
+    via filetype + return the (<=10MB) bytes. Returns (data, None) or
+    (None, error_response). Sniff is an additional gate, not a PIL replacement:
+    positive mismatches (known non-image signatures) => 415; unidentifiable
+    bytes fall through to PIL => 422, preserving the envelope contract."""
     if (r := _check_type(file)) is not None:
         return None, r
     if await _upload_size(file) > _LIMIT:
         return None, JSONResponse({"error": "file_too_large",
                                    "detail": "limit 10MB"}, status_code=413)
-    return file.file.read(), None
+    data = file.file.read()
+    try:
+        kind = filetype.guess(data)
+    except Exception:  # noqa: BLE001 — sniff failure => let PIL decide (422)
+        kind = None
+    if kind is not None and (kind.mime not in _ALLOWED or kind.extension not in _ALLOWED_EXTS):
+        return None, JSONResponse({"error": "unsupported_type",
+                                   "detail": f"sniffed {kind.mime} not supported"},
+                                  status_code=415)
+    return data, None
 
 
 def _decode(data: bytes):
