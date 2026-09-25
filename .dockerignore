@@ -1,0 +1,24 @@
+# Keep the image to source + lock; everything heavy or generated is excluded.
+.git/
+.venv*/
+.venv-rel002/
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+.benchmarks/
+.freebuff/
+.coverage
+
+# Multi-GB release artifacts: supplied as read-only runtime mounts, not baked in.
+checkpoints/
+outputs/
+data/
+demo_data/
+kaggle/
+reports/
+
+# Docs/plans are not needed at runtime.
+docs/
+*.md

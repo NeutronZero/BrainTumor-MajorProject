@@ -1,5 +1,12 @@
 # Locked dependencies — regenerate with pip freeze after verified env.
 # Python 3.14 / CPU baseline (Kaggle T4 image recorded per-run via run_config).
+# REL-002: regenerated from the verified env after pip check PASS.
+#   - declared filetype + prometheus-client (runtime imports in app/api/main.py)
+#   - refreshed fastapi/uvicorn/streamlit to the versions actually running here;
+#     the previous streamlit==1.50.0 pin (pandas<3) made the lock unresolvable
+#     together with pandas==3.0.3 (proven by clean-venv pip install failure).
+filetype==1.2.0
+prometheus-client==0.26.0
 torch==2.13.0
 torchvision==0.28.0
 numpy==2.4.6
@@ -9,7 +16,12 @@ scipy==1.17.1
 scikit-learn==1.8.0
 pyyaml==6.0.3
 pydantic==2.13.4
-fastapi==0.119.0
-uvicorn==0.37.0
-streamlit==1.50.0
+fastapi==0.141.1
+# Load-bearing transitive pins (REL-002): starlette floats with fastapi and its
+# version dictates the TestClient transport (1.2.1: httpx; newer: httpx2).
+# Pinning keeps fresh-venv behavior identical to the verified env.
+starlette==1.2.1
+httpx==0.28.1
+uvicorn==0.40.0
+streamlit==1.62.0
 pytest==9.0.3

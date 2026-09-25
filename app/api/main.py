@@ -7,6 +7,11 @@ and carry no result payload. Uploads are size-checked BEFORE any full-body
 decode, truncated/truncated-claim bodies surface as 422, and PIL's
 decompression-bomb guard is set explicitly (M7/M8 hardening).
 MIME sniffing via filetype provides defense-in-depth against content-type spoofing.
+
+REL-002 hardening: /analyze_batch is resource-bounded (max files, aggregate
+bytes, aggregate decoded pixels — all rejected before full-body parse), and
+inference-request metrics flow through one accounting helper so every
+inference endpoint reports exactly one observation per request.
 """
 
 from __future__ import annotations
@@ -39,6 +44,18 @@ INFERENCE_LATENCY = Histogram(
 REQUEST_LATENCY = Histogram(
     "http_request_latency_seconds", "HTTP request latency in seconds", ["endpoint"]
 )
+
+
+def _count_request(endpoint: str, status: int) -> None:
+    """Single accounting point for INFERENCE_REQUESTS (REL-002).
+
+    Rule: every inference endpoint reports exactly ONE observation per
+    request — its terminal status (413/415/422 validation, 200 success,
+    500 failure). /health and /metrics are not inference endpoints and
+    are deliberately excluded. New inference endpoints MUST call this at
+    each terminal exit point instead of touching the counter directly.
+    """
+    INFERENCE_REQUESTS.labels(endpoint=endpoint, status=str(status)).inc()
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from brain_tumor.inference.service import InferenceService, get_request_id, set_request_id, _request_id_var  # noqa: E402
@@ -237,6 +254,21 @@ def _with_disclaimer(result: dict) -> dict:
 _ALLOWED_MIME = {"jpeg", "png", "bmp", "tiff"}
 _ALLOWED_EXTS = {"jpg", "jpeg", "png", "bmp", "tif", "tiff"}
 
+# ---- /analyze_batch resource bounds (REL-002) ------------------------------
+# Request-level complement to the per-image defenses (_LIMIT, _MAX_PIXELS):
+# memory must not scale unboundedly with files × size. Declared-size and
+# file-count gates run BEFORE any request body is read into memory.
+_MAX_BATCH_FILES = 8
+_MAX_BATCH_AGGREGATE_BYTES = 32 * 1024 * 1024  # 8 files × 10MB per-file limit
+# Aggregate decoded-pixel budget: legit MRI PNGs are ≤1MP each, so this only
+# trips on adversarial declares that survive the per-image 32MP bomb guard.
+_MAX_BATCH_AGGREGATE_PIXELS = 64_000_000
+
+
+def _batch_limit_response(error: str, detail: str) -> JSONResponse:
+    """413 envelope for batch resource-bound rejections (no result payload)."""
+    return JSONResponse({"error": error, "detail": detail}, status_code=413)
+
 
 async def _upload_size(file: UploadFile) -> int:
     """Actual uploaded size. Starlette records it for parsed multipart when
@@ -343,14 +375,14 @@ def health():
 async def classify(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
-        INFERENCE_REQUESTS.labels(endpoint="/classify", status=err.status_code).inc()
+        _count_request("/classify", err.status_code)
         return err
     try:
         result = _with_disclaimer(_service.classify(img))
-        INFERENCE_REQUESTS.labels(endpoint="/classify", status=200).inc()
+        _count_request("/classify", 200)
         return result
     except Exception as e:  # noqa: BLE001 — never leak stack/paths (§64)
-        INFERENCE_REQUESTS.labels(endpoint="/classify", status=500).inc()
+        _count_request("/classify", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -360,16 +392,16 @@ async def classify(file: UploadFile):
 async def segment(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
-        INFERENCE_REQUESTS.labels(endpoint="/segment", status=err.status_code).inc()
+        _count_request("/segment", err.status_code)
         return err
     try:
         s = _service.segment(img)
         s["localization"] = s["localization"].model_dump()
         result = _with_disclaimer(s)
-        INFERENCE_REQUESTS.labels(endpoint="/segment", status=200).inc()
+        _count_request("/segment", 200)
         return result
     except Exception as e:  # noqa: BLE001
-        INFERENCE_REQUESTS.labels(endpoint="/segment", status=500).inc()
+        _count_request("/segment", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -379,10 +411,14 @@ async def segment(file: UploadFile):
 async def localize(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
+        _count_request("/localize", err.status_code)
         return err
     try:
-        return _with_disclaimer(_service.localize(img).model_dump())
+        result = _with_disclaimer(_service.localize(img).model_dump())
+        _count_request("/localize", 200)
+        return result
     except Exception as e:  # noqa: BLE001
+        _count_request("/localize", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -392,10 +428,14 @@ async def localize(file: UploadFile):
 async def quality(file: UploadFile):
     data, err = await _read_bounded(file)
     if err is not None:
+        _count_request("/quality", err.status_code)
         return err
     try:
-        return _with_disclaimer(_service.quality(data))
+        result = _with_disclaimer(_service.quality(data))
+        _count_request("/quality", 200)
+        return result
     except Exception as e:  # noqa: BLE001
+        _count_request("/quality", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -405,10 +445,14 @@ async def quality(file: UploadFile):
 async def consistency(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
+        _count_request("/consistency", err.status_code)
         return err
     try:
-        return _with_disclaimer(_service.consistency(img))
+        result = _with_disclaimer(_service.consistency(img))
+        _count_request("/consistency", 200)
+        return result
     except Exception as e:  # noqa: BLE001
+        _count_request("/consistency", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -418,11 +462,11 @@ async def consistency(file: UploadFile):
 async def analyze(file: UploadFile, consistency_probes: bool = True):
     data, err = await _read_bounded(file)
     if err is not None:
-        INFERENCE_REQUESTS.labels(endpoint="/analyze", status=err.status_code).inc()
+        _count_request("/analyze", err.status_code)
         return err
     img, err = _decode(data)
     if err is not None:
-        INFERENCE_REQUESTS.labels(endpoint="/analyze", status=err.status_code).inc()
+        _count_request("/analyze", err.status_code)
         return err
     try:
         # Compute each stage once; thread precomputed outputs into the
@@ -442,10 +486,10 @@ async def analyze(file: UploadFile, consistency_probes: bool = True):
         payload["reliability"] = _service.reliability(
             img, raw=data, result=result, con=con, qual=qual
         )
-        INFERENCE_REQUESTS.labels(endpoint="/analyze", status=200).inc()
+        _count_request("/analyze", 200)
         return _with_disclaimer(payload)
     except Exception as e:  # noqa: BLE001 — never leak stack/paths (§64)
-        INFERENCE_REQUESTS.labels(endpoint="/analyze", status=500).inc()
+        _count_request("/analyze", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -456,13 +500,18 @@ async def reliability(file: UploadFile):
     """REL-001 descriptive report (observer; SB-1 outputs unchanged)."""
     data, err = await _read_bounded(file)
     if err is not None:
+        _count_request("/reliability", err.status_code)
         return err
     img, err = _decode(data)
     if err is not None:
+        _count_request("/reliability", err.status_code)
         return err
     try:
-        return _with_disclaimer(_service.reliability(img, raw=data))
+        result = _with_disclaimer(_service.reliability(img, raw=data))
+        _count_request("/reliability", 200)
+        return result
     except Exception as e:  # noqa: BLE001
+        _count_request("/reliability", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -473,13 +522,18 @@ async def explain(file: UploadFile):
     """EXPL-001 unified explanation (observer; inference outputs identical)."""
     data, err = await _read_bounded(file)
     if err is not None:
+        _count_request("/explain", err.status_code)
         return err
     img, err = _decode(data)
     if err is not None:
+        _count_request("/explain", err.status_code)
         return err
     try:
-        return _with_disclaimer(_service.explain(img, raw=data))
+        result = _with_disclaimer(_service.explain(img, raw=data))
+        _count_request("/explain", 200)
+        return result
     except Exception as e:  # noqa: BLE001
+        _count_request("/explain", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -491,20 +545,54 @@ async def analyze_batch(files: list[UploadFile], consistency_probes: bool = True
 
     Accepts multiple files in a single request. Returns list of results
     in the same order as input files. Uses true GPU batching for classification.
+
+    Resource-bounded (REL-002): file count and aggregate declared bytes are
+    rejected BEFORE any body is read; aggregate decoded pixels are rejected
+    incrementally during decode. Per-image limits (_LIMIT, _MAX_PIXELS)
+    still apply to every file individually.
     """
     if not files:
         return []
 
-    # Read and decode all images first
+    # Gate 1: file count (pre-parse — no bytes read).
+    if len(files) > _MAX_BATCH_FILES:
+        _count_request("/analyze_batch", 413)
+        return _batch_limit_response(
+            "too_many_files", f"max {_MAX_BATCH_FILES} files per batch"
+        )
+
+    # Gate 2: aggregate declared size (pre-parse — Starlette records each
+    # part's size from headers before the body is read).
+    declared_total = 0
+    for f in files:
+        declared_total += await _upload_size(f)
+    if declared_total > _MAX_BATCH_AGGREGATE_BYTES:
+        _count_request("/analyze_batch", 413)
+        return _batch_limit_response(
+            "aggregate_too_large",
+            f"aggregate limit {_MAX_BATCH_AGGREGATE_BYTES} bytes",
+        )
+
+    # Read and decode all images (per-file gates + incremental pixel budget)
     images = []
     raw_bytes_list = []
+    decoded_pixels = 0
     for file in files:
         data, err = await _read_bounded(file)
         if err is not None:
+            _count_request("/analyze_batch", err.status_code)
             return err
         img, err = _decode(data)
         if err is not None:
+            _count_request("/analyze_batch", err.status_code)
             return err
+        decoded_pixels += img.width * img.height
+        if decoded_pixels > _MAX_BATCH_AGGREGATE_PIXELS:
+            _count_request("/analyze_batch", 413)
+            return _batch_limit_response(
+                "aggregate_too_large",
+                f"aggregate decoded-pixel limit {_MAX_BATCH_AGGREGATE_PIXELS}",
+            )
         images.append(img)
         raw_bytes_list.append(data)
 
@@ -524,8 +612,10 @@ async def analyze_batch(files: list[UploadFile], consistency_probes: bool = True
                 con=payload.get("consistency"), qual=payload["quality"]
             )
             payloads.append(_with_disclaimer(payload))
+        _count_request("/analyze_batch", 200)
         return payloads
     except Exception as e:  # noqa: BLE001 — never leak stack/paths
+        _count_request("/analyze_batch", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )

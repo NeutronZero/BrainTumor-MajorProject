@@ -23,3 +23,23 @@
 - Integrity: rerun `scripts/release/build_manifest.py` — zero MISSING.
 - Limits: 10MB uploads; typed errors; offline-capable inference path
   (OFF-001 PASS with documented loopback exemption).
+- Batch: `/analyze_batch` bounded (REL-002) — max 8 files, 32MB aggregate
+  bytes, 64MP aggregate decoded pixels; rejections are 413 before full parse.
+
+## Container (REL-002)
+
+- Build: `docker build -t braintumor-api:<TAG> .` — image ships source +
+  locked deps only (`requirements.lock`); `checkpoints/` and `outputs/` are
+  NOT baked in. Mount them read-only at runtime:
+  `docker run --rm -p 8000:8000 -v ./checkpoints:/app/checkpoints:ro -v ./outputs:/app/outputs:ro braintumor-api:<TAG>`
+  Artifact identity remains governed by the release manifest hashes, not the
+  image build cache.
+- **Rollback = redeploy the previous immutable image tag.** Tags are
+  release-scoped (e.g. `braintumor-api:SB-1`, `braintumor-api:REL-002`); never
+  mutate a published tag — build a new one. No orchestrator is in scope; this
+  is the whole rollback procedure.
+- Deployment boundary: loopback / internal research demo (see ethics.md and
+  the API disclaimers). Auth, rate limiting, CORS, and reverse-proxy TLS are
+  OUT of scope for this profile and become release requirements only if the
+  target changes to LAN/public exposure — an explicit future decision (audit
+  finding #4, deliberately deferred, not silently accepted).
