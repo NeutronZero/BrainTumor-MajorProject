@@ -8,7 +8,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.14" }  # matches requirements.lock baseline (recorded on 3.14)
       - run: pip install -r requirements.lock
-      - run: pip install pytest-cov  # coverage gate tooling (not part of the runtime lock)
+      - run: pip install huggingface-hub  # fetch-only dep (kept out of the runtime lock)
+      # CLS-001 + SEG-001 are the registry weights tests and the smoke check
+      # need; ROB-001 is a scripts-only variant. Hub, not LFS: no LFS quota burn.
+      - run: python scripts/fetch_models.py --only CLS-001 SEG-001
       - run: python scripts/reproducibility_check.py
       # fail_under=70 comes from [tool.coverage.report] in pyproject.toml
       - run: python -m pytest -q --cov=brain_tumor --cov-report=term-missing

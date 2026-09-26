@@ -71,10 +71,14 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Verify or fetch pinned checkpoints.")
     ap.add_argument("--check-only", action="store_true")
     ap.add_argument("--repo", default=HF_REPO)
+    ap.add_argument("--only", nargs="*", default=None,
+                    help="fetch only these experiments, e.g. --only CLS-001 SEG-001")
     args = ap.parse_args()
+    items = {k: v for k, v in EXPECTED.items()
+             if args.only is None or k.split("/")[1] in args.only}
     root = Path(__file__).resolve().parents[1]
     rc = 0
-    for local, (hub_name, sha, size) in EXPECTED.items():
+    for local, (hub_name, sha, size) in items.items():
         fp = root / local
         if _valid(fp, sha, size):
             print(f"fetch_models: OK {local}")

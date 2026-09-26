@@ -93,6 +93,29 @@ def _timed(label: str):
     return deco
 
 
+def _usable_ckpt(p: Path | None) -> Path | None:
+    """Return p only if it holds real weights.
+
+    Fresh clones without `git lfs pull` contain 134-byte LFS pointer text at
+    the checkpoint path; feeding that to torch.load raises UnpicklingError.
+    Pointers degrade to unavailable (same as missing) with a warning, so the
+    UI/API/tests report unavailable instead of crashing. Genuine load errors
+    on real-sized files still raise (fail fast on corruption).
+    """
+    if p is None:
+        return None
+    fp = Path(p)
+    if not fp.is_file() or fp.stat().st_size < 1024 * 1024:
+        if fp.is_file():
+            _log.warning("checkpoint %s looks like an LFS pointer; treating as unavailable", fp)
+        return None
+    with open(fp, "rb") as f:
+        if f.read(32).startswith(b"version https://git-lfs.github.com/"):
+            _log.warning("checkpoint %s is an LFS pointer; treating as unavailable", fp)
+            return None
+    return fp
+
+
 class InferenceService:
     """Frozen-model inference. Offline-first. CPU default; device optional.
 
@@ -117,7 +140,7 @@ class InferenceService:
         self.seg_norm = norm
 
         self.clf = None
-        if classifier_ckpt is not None and Path(classifier_ckpt).exists():
+        if _usable_ckpt(classifier_ckpt) is not None:
             clf = build_classifier("convnext_tiny")
             # weights_only=True: no pickle execution surface (own frozen file,
             # state_dict-only content — verified loadable under the restriction).
@@ -130,7 +153,7 @@ class InferenceService:
         self.cls_tf = build_cls_transform(False)
 
         self.seg = None
-        if segmenter_ckpt is not None and Path(segmenter_ckpt).exists():
+        if _usable_ckpt(segmenter_ckpt) is not None:
             seg = UNet()
             seg.load_state_dict(
                 torch.load(segmenter_ckpt, map_location=device, weights_only=True)["state"]
