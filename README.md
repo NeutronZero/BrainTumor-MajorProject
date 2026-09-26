@@ -51,8 +51,10 @@ docker run --rm -p 8000:8000 `
 
 ## Release artifacts
 
-- The GitHub source ZIP contains **LFS pointers** for `checkpoints/*/*.pt`, not
-  weights. Get the real files (SHA256-pinned in `docs/release_manifest.md`):
+- The GitHub source ZIP intentionally contains Git-LFS pointer files
+  (134 bytes each) for `checkpoints/*/*.pt`, not weights — this is not an
+  incomplete release. The actual weights are distributed separately through
+  the Hugging Face Hub and are SHA256-verified before use. Get the real files (SHA256-pinned in `docs/release_manifest.md`):
   `python scripts/fetch_models.py` downloads them from Hugging Face Hub and
   verifies every hash (`pip install huggingface-hub` first; or `git lfs pull`
   after cloning). Re-verify anytime with
