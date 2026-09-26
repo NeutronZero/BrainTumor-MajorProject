@@ -16,7 +16,7 @@ import hashlib
 import sys
 from pathlib import Path
 
-HF_REPO = "NeutronZero/BrainTumor-MajorProject-REL002"
+HF_REPO = "Satya12334/BrainTumor-MajorProject-REL002"
 
 # local path -> (Hub filename, SHA256 from docs/release_manifest.md, bytes)
 EXPECTED = {
