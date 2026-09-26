@@ -48,6 +48,7 @@ variables harden it when exposed beyond localhost:
 |---|---|---|
 | `BT_API_TOKEN` | unset (open) | When set, every inference endpoint requires `Authorization: Bearer <token>`. `/health` and `/metrics` stay open for probes/scrapers. |
 | `BT_RATE_LIMIT` | `120` | Max inference requests per client IP per 60s window (fixed window; 429 when exceeded). Validation failures count — hits are recorded pre-handler. |
+| `BT_TRUST_PROXY` | unset (off) | When set (`1`/`true`), the rate limiter keys on the first `X-Forwarded-For` entry. Leave unset unless a reverse proxy you control sets/strips that header — otherwise clients can spoof it to bypass the limit. |
 
 ```powershell
 # example: token-gated, 60 req/min
@@ -88,7 +89,7 @@ docker run --rm -p 8000:8000 `
 
 ```powershell
 python scripts/reproducibility_check.py
-python -m pytest -q   # 125 tests
+python -m pytest -q   # 115 tests in the committed tree
 python scripts/release/verify_manifest.py   # manifest ↔ tree integrity
 ```
 

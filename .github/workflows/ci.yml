@@ -19,6 +19,16 @@ jobs:
       - run: python scripts/reproducibility_check.py
       # fail_under=70 comes from [tool.coverage.report] in pyproject.toml
       - run: python -m pytest -q --cov=brain_tumor --cov-report=term-missing --cov-fail-under=70
+      # Type checking (advisory). pyright is declared in [project.optional-
+      # dependencies].dev but was never executed anywhere. The current baseline
+      # over the production surface is ~41 diagnostics, overwhelmingly
+      # third-party-stub false positives (PIL.Image.BILINEAR/NEAREST,
+      # sklearn zero_division, scipy.ndimage.label) plus dynamic torch/pydantic
+      # patterns. Non-blocking until that backlog is burned down, but the run is
+      # surfaced in the job log so new regressions are visible.
+      - run: pip install pyright
+      - run: pyright src app
+        continue-on-error: true
 
   lint:
     runs-on: ubuntu-latest

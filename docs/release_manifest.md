@@ -38,14 +38,19 @@ Runtime here: torch 2.13.0+cpu; python 3.14.7.
 
 ## contract_code
 - `src/brain_tumor/contracts.py` `b5027f85eea856d22d2a9ef404ac8e1720ba1e02125436cfd5983ee419133ae9` (8985 bytes)
-- `src/brain_tumor/inference/service.py` `fd7519351742bdd278abe5515d57e1401b483fcd2ac8c6f9bdcf539e381f8903` (22322 bytes)
+- `src/brain_tumor/inference/service.py` `8962141f18bb399a81dbaa2c1095d0f094b1b5b9d3c91674803b6cc88bfc4fdb` (22716 bytes)
 - `src/brain_tumor/preprocessing/pipeline.py` `d5a49ba17bf9b28004883ecbd953277243b1f46fa241ae503f129bf77a450972` (3148 bytes)
-- `app/api/main.py` `299185b607510a5520d0e8ae5c6b44355a6c2e1625e7c0c590d0e234e1b16f0c` (28284 bytes)
+- `src/brain_tumor/localization/extract.py` `2d05aacd46f5a627e27b79f0788d11728d668c44e144791cb14d0f0854e8df61` (2006 bytes)
+- `src/brain_tumor/quality/gate.py` `7d82d2e7ab1e3d2ba366efe39920f97834d047e6a97c9bbcd4c602fd2e85e196` (3850 bytes)
+- `src/brain_tumor/reliability/engine.py` `fcb5476a1fca2f911dc7484ce3c4d7a6090b0ef71ef5a35dee6e3ee893db0d17` (4017 bytes)
+- `src/brain_tumor/explain/gradcam.py` `7d851a2fe8fb7fce344032fa160e049d4a53651ce04ac393f15b70484ac9f1b7` (4175 bytes)
+- `src/brain_tumor/explain/report.py` `e2ee03472eb2fb1bbd1a9443d6362052193ac8cc123729081d51840f70be7a28` (1971 bytes)
+- `app/api/main.py` `600a9c0e74da17d114891e8c357801c925a8675f8bc68a72ba0a09961a6e6917` (29730 bytes)
 - `app/streamlit/app.py` `cc56404c6cc4e56a71865ec5927e2d5467b19ac087c7f42774eec474a4c26ed8` (19937 bytes)
 
 ## Status
 - SB-1 submission-ready fallback: CLS-001 + SEG-001 + UNC-001 (descriptive) + ROB-001 (documented variant) + FP16/autocast.
-- CPU CI: 125 passed (unit+integration+regression + data-gate; synthetic images only; round-3 access-hardening included).
+- CPU CI: 115 passed in the committed tree (unit+integration+regression + data-gate; synthetic images only; round-3 access-hardening included).
 - Locked evaluations closed; no tuning/re-cut permitted.
 - NOT included: optimizer-state `last.pt` files (remain on kernels), Kaggle HTML logs, tmp snapshots, `__pycache__`.
 - Claim boundary: measured BRISC-regime engineering results; not clinical diagnostic accuracy.

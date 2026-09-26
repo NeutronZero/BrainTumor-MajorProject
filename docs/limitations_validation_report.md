@@ -32,7 +32,7 @@ caveats; CPU pipeline smoke runs; PBA-001..005 failure characterization
 ECE 0.002655 independently recomputed; joint denominator 860 matched + 140
 unmeasured healthy; plan-§68 perturbation suite showing noise as the dominant
 stressor: CLS −0.019 with 20/24 CBW, SEG −0.169 with empty 10→163).
-85-test CPU CI (84 unit+integration+regression + 1 data-gate; contracts,
+115-test CPU CI (114 unit+integration+regression + 1 data-gate; contracts,
 endpoints, determinism, error envelopes, degraded paths, Streamlit payload,
 regression, data-gate fail-open) green; Streamlit live-byte path demonstrated.
 

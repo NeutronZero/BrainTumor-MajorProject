@@ -1,7 +1,10 @@
 __pycache__/
 *.pyc
 .venv/
-.streamlit/
+# Streamlit theme/upload config IS part of the REL-002 UI surface (tracked);
+# other .streamlit/ state stays local.
+.streamlit/*
+!.streamlit/config.toml
 # Tool state
 .coverage
 .hypothesis/

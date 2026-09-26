@@ -126,6 +126,35 @@ def test_token_set_health_and_metrics_stay_open(client, token_env):
     assert client.get("/metrics").status_code == 200
 
 
+def test_bearer_scheme_is_case_insensitive(client, token_env):
+    """RFC 7235: the auth scheme is case-insensitive."""
+    r = client.post(
+        "/classify",
+        files={"file": ("t.png", _png_bytes(), "image/png")},
+        headers={"Authorization": "bearer test-token-123"},
+    )
+    assert r.status_code == 200
+
+
+def test_wrong_token_attempts_are_throttled(client, limiter, token_env):
+    """Rate-limiting runs BEFORE the token check, so bad-token attempts consume
+    budget and token guessing is throttled instead of free."""
+    limiter._hits.clear()  # isolate this client's window from earlier tests
+    limiter._MAX_REQUESTS = 1
+    first = client.post(
+        "/classify",
+        files={"file": ("t.png", _png_bytes(), "image/png")},
+        headers={"Authorization": "Bearer nope"},
+    )
+    assert first.status_code == 401
+    second = client.post(
+        "/classify",
+        files={"file": ("t.png", _png_bytes(), "image/png")},
+        headers={"Authorization": "Bearer nope"},
+    )
+    assert second.status_code == 429
+
+
 def test_token_unset_gate_is_open(client):
     """Default behavior: no BT_API_TOKEN => no auth required (prototype mode)."""
     import main as api_main
@@ -173,10 +202,12 @@ def test_rate_limit_is_per_client(client, limiter):
     _gate_req(limiter, "/classify", "10.0.1.2")  # different client admitted
 
 
-def test_x_forwarded_for_takes_precedence(client, limiter):
-    """Behind a reverse proxy, the limiter keys on the forwarded client."""
+def test_x_forwarded_for_takes_precedence(client, limiter, monkeypatch):
+    """Behind a TRUSTED reverse proxy (BT_TRUST_PROXY=1), the limiter keys on
+    the forwarded client."""
     import main as api_main
 
+    monkeypatch.setenv("BT_TRUST_PROXY", "1")
     limiter._MAX_REQUESTS = 1
     headers = [(b"x-forwarded-for", b"203.0.113.7, 10.0.0.9")]
     req_a = _StarletteRequest(_fake_scope("/classify", "10.0.0.9", headers))
@@ -185,6 +216,15 @@ def test_x_forwarded_for_takes_precedence(client, limiter):
     with pytest.raises(api_main._AuthError):
         limiter._gate(req_b)  # same forwarded client => blocked
     assert limiter._client_key(req_a) == "203.0.113.7"
+
+
+def test_x_forwarded_for_ignored_without_trusted_proxy(limiter, monkeypatch):
+    """Default (BT_TRUST_PROXY unset): a spoofed XFF must NOT be trusted, or a
+    direct caller could mint unlimited limiter buckets and bypass the limit."""
+    monkeypatch.delenv("BT_TRUST_PROXY", raising=False)
+    headers = [(b"x-forwarded-for", b"203.0.113.7, 10.0.0.9")]
+    req = _StarletteRequest(_fake_scope("/classify", "10.0.0.9", headers))
+    assert limiter._client_key(req) == "10.0.0.9"
 
 
 # ---- integration with the REL-002 accounting rule -----------------------------

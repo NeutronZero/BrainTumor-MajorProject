@@ -22,6 +22,7 @@ because /analyze costs ~11 forward passes and the container binds 0.0.0.0.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import io
 import os
 import sys
@@ -76,6 +77,17 @@ def _count_request(endpoint: str, status: int) -> None:
 _API_TOKEN = os.environ.get("BT_API_TOKEN") or None
 
 
+def _trust_proxy() -> bool:
+    """Whether X-Forwarded-For may be trusted for rate-limit client keying.
+
+    Default False: a directly-exposed API must not let callers spoof their
+    apparent IP, which would mint unlimited rate-limit buckets and defeat the
+    limiter. Set BT_TRUST_PROXY=1 only behind a reverse proxy that sets/strips
+    the header. Read per-request so it can be toggled at runtime (and in tests).
+    """
+    return os.environ.get("BT_TRUST_PROXY", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 class _AuthError(Exception):
     def __init__(self, status: int, payload: dict):
         self.status = status
@@ -107,20 +119,23 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
         self._lock = threading.Lock()
 
     def _client_key(self, request: Request) -> str:
-        fwd = request.headers.get("x-forwarded-for")
-        if fwd:
-            return fwd.split(",")[0].strip()
+        # XFF is honored ONLY when the deployment declares a trusted proxy
+        # (BT_TRUST_PROXY); otherwise a direct caller could spoof the header to
+        # rotate its limiter bucket freely on the exposed prototype surface.
+        if _trust_proxy():
+            fwd = request.headers.get("x-forwarded-for")
+            if fwd:
+                return fwd.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
 
     def _gate(self, request: Request) -> None:
-        """Raise _AuthError on missing token or exhausted window; else record hit."""
-        if _API_TOKEN is not None:
-            header = request.headers.get("authorization", "")
-            if header != f"Bearer {_API_TOKEN}":
-                raise _AuthError(
-                    401,
-                    {"error": "unauthorized", "detail": "missing or invalid bearer token"},
-                )
+        """Rate-limit FIRST, then check the bearer token in constant time.
+
+        Order matters: recording the hit before the token check means rejected
+        (bad-token) attempts consume the client's budget, so token guessing is
+        throttled instead of free. Raises _AuthError on 429 or 401; otherwise
+        returns having recorded exactly one hit.
+        """
         key = self._client_key(request)
         now = time.perf_counter()
         with self._lock:
@@ -144,6 +159,19 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
                 )
             window.append(now)
             self._hits[key] = window
+        if _API_TOKEN is not None:
+            # Constant-time comparison (hmac.compare_digest) so a timing side
+            # channel cannot be used to recover the token byte-by-byte. The
+            # auth scheme is case-insensitive per RFC 7235.
+            header = request.headers.get("authorization", "")
+            scheme, _, supplied = header.partition(" ")
+            if scheme.lower() != "bearer":
+                supplied = ""
+            if not hmac.compare_digest(supplied.encode(), _API_TOKEN.encode()):
+                raise _AuthError(
+                    401,
+                    {"error": "unauthorized", "detail": "missing or invalid bearer token"},
+                )
 
     async def dispatch(self, request: Request, call_next):
         if request.url.path not in RequestIDMiddleware._INFERENCE_PATHS:
@@ -724,7 +752,7 @@ async def analyze_batch(files: list[UploadFile], consistency_probes: bool = True
         raw_bytes_list.append(data)
 
     try:
-        results = _service.analyze_batch(images, consistency_probes)
+        results = _service.analyze_batch(images)
         payloads = []
         for i, result in enumerate(results):
             payload = result.model_dump()

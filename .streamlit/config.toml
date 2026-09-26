@@ -1,0 +1,14 @@
+# Streamlit theme — REL-002 research-demo UI (v1.62)
+[theme]
+base = "dark"
+primaryColor = "#4FB3BF"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#161B26"
+textColor = "#E8EDF4"
+font = "sans serif"
+
+[server]
+maxUploadSize = 10
+
+[browser]
+gatherUsageStats = false

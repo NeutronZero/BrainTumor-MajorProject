@@ -57,6 +57,11 @@ FILES = {
         "src/brain_tumor/contracts.py",
         "src/brain_tumor/inference/service.py",
         "src/brain_tumor/preprocessing/pipeline.py",
+        "src/brain_tumor/localization/extract.py",
+        "src/brain_tumor/quality/gate.py",
+        "src/brain_tumor/reliability/engine.py",
+        "src/brain_tumor/explain/gradcam.py",
+        "src/brain_tumor/explain/report.py",
         "app/api/main.py",
         "app/streamlit/app.py",
     ],
@@ -93,8 +98,8 @@ def main() -> int:
         "## Status",
         "- SB-1 submission-ready fallback: CLS-001 + SEG-001 + UNC-001 "
         "(descriptive) + ROB-001 (documented variant) + FP16/autocast.",
-        "- CPU CI: 125 passed (unit+integration+regression + data-gate; "
-        "synthetic images only; round-3 access-hardening included).",
+        "- CPU CI: 115 passed in the committed tree (unit+integration+regression "
+        "+ data-gate; synthetic images only; round-3 access-hardening included).",
         "- Locked evaluations closed; no tuning/re-cut permitted.",
         "- NOT included: optimizer-state `last.pt` files (remain on kernels), "
         "Kaggle HTML logs, tmp snapshots, `__pycache__`.",

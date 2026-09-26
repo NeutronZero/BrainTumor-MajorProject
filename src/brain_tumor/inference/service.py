@@ -46,6 +46,10 @@ CLASSES = CANONICAL_CLASSES
 CONSISTENCY_K = 8
 CONSISTENCY_SEED_BASE = 7003
 CONSISTENCY_SIGMA = 0.05
+# Frozen localization threshold (contracts.LOCALIZATION_SCHEMA["threshold"]).
+# Referenced by the explain() overlay so the visualization cannot drift from
+# extract()'s default.
+SEG_THRESHOLD = 0.5
 
 # Request ID propagation (set by API middleware / Streamlit)
 _request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
@@ -412,7 +416,7 @@ class InferenceService:
         # Segmentation visualization (mirrors segment() exactly).
         if self.segmentation_available and payload["predicted_class"] != "notumor":
             prob, _, _ = self._segment_prob(gray)
-            mask = (prob > 0.5).astype("uint8") * 255
+            mask = (prob > SEG_THRESHOLD).astype("uint8") * 255
             mask_full = np.asarray(_Image.fromarray(mask).resize((ow, oh), _Image.NEAREST))
             vis = base.copy()
             d = _Draw.Draw(vis, "RGBA")
@@ -478,9 +482,7 @@ class InferenceService:
         )
 
     @_timed("analyze_batch")
-    def analyze_batch(
-        self, images: list[Any], consistency_probes: bool = True
-    ) -> list[BrainTumorResult]:
+    def analyze_batch(self, images: list[Any]) -> list[BrainTumorResult]:
         """Batch analyze multiple images with tensor-level batching.
 
         This provides true GPU batching by stacking preprocessed tensors,
@@ -488,6 +490,10 @@ class InferenceService:
         """
         if not images:
             return []
+        if self.clf is None:
+            # Same signal as classify(): never surface a bare AttributeError
+            # from the batch path when the classifier is unavailable.
+            raise RuntimeError("classifier_unavailable")
 
         from PIL import Image as _Image
 

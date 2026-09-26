@@ -67,6 +67,18 @@ skip-magic-trailing-comma = false
 "src/brain_tumor/classification/calibrate.py" = ["T20"]
 
 [tool.pyright]
+# Align analysis with the COMMITTED tree: the local-only modules below are
+# gitignored (never present in CI), so excluding them keeps a developer's
+# local pyright run comparable to the CI run.
+exclude = [
+  "**/node_modules",
+  "**/__pycache__",
+  "src/brain_tumor/models",
+  "src/brain_tumor/data/locked_holdout.py",
+  "tests/test_locked_holdout.py",
+  "tests/unit/test_contracts_property.py",
+  "tests/unit/test_train_candidate_tracking.py",
+]
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportUnknownParameterType = false

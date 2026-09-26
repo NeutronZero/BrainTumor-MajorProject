@@ -13,10 +13,10 @@
 # unresolvable together with pandas==3.0.3 (proven by clean-venv pip install
 # failure).
 filetype==1.2.0
-prometheus-client==0.26.0
 # Required by Starlette for multipart/form-data (UploadFile); undeclared deps
 # 500 every upload in a fresh container/clean venv.
 python-multipart==0.0.32
+prometheus-client==0.26.0
 altair==6.3.0
 annotated-doc==0.0.5
 annotated-types==0.8.0
@@ -51,7 +51,6 @@ packaging==26.3
 pandas==3.0.3
 pillow==12.2.0
 pluggy==1.6.0
-prometheus_client==0.26.0
 protobuf==7.36.2
 pyarrow==25.0.1
 pydantic==2.13.4
