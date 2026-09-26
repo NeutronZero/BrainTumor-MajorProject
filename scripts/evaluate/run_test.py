@@ -14,6 +14,7 @@ from pathlib import Path
 def main() -> int:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from evaluate_locked import main as locked_main
+
     return locked_main()
 
 

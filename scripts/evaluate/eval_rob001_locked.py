@@ -26,7 +26,6 @@ import torch
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-from brain_tumor.data.brisc import load_manifest  # noqa: E402
 from brain_tumor.localization.extract import extract  # noqa: E402
 from brain_tumor.preprocessing.pipeline import build_seg_pair_transform  # noqa: E402
 from brain_tumor.segmentation.unet import UNet  # noqa: E402
@@ -36,6 +35,7 @@ BATCH = 16
 
 def _open(p: Path, mode: str):
     from PIL import Image
+
     return Image.open(p).convert(mode)
 
 
@@ -53,14 +53,17 @@ def _file_sha(p: Path) -> str:
 
 def _seg_block(cases: list[dict], tag: str) -> dict:
     d = np.array([c["dice"] for c in cases])
-    return {"tag": tag, "n": len(cases),
-            "mean_dice": round(float(d.mean()), 6),
-            "median_dice": round(float(np.median(d)), 6),
-            "p10_dice": round(float(np.percentile(d, 10)), 6),
-            "min_dice": round(float(d.min()), 6),
-            "mean_iou": round(float(np.mean([c["iou"] for c in cases])), 6),
-            "empty_pred": sum(1 for c in cases if c["empty_pred"]),
-            "multi_component": sum(1 for c in cases if "multiple_components" in c["warnings"])}
+    return {
+        "tag": tag,
+        "n": len(cases),
+        "mean_dice": round(float(d.mean()), 6),
+        "median_dice": round(float(np.median(d)), 6),
+        "p10_dice": round(float(np.percentile(d, 10)), 6),
+        "min_dice": round(float(d.min()), 6),
+        "mean_iou": round(float(np.mean([c["iou"] for c in cases])), 6),
+        "empty_pred": sum(1 for c in cases if c["empty_pred"]),
+        "multi_component": sum(1 for c in cases if "multiple_components" in c["warnings"]),
+    }
 
 
 def main() -> int:
@@ -77,27 +80,37 @@ def main() -> int:
         "experiment": "ROB-001",
         "checkpoint_sha256": _file_sha(root / "checkpoints" / "ROB-001" / "best.pt"),
         "config_sha256": _file_sha(rob_cfg),
-        "config_matches_kernel_run": _file_sha(rob_cfg) == json.loads(
-            (out / "metrics.json").read_text())["config_sha256"],
+        "config_matches_kernel_run": _file_sha(rob_cfg)
+        == json.loads((out / "metrics.json").read_text())["config_sha256"],
         "pipeline": "src/brain_tumor/preprocessing/pipeline.py",
-        "pipeline_sha256": _file_sha(root / "src" / "brain_tumor" / "preprocessing" / "pipeline.py"),
+        "pipeline_sha256": _file_sha(
+            root / "src" / "brain_tumor" / "preprocessing" / "pipeline.py"
+        ),
         "localization": "configs/segmentation/localization.yaml",
         "localization_sha256": _file_sha(root / "configs" / "segmentation" / "localization.yaml"),
         "train_noise_sigma": 0.05,
-        "threshold": 0.5, "morphology": "none (same as SEG-001)",
+        "threshold": 0.5,
+        "morphology": "none (same as SEG-001)",
         "norm": json.loads((out / "metrics.json").read_text())["norm"],
-        "val_selected": {"val_dice": json.loads((out / "metrics.json").read_text())["val_dice"],
-                         "best_epoch": json.loads((out / "metrics.json").read_text())["best_epoch"]},
+        "val_selected": {
+            "val_dice": json.loads((out / "metrics.json").read_text())["val_dice"],
+            "best_epoch": json.loads((out / "metrics.json").read_text())["best_epoch"],
+        },
     }
     assert freeze["config_matches_kernel_run"], "config changed since kernel run — aborting"
     (out / "freeze.json").write_text(json.dumps(freeze, indent=1))
 
-    excl = json.loads((root / "outputs" / "data_gate_0" / "cross_split_exclusion_list.json").read_text())
+    excl = json.loads(
+        (root / "outputs" / "data_gate_0" / "cross_split_exclusion_list.json").read_text()
+    )
     cont_hashes = set(excl["hashes"])
 
     seg_model = UNet()
-    seg_model.load_state_dict(torch.load(root / "checkpoints" / "ROB-001" / "best.pt",
-                                         map_location="cpu", weights_only=False)["state"])
+    seg_model.load_state_dict(
+        torch.load(
+            root / "checkpoints" / "ROB-001" / "best.pt", map_location="cpu", weights_only=False
+        )["state"]
+    )
     seg_model.eval()
     seg_norm = freeze["norm"]
     seg_tf = build_seg_pair_transform(False, mean=seg_norm["mean"], std=seg_norm["std"])
@@ -125,12 +138,19 @@ def main() -> int:
                 iou = (inter + 1e-6) / (float((binp | bing).sum()) + 1e-6)
                 ow, oh = _open(img_p, "RGB").size
                 loc, w = extract(pr, (oh, ow))
-                seg_cases.append({"stem": img_p.stem, "dice": dice, "iou": iou,
-                                  "empty_pred": loc.area_pixels == 0,
-                                  "area": loc.area_pixels,
-                                  "bbox": loc.bbox, "centroid": loc.centroid,
-                                  "warnings": w,
-                                  "contaminated": bool(_sha(img_p) in cont_hashes)})
+                seg_cases.append(
+                    {
+                        "stem": img_p.stem,
+                        "dice": dice,
+                        "iou": iou,
+                        "empty_pred": loc.area_pixels == 0,
+                        "area": loc.area_pixels,
+                        "bbox": loc.bbox,
+                        "centroid": loc.centroid,
+                        "warnings": w,
+                        "contaminated": bool(_sha(img_p) in cont_hashes),
+                    }
+                )
             # meta holds paths; cleared by caller
 
         for i, (img_p, m_p) in enumerate(pairs):
@@ -145,8 +165,7 @@ def main() -> int:
                 print(f"seg {i}/860", flush=True)
 
     seg_primary = _seg_block(seg_cases, "rob001 seg-test N=860")
-    seg_sens = _seg_block([c for c in seg_cases if not c["contaminated"]],
-                          "rob001 seg-test N=853")
+    seg_sens = _seg_block([c for c in seg_cases if not c["contaminated"]], "rob001 seg-test N=853")
     assert seg_sens["n"] == 853, f"sensitivity N={seg_sens['n']} != 853 — aborting"
 
     # ---- disagreement via FROZEN CLS-001 records (no CLS inference) ----
@@ -189,10 +208,13 @@ def main() -> int:
         else:
             st = "uncertain"
         sys_states[st] = sys_states.get(st, 0) + 1
-    disagreement = {"rate": dis / n_conf_tumor if n_conf_tumor else 0.0,
-                    "count": dis, "n_confident_tumor": n_conf_tumor,
-                    "per_class": dis_by_cls,
-                    "exceeds_5pct": (dis / n_conf_tumor > 0.05) if n_conf_tumor else False}
+    disagreement = {
+        "rate": dis / n_conf_tumor if n_conf_tumor else 0.0,
+        "count": dis,
+        "n_confident_tumor": n_conf_tumor,
+        "per_class": dis_by_cls,
+        "exceeds_5pct": (dis / n_conf_tumor > 0.05) if n_conf_tumor else False,
+    }
 
     # ---- per-class dice (both populations) ----
     tmap = {"gl": "glioma", "me": "meningioma", "pi": "pituitary"}
@@ -209,31 +231,49 @@ def main() -> int:
     s_dis = locked["disagreement_confident_tumor_empty_seg"]
 
     def dseg(a, b):
-        return {k: round(a[k] - b[k], 6) for k in
-                ("mean_dice", "median_dice", "p10_dice", "mean_iou")}
+        return {
+            k: round(a[k] - b[k], 6) for k in ("mean_dice", "median_dice", "p10_dice", "mean_iou")
+        }
 
-    payload = {"experiment": "ROB-001 locked evaluation (segmentation only)",
-               "freeze": freeze,
-               "seg_primary": {**seg_primary, "by_class": by_class(seg_cases)},
-               "seg_sensitivity": {**seg_sens, "by_class": by_class(
-                   [c for c in seg_cases if not c["contaminated"]])},
-               "seg_delta_vs_SEG001": {"primary": dseg(seg_primary, s_p),
-                                       "sensitivity": dseg(seg_sens, s_s),
-                                       "empty_pred": seg_primary["empty_pred"] - s_p["empty_pred"],
-                                       "multi_component": seg_primary["multi_component"] - s_p["multi_component"]},
-               "system_state_distribution": sys_states,
-               "disagreement_confident_tumor_empty_seg": disagreement,
-               "disagreement_delta_vs_SEG001": {
-                   "count": disagreement["count"] - s_dis["count"],
-                   "rate": round(disagreement["rate"] - s_dis["rate"], 6)},
-               "cls_source": "frozen CLS-001 records (no new classification inference)",
-               "test_lock": "ROB-001 seg-test contact exactly once; no tuning permitted after this point"}
+    payload = {
+        "experiment": "ROB-001 locked evaluation (segmentation only)",
+        "freeze": freeze,
+        "seg_primary": {**seg_primary, "by_class": by_class(seg_cases)},
+        "seg_sensitivity": {
+            **seg_sens,
+            "by_class": by_class([c for c in seg_cases if not c["contaminated"]]),
+        },
+        "seg_delta_vs_SEG001": {
+            "primary": dseg(seg_primary, s_p),
+            "sensitivity": dseg(seg_sens, s_s),
+            "empty_pred": seg_primary["empty_pred"] - s_p["empty_pred"],
+            "multi_component": seg_primary["multi_component"] - s_p["multi_component"],
+        },
+        "system_state_distribution": sys_states,
+        "disagreement_confident_tumor_empty_seg": disagreement,
+        "disagreement_delta_vs_SEG001": {
+            "count": disagreement["count"] - s_dis["count"],
+            "rate": round(disagreement["rate"] - s_dis["rate"], 6),
+        },
+        "cls_source": "frozen CLS-001 records (no new classification inference)",
+        "test_lock": "ROB-001 seg-test contact exactly once; no tuning permitted after this point",
+    }
     (out / "locked_eval.json").write_text(json.dumps(payload, indent=1))
-    print(json.dumps({"seg_primary": payload["seg_primary"],
-                      "seg_sensitivity": {k: payload["seg_sensitivity"][k] for k in
-                                          ("n", "mean_dice", "median_dice", "mean_iou")},
-                      "delta": payload["seg_delta_vs_SEG001"],
-                      "disagreement": disagreement, "system_states": sys_states}, indent=1))
+    print(
+        json.dumps(
+            {
+                "seg_primary": payload["seg_primary"],
+                "seg_sensitivity": {
+                    k: payload["seg_sensitivity"][k]
+                    for k in ("n", "mean_dice", "median_dice", "mean_iou")
+                },
+                "delta": payload["seg_delta_vs_SEG001"],
+                "disagreement": disagreement,
+                "system_states": sys_states,
+            },
+            indent=1,
+        )
+    )
     return 0
 
 

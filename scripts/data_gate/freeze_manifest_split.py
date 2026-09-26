@@ -30,7 +30,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from data_gate.common import outputs_dir, sha256_file, write_json  # noqa: E402
-from data_gate.layout import CLASS_ALIAS, CLS_IMG_EXTS, cls_split_dirs, find_release_root, list_files  # noqa: E402
+from data_gate.layout import (  # noqa: E402
+    CLASS_ALIAS,
+    CLS_IMG_EXTS,
+    cls_split_dirs,
+    find_release_root,
+    list_files,
+)
 
 SEED = 42
 N_TRAIN, N_VAL = 4000, 1000
@@ -114,13 +120,18 @@ def main() -> int:
     sens_excluded = sorted({rp for h in cross_hashes for rp in test_by_hash[h]})
     sens_kept = sorted(set(test_hash_of) - set(sens_excluded))
     assert len(sens_kept) == 993, f"sensitivity N={len(sens_kept)}"
-    write_json("cross_split_exclusion_list.json", {
-        "n_contaminated_hashes": 7, "hashes": sorted(cross_hashes),
-        "train_paths": sorted([rp for h in cross_hashes for rp in train_by_hash[h]]),
-        "excluded_test_paths": sens_excluded,
-        "primary_test_n": 1000, "sensitivity_test_n": 993,
-        "rule": "Primary N=1000 stays principal (official release). N=993 is sensitivity only.",
-    })
+    write_json(
+        "cross_split_exclusion_list.json",
+        {
+            "n_contaminated_hashes": 7,
+            "hashes": sorted(cross_hashes),
+            "train_paths": sorted([rp for h in cross_hashes for rp in train_by_hash[h]]),
+            "excluded_test_paths": sens_excluded,
+            "primary_test_n": 1000,
+            "sensitivity_test_n": 993,
+            "rule": "Primary N=1000 stays principal (official release). N=993 is sensitivity only.",
+        },
+    )
 
     # units (SHA-atomic) over pool
     units: dict[str, dict] = {}
@@ -131,12 +142,16 @@ def main() -> int:
         assert all(c == next(iter(classes)) for c, _ in parsed), "folder/filename class mismatch"
         planes = sorted({v for _, v in parsed})
         assert all(v in VIEWS for v in planes), f"unknown plane code {h[:12]}"
-        units[h] = {"files": sorted(paths), "n": len(paths),
-                    "class": next(iter(classes)),
-                    "planes": planes,
-                    "stratum": f"{next(iter(classes))}x{planes[0]}" if len(planes) == 1
-                               else next(iter(classes)),
-                    "contaminated": h in cross_hashes}
+        units[h] = {
+            "files": sorted(paths),
+            "n": len(paths),
+            "class": next(iter(classes)),
+            "planes": planes,
+            "stratum": f"{next(iter(classes))}x{planes[0]}"
+            if len(planes) == 1
+            else next(iter(classes)),
+            "contaminated": h in cross_hashes,
+        }
 
     # R2: contaminated units -> train
     train_files: list[str] = []
@@ -194,21 +209,34 @@ def main() -> int:
     train_files.sort()
     val_files.sort()
     manifest_rows = []
-    split_of = {p: "train" for p in train_files}
-    split_of.update({p: "val" for p in val_files})
+    split_of = dict.fromkeys(train_files, "train")
+    split_of.update(dict.fromkeys(val_files, "val"))
     for p in sorted([str(x.relative_to(root)) for x in pool]):
         h = sha256_file(root / p)
-        manifest_rows.append({"path": p, "sha256": h, "population": "official_train_pool",
-                              "class": CLASS_ALIAS[Path(p).parent.name],
-                              "cross_split_contaminated": int(h in cross_hashes),
-                              "project_split": split_of[p], "sensitivity": ""})
+        manifest_rows.append(
+            {
+                "path": p,
+                "sha256": h,
+                "population": "official_train_pool",
+                "class": CLASS_ALIAS[Path(p).parent.name],
+                "cross_split_contaminated": int(h in cross_hashes),
+                "project_split": split_of[p],
+                "sensitivity": "",
+            }
+        )
     for p in sorted([str(x.relative_to(root)) for x in test]):
         h = test_hash_of[p]
-        manifest_rows.append({"path": p, "sha256": h, "population": "official_test_locked",
-                              "class": CLASS_ALIAS[Path(p).parent.name],
-                              "cross_split_contaminated": int(h in cross_hashes),
-                              "project_split": "test_primary",
-                              "sensitivity": "excluded" if p in sens_excluded else "kept"})
+        manifest_rows.append(
+            {
+                "path": p,
+                "sha256": h,
+                "population": "official_test_locked",
+                "class": CLASS_ALIAS[Path(p).parent.name],
+                "cross_split_contaminated": int(h in cross_hashes),
+                "project_split": "test_primary",
+                "sensitivity": "excluded" if p in sens_excluded else "kept",
+            }
+        )
     with open(out / "project_manifest.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(manifest_rows[0].keys()))
         w.writeheader()
@@ -217,15 +245,24 @@ def main() -> int:
     def _h(obj) -> str:
         return hashlib.sha256(json.dumps(obj, sort_keys=True).encode()).hexdigest()
 
-    split = {"seed": SEED, "policy": "4000/1000 over 5000 pool; SHA-atomic units; "
-                                    "class x plane strata (class-only fallback); "
-                                    "contaminated units pre-assigned to train (R2); "
-                                    "exact subset-sum DP per stratum, residual carried",
-             "stratum_quotas": quotas, "atomicity_adjustments": adjustments,
-             "train": train_files, "val": val_files,
-             "test_primary": sorted(test_hash_of), "test_sensitivity": sens_kept,
-             "hashes": {"train": _h(train_files), "val": _h(val_files),
-                        "manifest": _h([r["sha256"] for r in manifest_rows])}}
+    split = {
+        "seed": SEED,
+        "policy": "4000/1000 over 5000 pool; SHA-atomic units; "
+        "class x plane strata (class-only fallback); "
+        "contaminated units pre-assigned to train (R2); "
+        "exact subset-sum DP per stratum, residual carried",
+        "stratum_quotas": quotas,
+        "atomicity_adjustments": adjustments,
+        "train": train_files,
+        "val": val_files,
+        "test_primary": sorted(test_hash_of),
+        "test_sensitivity": sens_kept,
+        "hashes": {
+            "train": _h(train_files),
+            "val": _h(val_files),
+            "manifest": _h([r["sha256"] for r in manifest_rows]),
+        },
+    }
     (out / "project_split.json").write_text(json.dumps(split, indent=1), encoding="utf-8")
     (out / "project_split_report.md").write_text(
         "# Project split (frozen)\n\n"
@@ -234,9 +271,13 @@ def main() -> int:
         f"- test_primary=1000 LOCKED (contamination disclosed)\n"
         f"- test_sensitivity=993 LOCKED\n"
         f"- contaminated train files retained+flagged: {n_pre} (in train, never val)\n"
-        f"- manifest sha={split['hashes']['manifest']}\n", encoding="utf-8")
-    print(f"split frozen: train={len(train_files)} val={len(val_files)} "
-          f"sens=993 manifest={split['hashes']['manifest'][:12]}")
+        f"- manifest sha={split['hashes']['manifest']}\n",
+        encoding="utf-8",
+    )
+    print(
+        f"split frozen: train={len(train_files)} val={len(val_files)} "
+        f"sens=993 manifest={split['hashes']['manifest'][:12]}"
+    )
     return 0
 
 

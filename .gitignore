@@ -2,10 +2,20 @@ __pycache__/
 *.pyc
 .venv/
 .streamlit/
+# Tool state
+.coverage
+.hypothesis/
+.benchmarks/
+.pytest_cache/
+.ruff_cache/
 # Release data lives ONLY at repo-root data/ (anchored: bare `data/` would
 # silently exclude src/brain_tumor/data, configs/data, tests/data).
 /data/
 kaggle/codepkg/
+# Kaggle kernel-output download scratch (redundant artifact copies; logs are
+# 0-byte under the CLI's charmap bug — fetch logs via the API with PYTHONUTF8=1).
+kaggle/kaggle-output*/
+kaggle/bt-major-code-snapshot/
 # Smoke runs and non-production checkpoints stay local (precedent: last.pt
 # remains on kernels; smoke dirs are pipeline checks, not releases).
 *-smoke/

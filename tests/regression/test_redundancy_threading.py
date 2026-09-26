@@ -22,6 +22,7 @@ _rng = np.random.RandomState(77)
 
 def _png(array):
     from PIL import Image
+
     buf = io.BytesIO()
     Image.fromarray(array.astype("uint8")).save(buf, format="PNG")
     return buf.getvalue()
@@ -30,6 +31,7 @@ def _png(array):
 def _img_and_raw():
     raw = _png(_rng.rand(256, 256) * 255)
     from PIL import Image
+
     return Image.open(io.BytesIO(raw)), raw
 
 
@@ -62,8 +64,10 @@ def test_reliability_threaded_args_match_default(svc):
 def test_api_analyze_payload_bit_identical(svc):
     """API /analyze (threaded) == manual composition of the same stages."""
     import json
+
     import main as api_main
     from fastapi.testclient import TestClient
+
     client = TestClient(api_main.app)
     img, raw = _img_and_raw()
     body = client.post("/analyze", files={"file": ("t.png", raw, "image/png")}).json()
@@ -73,8 +77,8 @@ def test_api_analyze_payload_bit_identical(svc):
     manual["quality"] = svc.quality(raw)
     manual["consistency"] = svc.consistency(img, clean_pred=result.predicted_class)
     manual["reliability"] = svc.reliability(
-        img, raw=raw, result=result, con=manual["consistency"],
-        qual=manual["quality"])
+        img, raw=raw, result=result, con=manual["consistency"], qual=manual["quality"]
+    )
     manual["disclaimer"] = body["disclaimer"]
     # JSON round-trip: HTTP payloads carry lists where model_dump has tuples.
     assert body == json.loads(json.dumps(manual))
@@ -85,11 +89,14 @@ def test_api_analyze_without_probes_keeps_reliability_internal():
     computed internally (con=None path) — matches pre-threading behavior."""
     import main as api_main
     from fastapi.testclient import TestClient
+
     client = TestClient(api_main.app)
     _, raw = _img_and_raw()
-    body = client.post("/analyze",
-                       files={"file": ("t.png", raw, "image/png")},
-                       params={"consistency_probes": False}).json()
+    body = client.post(
+        "/analyze",
+        files={"file": ("t.png", raw, "image/png")},
+        params={"consistency_probes": False},
+    ).json()
     # Absent entirely (not null): response_model must not change the wire.
     assert "consistency" not in body
     assert body["reliability"]["consistency"]["k"] == 8
@@ -99,6 +106,7 @@ def test_api_analyze_without_probes_keeps_reliability_internal():
 def test_streamlit_payload_bit_identical(svc):
     """build_payload (threaded) == manual composition of the same stages."""
     import app as streamlit_app
+
     img, raw = _img_and_raw()
     payload = streamlit_app.build_payload(svc, raw)
 
@@ -107,8 +115,8 @@ def test_streamlit_payload_bit_identical(svc):
     manual["quality"] = svc.quality(raw)
     manual["consistency"] = svc.consistency(img, clean_pred=result.predicted_class)
     manual["reliability"] = svc.reliability(
-        img, raw=raw, result=result, con=manual["consistency"],
-        qual=manual["quality"])
+        img, raw=raw, result=result, con=manual["consistency"], qual=manual["quality"]
+    )
     assert payload == manual
 
 

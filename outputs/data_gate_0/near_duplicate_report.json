@@ -31,7 +31,9 @@
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01213_me_ax_t1.jpg",
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01426_me_ax_t1.jpg",
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01574_me_co_t1.jpg",
-      "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_03825_pi_ax_t1.jpg"
+      "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_03825_pi_ax_t1.jpg",
+      "data\\external\\brain-cancer-mri-dataset\\Brain_Cancer raw MRI data\\Brain_Cancer\\brain_glioma\\brain_glioma_1360.jpg",
+      "data\\external\\brain-cancer-mri-dataset\\Brain_Cancer raw MRI data\\Brain_Cancer\\brain_glioma\\brain_glioma_1375.jpg"
     ],
     [
       "data\\brisc2025\\classification_task\\test\\glioma\\brisc2025_test_00002_gl_ax_t1.jpg",
@@ -86,7 +88,9 @@
       "data\\brisc2025\\segmentation_task\\test\\images\\brisc2025_test_00343_me_ax_t1.jpg",
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01155_me_ax_t1.jpg",
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01227_me_ax_t1.jpg",
-      "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01557_me_ax_t1.jpg"
+      "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01557_me_ax_t1.jpg",
+      "data\\external\\brain-cancer-mri-dataset\\Brain_Cancer raw MRI data\\Brain_Cancer\\brain_glioma\\brain_glioma_0200.jpg",
+      "data\\external\\brain-cancer-mri-dataset\\Brain_Cancer raw MRI data\\Brain_Cancer\\brain_menin\\brain_menin_0874.jpg"
     ],
     [
       "data\\brisc2025\\classification_task\\test\\glioma\\brisc2025_test_00004_gl_ax_t1.jpg",
@@ -154,7 +158,16 @@
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_00317_gl_ax_t1.jpg",
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_00377_gl_ax_t1.jpg",
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_00378_gl_ax_t1.jpg",
-      "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_00382_gl_ax_t1.jpg"
+      "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_00382_gl_ax_t1.jpg",
+      "data\\external\\figshare-extracted\\images\\1875.png",
+      "data\\external\\figshare-extracted\\images\\1876.png",
+      "data\\external\\figshare-extracted\\images\\1883.png",
+      "data\\external\\figshare-extracted\\images\\2033.png",
+      "data\\external\\figshare-extracted\\images\\2034.png",
+      "data\\external\\figshare-extracted\\images\\2035.png",
+      "data\\external\\figshare-extracted\\images\\2036.png",
+      "data\\external\\figshare-extracted\\images\\2050.png",
+      "data\\external\\figshare-extracted\\images\\2127.png"
     ],
     [
       "data\\brisc2025\\classification_task\\test\\glioma\\brisc2025_test_00007_gl_ax_t1.jpg",
@@ -262,11 +275,23 @@
       "data\\brisc2025\\classification_task\\train\\glioma\\brisc2025_train_01073_gl_sa_t1.jpg",
       "data\\brisc2025\\segmentation_task\\test\\images\\brisc2025_test_00011_gl_ax_t1.jpg",
       "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_00078_gl_ax_t1.jpg",
-      "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01073_gl_sa_t1.jpg"
+      "data\\brisc2025\\segmentation_task\\train\\images\\brisc2025_train_01073_gl_sa_t1.jpg",
+      "data\\external\\brain-cancer-mri-dataset\\Brain_Cancer raw MRI data\\Brain_Cancer\\brain_menin\\brain_menin_0536.jpg",
+      "data\\external\\brain-cancer-mri-dataset\\Brain_Cancer raw MRI data\\Brain_Cancer\\brain_menin\\brain_menin_1475.jpg",
+      "data\\external\\brain-cancer-mri-dataset\\Brain_Cancer raw MRI data\\Brain_Cancer\\brain_menin\\brain_menin_1837.jpg",
+      "data\\external\\brain-cancer-mri-dataset\\Brain_Cancer raw MRI data\\Brain_Cancer\\brain_tumor\\brain_tumor_1109.jpg",
+      "data\\external\\figshare-extracted\\images\\1894.png",
+      "data\\external\\figshare-extracted\\images\\1895.png",
+      "data\\external\\figshare-extracted\\images\\1896.png",
+      "data\\external\\figshare-extracted\\images\\731.png",
+      "data\\external\\figshare-extracted\\images\\732.png",
+      "data\\external\\figshare-extracted\\images\\733.png",
+      "data\\external\\figshare-extracted\\images\\734.png",
+      "data\\external\\figshare-extracted\\images\\815.png"
     ]
   ],
-  "n_collision_groups": 3250,
-  "n_files": 15586,
+  "n_collision_groups": 4267,
+  "n_files": 27770,
   "pass": true,
   "policy": "report_only"
 }

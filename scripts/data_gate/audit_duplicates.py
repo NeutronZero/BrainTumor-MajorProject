@@ -49,18 +49,23 @@ def _sha_map(files: list[Path]) -> dict[str, list[str]]:
 
 def _within(groups_map: dict[str, list[str]]) -> dict:
     dups = {h: v for h, v in groups_map.items() if len(v) > 1}
-    return {"n_files": sum(len(v) for v in groups_map.values()),
-            "n_unique": len(groups_map),
-            "n_groups": len(dups),
-            "n_excess": sum(len(v) - 1 for v in dups.values()),
-            "groups_sample": list(dups.values())[:10]}
+    return {
+        "n_files": sum(len(v) for v in groups_map.values()),
+        "n_unique": len(groups_map),
+        "n_groups": len(dups),
+        "n_excess": sum(len(v) - 1 for v in dups.values()),
+        "groups_sample": list(dups.values())[:10],
+    }
 
 
 def main() -> dict:
     root = Path(__file__).resolve().parents[2]
     release = find_release_root(root)
-    thr = int((yaml.safe_load(open(root / "configs" / "data" / "gate_thresholds.yaml")) or {}).get(
-        "duplicate_hash_threshold", 0))
+    thr = int(
+        (yaml.safe_load(open(root / "configs" / "data" / "gate_thresholds.yaml")) or {}).get(
+            "duplicate_hash_threshold", 0
+        )
+    )
     if release is None:
         result = {"check": "exact_duplicates", "pass": False, "reason": "release_not_found"}
         write_json("duplicate_report.json", result)
@@ -81,40 +86,58 @@ def main() -> dict:
 
     cross_cls = sorted(set(m_ct) & set(m_ce))
     cross_seg = sorted(set(m_st) & set(m_se))
-    cat3 = {"n_shared_hashes": len(cross_cls),
-            "n_train_files": sum(len(m_ct[h]) for h in cross_cls),
-            "n_test_files": sum(len(m_ce[h]) for h in cross_cls),
-            "hashes_sample": cross_cls[:10]}
-    cat6 = {"n_shared_hashes": len(cross_seg),
-            "n_train_files": sum(len(m_st[h]) for h in cross_seg),
-            "n_test_files": sum(len(m_se[h]) for h in cross_seg),
-            "hashes_sample": cross_seg[:10]}
+    cat3 = {
+        "n_shared_hashes": len(cross_cls),
+        "n_train_files": sum(len(m_ct[h]) for h in cross_cls),
+        "n_test_files": sum(len(m_ce[h]) for h in cross_cls),
+        "hashes_sample": cross_cls[:10],
+    }
+    cat6 = {
+        "n_shared_hashes": len(cross_seg),
+        "n_train_files": sum(len(m_st[h]) for h in cross_seg),
+        "n_test_files": sum(len(m_se[h]) for h in cross_seg),
+        "hashes_sample": cross_seg[:10],
+    }
 
     # Category 7: subset correspondence (reported only)
     cls_all = set(m_ct) | set(m_ce)
     seg_all = set(m_st) | set(m_se)
     matched = seg_all & cls_all
-    cat7 = {"n_seg_unique": len(seg_all), "n_cls_unique": len(cls_all),
-            "n_seg_hashes_found_in_classification": len(matched),
-            "n_seg_hashes_only_in_segmentation": len(seg_all - cls_all),
-            "note": "Same-byte classification<->segmentation presence is expected "
-                    "subset mechanics, NOT contamination."}
+    cat7 = {
+        "n_seg_unique": len(seg_all),
+        "n_cls_unique": len(cls_all),
+        "n_seg_hashes_found_in_classification": len(matched),
+        "n_seg_hashes_only_in_segmentation": len(seg_all - cls_all),
+        "note": "Same-byte classification<->segmentation presence is expected "
+        "subset mechanics, NOT contamination.",
+    }
 
     critical = cat3["n_shared_hashes"] + cat6["n_shared_hashes"]
     ok = (len(cls_train) + len(cls_test) > 0) and critical <= thr
-    reason = None if ok else ("dataset_not_present" if not (cls_train or cls_test)
-                              else "cross_split_contamination")
-    result = {"check": "exact_duplicates", "pass": ok,
-              "threshold_critical_cross": thr, "critical_cross_total": critical,
-              "cat1_within_cls_train": cat1, "cat2_within_cls_test": cat2,
-              "cat3_cross_cls_train_test_CRITICAL": cat3,
-              "cat4_within_seg_train": cat4, "cat5_within_seg_test": cat5,
-              "cat6_cross_seg_train_test_CRITICAL": cat6,
-              "cat7_cls_seg_correspondence_report_only": cat7,
-              "reason": reason}
+    reason = (
+        None
+        if ok
+        else ("dataset_not_present" if not (cls_train or cls_test) else "cross_split_contamination")
+    )
+    result = {
+        "check": "exact_duplicates",
+        "pass": ok,
+        "threshold_critical_cross": thr,
+        "critical_cross_total": critical,
+        "cat1_within_cls_train": cat1,
+        "cat2_within_cls_test": cat2,
+        "cat3_cross_cls_train_test_CRITICAL": cat3,
+        "cat4_within_seg_train": cat4,
+        "cat5_within_seg_test": cat5,
+        "cat6_cross_seg_train_test_CRITICAL": cat6,
+        "cat7_cls_seg_correspondence_report_only": cat7,
+        "reason": reason,
+    }
     write_json("duplicate_report.json", result)
-    print(f"duplicates: {'PASS' if ok else 'FAIL'} "
-          f"cross_cls={cat3['n_shared_hashes']} cross_seg={cat6['n_shared_hashes']}")
+    print(
+        f"duplicates: {'PASS' if ok else 'FAIL'} "
+        f"cross_cls={cat3['n_shared_hashes']} cross_seg={cat6['n_shared_hashes']}"
+    )
     return result
 
 

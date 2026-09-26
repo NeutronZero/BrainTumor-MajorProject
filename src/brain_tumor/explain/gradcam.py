@@ -15,8 +15,6 @@ clinical-meaning claim without separate validation.
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -31,20 +29,23 @@ def resolve_target_layer(model: nn.Module) -> tuple[str, nn.Module]:
     the last nn.Conv2d anywhere in the model; (3) raise RuntimeError only
     when the model contains zero nn.Conv2d modules.
     """
-    found = [(n, m) for n, m in model.named_modules()
-             if n.startswith("features") and isinstance(m, nn.Conv2d)]
+    found = [
+        (n, m)
+        for n, m in model.named_modules()
+        if n.startswith("features") and isinstance(m, nn.Conv2d)
+    ]
     if found:
         return found[-1]
-    any_conv = [(n, m) for n, m in model.named_modules()
-                if isinstance(m, nn.Conv2d)]
+    any_conv = [(n, m) for n, m in model.named_modules() if isinstance(m, nn.Conv2d)]
     if not any_conv:
         # Real exception (not assert): must survive `python -O` deployment.
         raise RuntimeError("model has no nn.Conv2d — cannot resolve Grad-CAM target layer")
     return any_conv[-1]
 
 
-def gradcam_heatmap(model: nn.Module, target: tuple[str, nn.Module], x: torch.Tensor,
-                    class_idx: int) -> tuple[np.ndarray, str]:
+def gradcam_heatmap(
+    model: nn.Module, target: tuple[str, nn.Module], x: torch.Tensor, class_idx: int
+) -> tuple[np.ndarray, str]:
     """CAM for class_idx (pre-softmax logit). Returns (H,W float32 in [0,1], target name)."""
     target_name, target_mod = target
     acts: dict = {}
@@ -74,8 +75,14 @@ def gradcam_heatmap(model: nn.Module, target: tuple[str, nn.Module], x: torch.Te
 
 def upsample_cam(cam: np.ndarray, size: tuple[int, int]) -> np.ndarray:
     from PIL import Image
-    return np.asarray(Image.fromarray((cam * 255).astype("uint8")).resize(
-        size, Image.BILINEAR), dtype=np.float32) / 255.0
+
+    return (
+        np.asarray(
+            Image.fromarray((cam * 255).astype("uint8")).resize(size, Image.BILINEAR),
+            dtype=np.float32,
+        )
+        / 255.0
+    )
 
 
 def jet(m: np.ndarray) -> np.ndarray:

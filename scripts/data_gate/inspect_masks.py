@@ -39,6 +39,7 @@ from data_gate.layout import find_release_root, seg_split_dirs  # noqa: E402
 def _analyze_mask(p: Path):
     """Return dict of Stage-1 facts, or None if unreadable."""
     from PIL import Image
+
     with Image.open(p) as im:
         mode, size = im.mode, im.size
         g = im.convert("L") if mode != "L" else im
@@ -48,16 +49,25 @@ def _analyze_mask(p: Path):
         inter = total - c0 - c255
         fg127 = sum(hist[128:])
         uniques = [i for i, c in enumerate(hist) if c]
-        return {"mode": mode, "size": [size[0], size[1]], "total": total,
-                "c0": c0, "c255": c255, "intermediate": inter, "fg127": fg127,
-                "n_unique": len(uniques),
-                "min": uniques[0], "max": uniques[-1],
-                "uniques_sample": uniques[:32]}
+        return {
+            "mode": mode,
+            "size": [size[0], size[1]],
+            "total": total,
+            "c0": c0,
+            "c255": c255,
+            "intermediate": inter,
+            "fg127": fg127,
+            "n_unique": len(uniques),
+            "min": uniques[0],
+            "max": uniques[-1],
+            "uniques_sample": uniques[:32],
+        }
 
 
 def _img_size(p: Path):
     try:
         from PIL import Image
+
         with Image.open(p) as im:
             return [im.size[0], im.size[1]]
     except Exception:
@@ -71,8 +81,13 @@ def main() -> dict:
     inter_cap = float(thr_cfg.get("mask_intermediate_fraction_cap", 0.02))
     allowed = set(thr_cfg.get("mask_allowed_encodings", ["binary", "binary_intent_aa"]))
     if release is None:
-        result = {"check": "masks", "pass": False, "mask_encoding": "unknown",
-                  "n_masks": 0, "reason": "release_not_found"}
+        result = {
+            "check": "masks",
+            "pass": False,
+            "mask_encoding": "unknown",
+            "n_masks": 0,
+            "reason": "release_not_found",
+        }
         write_json("mask_report.json", result)
         print("masks: FAIL (release_not_found)")
         return result
@@ -80,8 +95,12 @@ def main() -> dict:
     try:
         import PIL  # noqa: F401
     except ImportError:
-        result = {"check": "masks", "pass": False, "mask_encoding": "unknown",
-                  "reason": "PIL_unavailable_cannot_verify"}
+        result = {
+            "check": "masks",
+            "pass": False,
+            "mask_encoding": "unknown",
+            "reason": "PIL_unavailable_cannot_verify",
+        }
         write_json("mask_report.json", result)
         print("masks: FAIL (PIL unavailable — fail-closed)")
         return result
@@ -136,8 +155,7 @@ def main() -> dict:
             except Exception:
                 pass
 
-    n_masks_total = sum(1 for s in ("train", "test")
-                        for _ in seg[s]["masks"].glob("*.png"))
+    n_masks_total = sum(1 for s in ("train", "test") for _ in seg[s]["masks"].glob("*.png"))
     glob_inter_frac = (tot_inter / tot_px) if tot_px else 1.0
     divergent = sum(1 for v in img_to_masks.values() if len(v) > 1)
 
@@ -166,28 +184,43 @@ def main() -> dict:
         if reason is None:
             reason = "encoding_not_in_allowlist"
 
-    result = {"check": "masks", "pass": ok, "mask_encoding": encoding,
-              "stage1": {"n_masks_on_disk": n_masks_total, "n_checked": n_checked,
-                         "modes": dict(modes),
-                         "n_unique_histogram": {str(k): v for k, v in sorted(n_unique_hist.items())},
-                         "global_intermediate_fraction": glob_inter_frac,
-                         "intermediate_cap": inter_cap,
-                         "corpus_distinct_values_seen": len(corpus_values)},
-              "convention_evaluated": "mask > 127 -> 1 else 0 (documented, files untouched)",
-              "coverage_after_convention": {"with_foreground": n_fg, "empty": n_empty},
-              "pairing": {"missing_mask": missing_mask[:10], "n_missing_mask": len(missing_mask),
-                          "missing_image": missing_image[:10], "n_missing_image": len(missing_image),
-                          "dimension_mismatches": dim_mismatch, "unreadable": unreadable},
-              "mask_sha": {"n_unique_mask_hashes": len(mask_hashes),
-                           "n_images_with_divergent_masks": divergent},
-              "reason": reason,
-              "gate_effect": ("FAIL -> segmentation becomes stretch goal (§12)"
-                              if not ok else None),
-              "note": "Binary-intent with antialiased edges is a release property, "
-                      "not a binarization decision by this gate."}
+    result = {
+        "check": "masks",
+        "pass": ok,
+        "mask_encoding": encoding,
+        "stage1": {
+            "n_masks_on_disk": n_masks_total,
+            "n_checked": n_checked,
+            "modes": dict(modes),
+            "n_unique_histogram": {str(k): v for k, v in sorted(n_unique_hist.items())},
+            "global_intermediate_fraction": glob_inter_frac,
+            "intermediate_cap": inter_cap,
+            "corpus_distinct_values_seen": len(corpus_values),
+        },
+        "convention_evaluated": "mask > 127 -> 1 else 0 (documented, files untouched)",
+        "coverage_after_convention": {"with_foreground": n_fg, "empty": n_empty},
+        "pairing": {
+            "missing_mask": missing_mask[:10],
+            "n_missing_mask": len(missing_mask),
+            "missing_image": missing_image[:10],
+            "n_missing_image": len(missing_image),
+            "dimension_mismatches": dim_mismatch,
+            "unreadable": unreadable,
+        },
+        "mask_sha": {
+            "n_unique_mask_hashes": len(mask_hashes),
+            "n_images_with_divergent_masks": divergent,
+        },
+        "reason": reason,
+        "gate_effect": ("FAIL -> segmentation becomes stretch goal (§12)" if not ok else None),
+        "note": "Binary-intent with antialiased edges is a release property, "
+        "not a binarization decision by this gate.",
+    }
     write_json("mask_report.json", result)
-    print(f"masks: {'PASS' if ok else 'FAIL'} encoding={encoding} "
-          f"inter_frac={glob_inter_frac:.4f} fg={n_fg} empty={n_empty}")
+    print(
+        f"masks: {'PASS' if ok else 'FAIL'} encoding={encoding} "
+        f"inter_frac={glob_inter_frac:.4f} fg={n_fg} empty={n_empty}"
+    )
     return result
 
 

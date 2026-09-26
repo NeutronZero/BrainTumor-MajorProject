@@ -19,6 +19,7 @@ _rng = np.random.RandomState(31)
 
 def _png(array: np.ndarray) -> bytes:
     from PIL import Image
+
     buf = io.BytesIO()
     Image.fromarray(array.astype("uint8")).save(buf, format="PNG")
     return buf.getvalue()
@@ -26,11 +27,13 @@ def _png(array: np.ndarray) -> bytes:
 
 def _img():
     from PIL import Image
+
     return Image.open(io.BytesIO(_png(_rng.rand(256, 256) * 255)))
 
 
 def _svc():
     from brain_tumor.inference.service import InferenceService
+
     return InferenceService.from_registry()
 
 
@@ -39,12 +42,18 @@ def test_explain_preserves_inference_outputs():
     img = _img()
     a = svc.analyze(img).model_dump()
     e = svc.explain(img)
-    for k in ("predicted_class", "probabilities", "confidence",
-              "classification_state", "segmentation_state", "localization",
-              "warnings", "system_state"):
+    for k in (
+        "predicted_class",
+        "probabilities",
+        "confidence",
+        "classification_state",
+        "segmentation_state",
+        "localization",
+        "warnings",
+        "system_state",
+    ):
         assert e[k] == a[k], k
-    BrainTumorResult(**{k: v for k, v in e.items()
-                        if k in BrainTumorResult.model_fields})
+    BrainTumorResult(**{k: v for k, v in e.items() if k in BrainTumorResult.model_fields})
 
 
 def test_explain_deterministic_and_shaped():
@@ -56,6 +65,7 @@ def test_explain_deterministic_and_shaped():
     assert e1["gradcam"]["target_layer"] == "features.7.2.block.0"
     raw = base64.b64decode(e1["gradcam"]["overlay_png_b64"])
     from PIL import Image
+
     ov = Image.open(io.BytesIO(raw))
     assert ov.size == img.size and ov.mode == "RGB"
     assert "not a clinical" in e1["report_text"]
@@ -65,10 +75,11 @@ def test_explain_deterministic_and_shaped():
 def test_explain_endpoint():
     import main as api_main
     from fastapi.testclient import TestClient
+
     client = TestClient(api_main.app)
-    body = client.post("/explain",
-                       files={"file": ("t.png", _png(_rng.rand(256, 256) * 255),
-                                       "image/png")}).json()
+    body = client.post(
+        "/explain", files={"file": ("t.png", _png(_rng.rand(256, 256) * 255), "image/png")}
+    ).json()
     assert body["gradcam"]["target_layer"] == "features.7.2.block.0"
     assert body["consistency"]["k"] == 8
     assert "report_text" in body and "disclaimer" in body
@@ -80,7 +91,9 @@ def test_explain_non256_resolutions():
     """Regression: overlays must match ORIGINAL size (live-check caught a
     256-vs-original broadcast crash on large uploads)."""
     import base64 as _b64
+
     from PIL import Image as _Image
+
     svc = _svc()
     for shape, seed in (((1024, 1024), 2), ((384, 512, 3), 3)):
         arr = (np.random.RandomState(seed).rand(*shape) * 255).astype("uint8")

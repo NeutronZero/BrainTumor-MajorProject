@@ -16,6 +16,7 @@ from brain_tumor.inference.service import InferenceService  # noqa: E402
 
 def _img(array: np.ndarray):
     from PIL import Image
+
     buf = io.BytesIO()
     Image.fromarray(array.astype("uint8")).save(buf, format="PNG")
     buf.seek(0)
@@ -28,7 +29,8 @@ def _svc(**kw):
         return InferenceService.from_registry()
     return InferenceService(
         classifier_ckpt=kw.get("clf", root / "checkpoints" / "CLS-001" / "best.pt"),
-        segmenter_ckpt=kw.get("seg", root / "checkpoints" / "SEG-001" / "best.pt"))
+        segmenter_ckpt=kw.get("seg", root / "checkpoints" / "SEG-001" / "best.pt"),
+    )
 
 
 def test_observer_equivalence():
@@ -49,8 +51,14 @@ def test_tumor_path_shape():
     rng = np.random.RandomState(31)
     img, raw = _img(rng.rand(256, 256) * 255)
     rel = svc.reliability(img, raw=raw)
-    assert set(rel) >= {"classification", "consistency", "quality",
-                        "segmentation", "localization", "reliability"}
+    assert set(rel) >= {
+        "classification",
+        "consistency",
+        "quality",
+        "segmentation",
+        "localization",
+        "reliability",
+    }
     assert isinstance(rel["reliability"]["basis"], list) and rel["reliability"]["basis"]
 
 
@@ -75,6 +83,7 @@ def test_quality_reject_and_missing_capabilities():
     assert rel["reliability"]["summary"] == "review"
     noseg = _svc(seg=Path("none"))
     import pytest
+
     rng = np.random.RandomState(31)
     img, raw = _img(rng.rand(256, 256) * 255)
     rel_ns = noseg.reliability(img, raw=raw)
@@ -93,15 +102,19 @@ def test_determinism():
 
 def test_reliability_endpoint():
     import sys as _sys
+
     _sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "app" / "api"))
     import main as api_main
     from fastapi.testclient import TestClient
+
     client = TestClient(api_main.app)
     rng = np.random.RandomState(31)
-    body = client.post("/reliability", files={
-        "file": ("t.png", _img(rng.rand(256, 256) * 255)[1], "image/png")}).json()
+    body = client.post(
+        "/reliability", files={"file": ("t.png", _img(rng.rand(256, 256) * 255)[1], "image/png")}
+    ).json()
     assert body["reliability"]["summary"] in ("stable", "review")
     assert body["reliability"]["clinical_meaning"] is False
-    body2 = client.post("/analyze", files={
-        "file": ("t.png", _img(rng.rand(128, 128) * 255)[1], "image/png")}).json()
+    body2 = client.post(
+        "/analyze", files={"file": ("t.png", _img(rng.rand(128, 128) * 255)[1], "image/png")}
+    ).json()
     assert "reliability" in body2

@@ -37,11 +37,11 @@ Runtime here: torch 2.13.0+cpu; python 3.14.7.
 - `outputs/SYSINT/batchk8_check.json` `bdcad54122e297d18e9aa7172963361c8cf1f685cc76fb9c13a3bf0eaf21c45f` (978 bytes)
 
 ## contract_code
-- `src/brain_tumor/contracts.py` `37d6e560b568309ae51bca136d73a75e6bed094f9f9d0827d313acd63125340d` (9063 bytes)
-- `src/brain_tumor/inference/service.py` `be0f467bdf283a7ebdedbbbb0c6c9dd3d918e319151d7f03beadb7178daeca65` (16195 bytes)
-- `src/brain_tumor/preprocessing/pipeline.py` `a0bdfff9c28f0a1dbfac642819dc955eecd6a750b57292f62439328e45a7f77e` (3146 bytes)
-- `app/api/main.py` `0c026d66063e6e0e641fb9e0f5ef4ecb028594b61fbfd23240bbd5394ed73920` (13025 bytes)
-- `app/streamlit/app.py` `42286dbe70c4589867d9eb26e36f20d77d7f7a552c4559d6e9f3aee850b80441` (7022 bytes)
+- `src/brain_tumor/contracts.py` `b5027f85eea856d22d2a9ef404ac8e1720ba1e02125436cfd5983ee419133ae9` (8985 bytes)
+- `src/brain_tumor/inference/service.py` `5f77925177318a281fbef8c541f2e3cefe327c23bf8c2c5505b69d0757e67992` (21471 bytes)
+- `src/brain_tumor/preprocessing/pipeline.py` `d5a49ba17bf9b28004883ecbd953277243b1f46fa241ae503f129bf77a450972` (3148 bytes)
+- `app/api/main.py` `e8512f9148f9bedf642bc9e6ab8b26fb8cb2e1d961d0703dc3609d78b5ca93cd` (22891 bytes)
+- `app/streamlit/app.py` `848dd69ce43e1a72c3857e99a5d2fb8f02612fce785d5b1b3971a5adec90d66f` (6977 bytes)
 
 ## Status
 - SB-1 submission-ready fallback: CLS-001 + SEG-001 + UNC-001 (descriptive) + ROB-001 (documented variant) + FP16/autocast.

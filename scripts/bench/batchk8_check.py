@@ -31,20 +31,26 @@ K, SEED_BASE, SIGMA = 8, 7003, 0.05
 
 def _synthetic(seed: int, size: int = 512):
     from PIL import Image
+
     rng = np.random.RandomState(seed)
     return Image.fromarray((rng.rand(size, size) * 255).astype("uint8"))
 
 
 def _stats(xs: list[float]) -> dict:
     a = np.array(xs)
-    return {"n": len(xs), "median": round(float(np.median(a)), 4),
-            "p95": round(float(np.percentile(a, 95)), 4),
-            "min": round(float(a.min()), 4), "max": round(float(a.max()), 4)}
+    return {
+        "n": len(xs),
+        "median": round(float(np.median(a)), 4),
+        "p95": round(float(np.percentile(a, 95)), 4),
+        "min": round(float(a.min()), 4),
+        "max": round(float(a.max()), 4),
+    }
 
 
 def sequential_consistency(svc, base, k=K):
     """Frozen pre-batching reference implementation (identical seeds)."""
     from PIL import Image
+
     clean_pred = svc.classify(base)["predicted_class"]
     agree = 0
     with torch.no_grad():
@@ -54,7 +60,8 @@ def sequential_consistency(svc, base, k=K):
             a = np.clip(a + rng.normal(0, SIGMA, a.shape), 0, 1)
             noisy = Image.fromarray((a * 255).astype(np.uint8))
             probs = torch.softmax(
-                svc.clf(svc.cls_tf(noisy).unsqueeze(0).to(svc.device)) / svc.T, dim=1)[0]
+                svc.clf(svc.cls_tf(noisy).unsqueeze(0).to(svc.device)) / svc.T, dim=1
+            )[0]
             if CLASSES[int(probs.argmax())] == clean_pred:
                 agree += 1
     return round(agree / k, 4), bool(agree / k < 1.0)
@@ -62,22 +69,28 @@ def sequential_consistency(svc, base, k=K):
 
 def main() -> int:
     from sklearn.metrics import f1_score
+
     root = Path(__file__).resolve().parents[2]
     out = root / "outputs" / "SYSINT"
     assert torch.cuda.is_available(), "no CUDA — GPU rung kernel required"
 
+    from PIL import Image
+
     from brain_tumor.data.brisc import SegDataset, load_manifest
     from brain_tumor.inference.service import InferenceService
     from brain_tumor.preprocessing.pipeline import build_seg_pair_transform
-    from PIL import Image
 
     svc = InferenceService(
         classifier_ckpt=root / "checkpoints" / "CLS-001" / "best.pt",
         segmenter_ckpt=root / "checkpoints" / "SEG-001" / "best.pt",
-        device="cuda")
+        device="cuda",
+    )
     manifest = load_manifest(root / "outputs" / "data_gate_0" / "project_manifest.csv")
-    val_rows = [r for r in manifest if r["population"] == "official_train_pool"
-                and r["project_split"] == "val"]
+    val_rows = [
+        r
+        for r in manifest
+        if r["population"] == "official_train_pool" and r["project_split"] == "val"
+    ]
     assert len(val_rows) == 1000
     ref = json.loads((out / "fp16_check.json").read_text())
     amp = torch.autocast(device_type="cuda", dtype=torch.float16)
@@ -111,8 +124,8 @@ def main() -> int:
             base = Image.open(root / r["path"]).convert("RGB")
             ra, fa = sequential_consistency(svc, base)
             rb = svc.consistency(base)
-            mism_agree += (ra != rb["agreement_fraction"])
-            mism_flag += (fa != rb["flagged"])
+            mism_agree += ra != rb["agreement_fraction"]
+            mism_flag += fa != rb["flagged"]
             flags += rb["flagged"]
             if (i + 1) % 250 == 0:
                 print(f"equivalence {i + 1}/1000", flush=True)
@@ -125,8 +138,12 @@ def main() -> int:
             svc.consistency(img)
             svc.analyze(img)
     torch.cuda.synchronize()
-    lat: dict[str, list[float]] = {"consistency_seq": [], "consistency_batched": [],
-                                   "analyze_core": [], "analyze_full": []}
+    lat: dict[str, list[float]] = {
+        "consistency_seq": [],
+        "consistency_batched": [],
+        "analyze_core": [],
+        "analyze_full": [],
+    }
     with amp:
         for _ in range(REPEATS):
             for img in images:
@@ -153,24 +170,36 @@ def main() -> int:
             svc.analyze(img)
             svc.consistency(img)
     torch.cuda.synchronize()
-    mem = {"peak_allocated_MB": round(torch.cuda.max_memory_allocated() / 2**20, 1),
-           "peak_reserved_MB": round(torch.cuda.max_memory_reserved() / 2**20, 1)}
+    mem = {
+        "peak_allocated_MB": round(torch.cuda.max_memory_allocated() / 2**20, 1),
+        "peak_reserved_MB": round(torch.cuda.max_memory_reserved() / 2**20, 1),
+    }
     with amp:
-        e1 = (svc.consistency(images[0])["agreement_fraction"],
-              svc.consistency(images[0])["flagged"])
-        e2 = (svc.consistency(images[0])["agreement_fraction"],
-              svc.consistency(images[0])["flagged"])
+        e1 = (
+            svc.consistency(images[0])["agreement_fraction"],
+            svc.consistency(images[0])["flagged"],
+        )
+        e2 = (
+            svc.consistency(images[0])["agreement_fraction"],
+            svc.consistency(images[0])["flagged"],
+        )
     payload = {
-        "untouched_paths": {"macro_f1": round(f1, 6),
-                            "d_f1_vs_fp32ref": round(f1 - ref["fp32"]["macro_f1_val"], 6),
-                            "mean_dice": round(dice, 6),
-                            "d_dice_vs_fp32ref": round(dice - ref["fp32"]["mean_dice_segval"], 6)},
-        "equivalence_val_N1000": {"agreement_mismatches": mism_agree,
-                                  "flag_mismatches": mism_flag,
-                                  "flagged_total": flags},
+        "untouched_paths": {
+            "macro_f1": round(f1, 6),
+            "d_f1_vs_fp32ref": round(f1 - ref["fp32"]["macro_f1_val"], 6),
+            "mean_dice": round(dice, 6),
+            "d_dice_vs_fp32ref": round(dice - ref["fp32"]["mean_dice_segval"], 6),
+        },
+        "equivalence_val_N1000": {
+            "agreement_mismatches": mism_agree,
+            "flag_mismatches": mism_flag,
+            "flagged_total": flags,
+        },
         "latency_s": {k: _stats(v) for k, v in lat.items()},
-        "definitions": {"analyze_core": "classify+segment (service.analyze)",
-                        "analyze_full": "analyze_core+consistency (what /analyze returns)"},
+        "definitions": {
+            "analyze_core": "classify+segment (service.analyze)",
+            "analyze_full": "analyze_core+consistency (what /analyze returns)",
+        },
         "peak_gpu_memory": mem,
         "deterministic_repeat": bool(e1 == e2),
     }

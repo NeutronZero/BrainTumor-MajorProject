@@ -40,6 +40,20 @@ def _open_rgb(path: Path):
     return Image.open(path).convert("RGB")
 
 
+def _resolve_brisc_path(project_root: Path, rel_path: str) -> Path:
+    """Resolve BRISC relative path to actual file path.
+    
+    Handles both:
+    - Manifest with paths like "classification_task/train/..." (needs data/brisc2025/ prefix)
+    - Manifest with paths like "data/brisc2025/classification_task/train/..." (already correct)
+    """
+    rel_path = rel_path.replace("\\", "/")
+    if rel_path.startswith("data/brisc2025/"):
+        return project_root / rel_path
+    else:
+        return project_root / "data" / "brisc2025" / rel_path
+
+
 class ClsDataset(Dataset):
     """Classification rows with project_split train/val from frozen manifest."""
 
@@ -59,7 +73,8 @@ class ClsDataset(Dataset):
 
     def __getitem__(self, i: int):
         r = self.rows[i]
-        img = _open_rgb(self.root / r["path"])
+        img_path = _resolve_brisc_path(self.root, r["path"])
+        img = _open_rgb(img_path)
         if self.transform:
             img = self.transform(img)
         return img, CLASS_TO_IDX[r["class"]]

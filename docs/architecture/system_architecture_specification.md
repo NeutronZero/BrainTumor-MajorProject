@@ -7,7 +7,7 @@
 **Document Classification:** Academic Major Project Engineering Architecture & Technical Design Specification  
 **Project Identifier:** `BrainTumor-MajorProject`  
 **System Version:** Release Baseline `FINAL-001` (`48dd3aeb757ecda15a9bf53665ef7f0adad118c2`)  
-**Maintenance Lineage:** Commit `ad01b73` (`CORRECTION-002` documentation integrity update); subsequent documentation-only verification commits on `final-001` are cataloged in Document Revision History (zero changes to code, weights, configs, or interfaces).  
+**Maintenance Lineage:** Commit `ad01b73` (`CORRECTION-002` documentation integrity update); subsequent documentation-only verification commits on `final-001` are cataloged in Document Revision History. Post-FINAL-001 engineering increments on `final-001`: **SB-1** (`0f496a6`, immutable submission baseline), **Phase-E API capture** (`73c4396`, verbatim pre-REL-002 wrapper state), and **REL-002** (`b4a002a`, production boundary hardening — strictly scoped delta; release status CONDITIONAL pending container-build verification, see §22.1).  
 **Lead Engineer / Author:** Senior Systems Architect & ML Engineering Team  
 **Academic Guides & Examination Committee:** Major Project Review Board  
 **Target Domain:** Applied Machine Learning Systems, Computer Vision, Fault-Tolerant Software Engineering  
@@ -25,6 +25,7 @@
 | **1.2** | September 2026 | Documentation Maintenance (`final-001` branch) | ECE engineering curriculum mapping reconciliation (§31) against frozen FINAL-001 artifacts, exact Q01–Q09 specification, and hardware profiling alignment. |
 | **1.3** | September 2026 | Documentation Maintenance (`final-001` branch HEAD) | Final forensic verification pass: §31 diagram terminology alignment, §24.2 cross-reference correction, T5/T7 test suite consolidation clarification (§23.2), and maintenance lineage header refinement. |
 | **1.4** | September 2026 | Documentation Maintenance (`final-001` branch) | Forensic correction pass, zero code/weight/config/interface changes: localization threshold/connectivity/bbox/area semantics (§11, §31.3); Dice smoothing, scheduler floor, AdamW betas, epoch provenance (§9–§10); softmax, UNC F1, OFF exception, REL None nuance, healthy invariant, EXPL dynamic target (§12, §14–§17); CI/test counts/tolerance/env, validation provenance, §31 hardware/numerics notes (§23–§24, §31). |
+| **1.5** | September 2026 | Engineering Increment (`REL-002`, `b4a002a`) | Production boundary hardening + UI evolution (first interface-code revision since FINAL-001): `/analyze_batch` resource bounds and middleware-level metric accounting (§19); dependency-reproducibility repair (unresolvable lock proven by clean-venv install; `filetype`, `prometheus-client`, `python-multipart` declared); `/health` TTL-cached integrity report; Streamlit UI rebuild preserving frozen contracts (§20); container deployment profile with daemon-free boot proof, build UNVERIFIED (§22.1); release lineage extension (§26); CI baseline update to Python 3.14 + coverage gate (§23). Full evidence: `docs/rel002_gate_report.md`. |
 
 ---
 
@@ -153,7 +154,7 @@ The system architecture is derived from twelve functional requirements (FR) and 
 - **FR-QLT-1 (Decodable Image Quality Verification):** The system shall evaluate decodable uploads against deterministic algorithmic checks (`Q01`–`Q09`) and report failure codes. In the standard analysis pipeline, this operates as a descriptive observer attached to the payload without mutating the primary prediction.
 - **FR-QLT-2 (Interface Boundary Rejection):** The system shall immediately trap and reject structural transfer errors at the transport boundary—specifically payloads exceeding the 10 MB limit (`Q08`) or containing undecodable image bytes (`Q01`)—returning structured HTTP `413` or `422` error envelopes without invoking downstream inference engines.
 - **FR-EXP-1 (Feature Attribution):** The system shall provide Grad-CAM heatmaps for the penultimate convolutional block of the classifier, preserving identical model predictions with the uninstrumented pipeline (FP32 execution ensures numerical stability).
-- **FR-API-1 (Unified API Endpoints):** The system shall expose nine RESTful endpoints with structured error envelopes (`413`, `415`, `422`, `500`) that prevent stack-trace leakage.
+- **FR-API-1 (Unified API Endpoints):** The system shall expose nine RESTful endpoints with structured error envelopes (`413`, `415`, `422`, `500`) that prevent stack-trace leakage. (Revision 1.5 note: the transport surface was extended in Phase-E with `POST /analyze_batch` and `GET /metrics`; REL-002 added request-level resource bounds on the batch endpoint — see §19.1.)
 - **FR-UI-1 (Integrated Graphical Interface):** The system shall provide an interactive Streamlit UI utilizing direct in-memory service calls without HTTP loopback.
 - **FR-SYS-1 (State Precedence Enforcement):** The system shall derive a singular system state via strict priority: $\text{degraded} > \text{uncertain} > \text{tumor\_unlocalized} > \text{tumor\_localized} > \text{healthy}$.
 
@@ -184,7 +185,7 @@ The system architecture is derived from twelve functional requirements (FR) and 
 | **FR-SYS-1** | State Machine Engine | `src/brain_tumor/contracts.py` | `tests/unit/test_contracts.py` |
 | **NFR-REPRO-1**| Build Tooling | `scripts/release/build_manifest.py` | `docs/release_manifest.md` |
 | **NFR-DET-1** | Inference Pipeline | `service.py` / `engine.py` | `tests/integration/test_system.py` |
-| **NFR-CPU-1** | Tensor Runtime | PyTorch CPU Execution Subsystem | 85 passed CI tests on CPU (84 unit+integration+regression + 1 data-gate) |
+| **NFR-CPU-1** | Tensor Runtime | PyTorch CPU Execution Subsystem | 113 passed tests on CPU at revision 1.5 (48 unit+data+holdout, 65 regression+integration); grew from the 85 documented at FINAL-001 via Phase-E + REL-002 additions |
 | **NFR-GPU-1** | Mixed Precision Context| `service.py::_autocast()` | `outputs/SYSINT/fp16_check.json` |
 | **NFR-PERF-1** | Deployment Profiler | `scripts/bench/` | `outputs/SYSINT/gpu_latency_fp32.json` |
 | **NFR-PORT-1** | Packaging Framework | Repository Structure & Lockfile | Clean Git clone verification |
@@ -862,15 +863,27 @@ flowchart TD
 
 | Endpoint | Method | Input Payload | Output Schema | HTTP Status Codes |
 | :--- | :--- | :--- | :--- | :--- |
-| `/health` | `GET` | None | Service status, model availability, calibration constants | `200` |
+| `/health` | `GET` | None | Service status, model availability, calibration constants, SHA-256 artifact-integrity block (TTL-cached, 300s — §19.1) | `200` |
 | `/classify` | `POST` | Multipart image file | Class probabilities, predicted label, confidence, state | `200`, `413`, `415`, `422`, `500` |
 | `/segment` | `POST` | Multipart image file | Mask state (`empty`/`nonempty`), localization, warnings | `200`, `413`, `415`, `422`, `500` |
 | `/localize` | `POST` | Multipart image file | Integer bbox coordinates, centroid, pixel area | `200`, `413`, `415`, `422`, `500` |
 | `/quality` | `POST` | Multipart image file | Verdict (`accept`/`reject`), failed checks (`Q01`–`Q09`) | `200`, `415`, `500` (oversize/undecodable returned as `200 reject` with `Q08`/`Q01`, never `413`/`422`) |
 | `/consistency` | `POST` | Multipart image file | $K=8$ agreement fraction, probe stability flag | `200`, `413`, `415`, `422`, `500` |
 | `/analyze` | `POST` | Multipart image file | Complete canonical payload (`BrainTumorResult`) | `200`, `413`, `415`, `422`, `500` |
+| `/analyze_batch` | `POST` | Multiple multipart image files | List of complete canonical payloads in input order (tensor-level batched classification) | `200`, `413` (per-file, aggregate-bytes, or aggregate-pixels bound), `415`, `422`, `500` |
 | `/reliability` | `POST` | Multipart image file | Structured reliability status and explicit basis array | `200`, `413`, `415`, `422`, `500` |
 | `/explain` | `POST` | Multipart image file | Unified analysis, Grad-CAM overlays, report text | `200`, `413`, `415`, `422`, `500` |
+| `/metrics` | `GET` | None | Prometheus exposition: `inference_requests_total`, latency histograms | `200` |
+
+### 19.1 REL-002 Transport Hardening (Batch Bounds, Metric Accounting, Dependency Surface)
+
+Three REL-002 mechanisms live at the transport layer (`app/api/main.py`):
+
+1. **Batch Resource Bounds (`/analyze_batch`):** Requests are bounded at max 8 files, 32 MB aggregate declared bytes, and 64 MP aggregate decoded pixels. The file-count and aggregate-byte gates execute *before any request body is read* (declared part sizes come from multipart headers), and the decoded-pixel budget increments during decode — rejections return a typed `413` envelope before any inference work. Per-image defenses (10 MB limit, 32 MP decompression-bomb guard) remain in force for every file.
+2. **Middleware-Level Metric Accounting:** `INFERENCE_REQUESTS` is incremented exclusively by `RequestIDMiddleware` at the terminal HTTP status for the nine inference endpoints (`/health` and `/metrics` excluded). Moving accounting out of handlers (35 in-handler call sites removed) makes the "exactly one observation per request" invariant enforceable for *all* terminal statuses — including FastAPI validation rejections (`422`) that never reach handler code, which the in-handler scheme structurally could not observe.
+3. **Declared Dependency Surface:** `filetype` (MIME-sniffing defense), `prometheus-client` (`/metrics`), and `python-multipart` (multipart/form-data parsing for every `UploadFile` endpoint) are declared runtime dependencies pinned in `requirements.lock`. The multipart dependency is load-bearing: its absence passes application import but fails every upload at runtime in a fresh environment.
+
+Additionally, the `/health` integrity block is served from a 300-second TTL cache: the tracked artifacts total ~600 MB, and rehashing on every probe made `/health` unusable as a liveness check. Full rehash remains available via `scripts/release/build_manifest.py`.
 
 ---
 
@@ -881,28 +894,34 @@ The web frontend (`app/streamlit/app.py`) provides an interactive interface for 
 ```mermaid
 flowchart TD
     User([User]) --> Browser["Browser Session"]
-    Browser --> AppStartup["Streamlit App Initialization"]
+    Browser --> AppStartup["Streamlit App Initialization<br/>(wide layout, dark theme via .streamlit/config.toml)"]
     AppStartup --> CacheCheck{"@st.cache_resource:<br/>InferenceService Loaded?"}
-    
+
     CacheCheck -->|No| LoadService["InferenceService.from_registry()<br/>(Loads PyTorch Weights In-Memory)"]
     CacheCheck -->|Yes| ReuseService["Reuse Cached Service Instance"]
     LoadService --> Ready["Service Ready (Zero Network Overhead)"]
     ReuseService --> Ready
 
-    Ready --> Upload["st.file_uploader: Ingest MRI Slice"]
-    Upload --> Action{"User Action Selection"}
+    Ready --> Sidebar["Sidebar: Upload + Model Status<br/>(classifier/segmenter state, file name + size)<br/>Analyze (primary) / Explain buttons<br/>disabled until upload exists"]
+    Sidebar --> Upload["st.file_uploader: Ingest MRI Slice"]
+    Upload --> SessionCache["Result cached in st.session_state<br/>(bt_payload / bt_explain / bt_image_bytes)<br/>new upload invalidates prior render path"]
 
-    Action -->|Click 'Analyze'| ExecAnalyze["svc.analyze() + svc.quality()<br/>+ svc.consistency() + svc.reliability()"]
-    Action -->|Click 'Explain'| ExecExplain["svc.explain(raw_bytes)"]
+    SessionCache --> Action{"User Action (sidebar buttons)"}
 
-    ExecAnalyze --> RenderAnalyze["Render Dashboard:<br/>1. Input Image Display<br/>2. Primary Model Predictions<br/>3. Engineering Observers Section<br/>4. Localization Coordinates"]
-    
-    ExecExplain --> RenderExplain["Render Explainability Suite:<br/>1. All Standard Analyze Metrics<br/>2. Grad-CAM Overlay (features.7.2.block.0)<br/>3. Segmentation Mask Alpha Overlay<br/>4. CAM Mass in Bbox Statistic"]
+    Action -->|Click 'Analyze'| ExecAnalyze["svc.analyze() + svc.quality()<br/>+ svc.consistency() + svc.reliability()<br/>(spinner feedback; compute-once threading)"]
+    Action -->|Click 'Explain'| ExecExplain["svc.explain(raw_bytes)<br/>(spinner feedback)"]
+
+    ExecAnalyze --> RenderAnalyze["Analyze Tab — Result Card:<br/>1. Input Image + Verdict Panel<br/>2. Confidence Metric + Progress Bar<br/>3. Per-Class Probability Chips (accent-coded)<br/>4. Model Output + Engineering Observers<br/>5. Localization Coordinates"]
+    ExecExplain --> RenderExplain["Explanation Tab:<br/>1. All Standard Analyze Metrics<br/>2. Grad-CAM Overlay (features.7.2.block.0)<br/>3. Segmentation Mask Alpha Overlay<br/>4. CAM Mass in Bbox Statistic"]
 ```
 
-### UI Design Principles
+### UI Design Principles (updated at revision 1.5)
 1. **Direct In-Memory Invocation:** The UI imports `InferenceService` directly. It avoids HTTP loopback calls to localhost, eliminating connection overhead, serializing bottlenecks, and port contention.
 2. **Clear Provenance Labeling:** The UI explicitly separates primary model inferences from diagnostic observer signals, labeling the latter with non-clinical disclaimers.
+3. **Session Persistence:** Results are cached in `st.session_state` and re-rendered across Streamlit reruns; results no longer vanish when any widget interaction triggers a script re-execution.
+4. **Upload-Coupled Caching:** A new upload invalidates the previous render path — stale results never silently represent a different image.
+5. **Styled Result Presentation:** Confidence is rendered as a progress bar plus per-class accent chips; the frozen error envelopes, empty/unavailable segmentation branches, and standing disclaimer are preserved verbatim.
+6. **Model Status Feedback:** The sidebar reports classifier/segmenter load state (health parity with the API), and run actions are disabled until an upload exists.
 
 ---
 
@@ -972,6 +991,16 @@ flowchart TD
 | **GPU Production** | NVIDIA T4 (16GB) | FP16 Automatic Mixed Precision | $370.1\text{ MB}$ Allocated / $578.0\text{ MB}$ Reserved | $0.0301\text{s}$ ($30.1\text{ms}$) |
 | **ONNX Runtime (Rejected)**| NVIDIA T4 / CUDA EP | FP32 ONNX Graphs | $917.0\text{ MB}$ VRAM (Arena Pre-alloc) | $0.0353\text{s}$ ($35.3\text{ms}$) |
 
+### 22.1 Container Deployment Profile (REL-002)
+
+A minimal reproducible container profile was added at REL-002 (`Dockerfile`, `.dockerignore`):
+
+- **Image contents:** application source + the pinned dependency set from `requirements.lock` only. Multi-gigabyte release artifacts (`checkpoints/`, `outputs/`) are **not baked into the image**; they are supplied as read-only runtime mounts, keeping artifact identity governed by the release-manifest hashes (§26.3) rather than the Docker build cache.
+- **Startup command:** `python -m uvicorn main:app --app-dir app/api` — `app/api` is the import root and `main.py` self-bootstraps `src/` onto `sys.path`. (Round-2 audit correction: the initially drafted `app.api.main:app` module path contradicted `--app-dir` and would have failed at container boot.)
+- **Rollback:** redeploy the previous immutable image tag; tags are release-scoped (e.g. `braintumor-api:REL-002`) and are never mutated after publication.
+- **Verification status (honest):** the dependency set and startup command were verified **daemon-free** — a clean venv installed purely from `requirements.lock` booted the API with the exact container CMD and served `/health` (`ok`, both models loaded), a real multipart `/classify` upload (HTTP 200), and correct `/metrics` accounting. The actual `docker build` remains **UNVERIFIED** (Docker daemon unavailable on the build machine at release time); the REL-002 release is therefore CONDITIONAL per `docs/rel002_gate_report.md`, which also carries the full build/run/health/inference/restart checklist for when the daemon is available.
+- **Deployment boundary:** loopback / internal research demo (§28). Auth, rate limiting, CORS, and reverse-proxy TLS are out of scope for this profile and become release requirements only under an explicit future decision to move to LAN/public exposure.
+
 ---
 
 ## 23. SOFTWARE VERIFICATION STRATEGY AND CONTINUOUS INTEGRATION PIPELINE
@@ -980,7 +1009,7 @@ The platform's verification strategy ensures that implemented software component
 
 ```mermaid
 flowchart TD
-    subgraph CI Test Suite (49 Tests - Pure CPU)
+    subgraph CI Test Suite (Pure CPU)
         T1["Unit Tests: Contracts & Invariants (3 Tests<br/>test_contracts.py)"]
         T2["Unit Tests: Preprocessing Transforms (4 Tests<br/>test_preprocessing.py)"]
         T3["Unit Tests: Localization Geometry (4 Tests<br/>test_localization.py)"]
@@ -989,7 +1018,7 @@ flowchart TD
         T6["Integration Tests: Streamlit Direct Ingestion (3 Tests<br/>test_streamlit.py)"]
         T7["Integration Tests: Determinism Across Runs<br/>(in test_system.py + test_reliability.py/test_explain.py)"]
         T8["Data Gate: Fail-Open Regression Protection (1 Test)"]
-        TX["Adjacent Units: amp/datasets/models/explain/reliability<br/>(remaining tests to 49 total)"]
+        TX["Adjacent Units: amp/datasets/models/explain/reliability<br/>(suite total at revision 1.5: 113 tests —<br/>48 unit+data+holdout, 65 regression+integration)"]
     end
 
     subgraph Automated CI Gates
@@ -1006,12 +1035,12 @@ All verification tests, regression suites, and latency benchmarks were executed 
 | Specification Layer | Production / Verification Reference Specification | Continuous Integration (CI) Baseline (`.github/workflows/ci.yml`) |
 | :--- | :--- | :--- |
 | **Operating System** | Microsoft Windows 11 / Linux x86_64 | `windows-latest` GitHub Actions Runner |
-| **Python Runtime** | Python 3.10.12 (CPython) for locked GPU benchmarks | Python 3.11 (`setup-python@v5`) |
+| **Python Runtime** | Python 3.10.12 (CPython) for locked GPU benchmarks | Python 3.14 (`setup-python@v5`; matches the `requirements.lock` 3.14 CPU baseline, updated at REL-002) |
 | **Deep Learning Framework**| PyTorch 2.10.0+cu128 (CUDA 12.8 runtime, recorded in `outputs/SYSINT/gpu_latency_fp32.json`) | CPU wheel from `requirements.lock` (live envs drift, e.g. torch 2.13, numpy 2.4) |
 | **Acceleration Hardware** | NVIDIA T4 Tensor Core GPU (16 GB GDDR6) | Headless runner (CPU-only) |
 | **Key Scientific Stack** | `numpy` 1.24.3, `scipy` 1.10.1, `pillow` 9.5.0 (reference) | Versions resolved from `requirements.lock` at CI time |
 | **Application Framework** | `fastapi` 0.104.1, `pydantic` 2.5.2, `streamlit` 1.28.2 (reference) | Versions resolved from `requirements.lock` at CI time |
-| **Automated Test Runner** | `pytest` 7.4.3 (85 tests collected; reference timing $\approx 18.5\text{s}$ unreproduced on current hardware) | `python -m pytest -q` after `scripts/reproducibility_check.py` (no separate lint or manifest-audit gate) |
+| **Automated Test Runner** | `pytest` 7.4.3 (85 tests collected; reference timing $\approx 18.5\text{s}$ unreproduced on current hardware) | `python -m pytest -q --cov=brain_tumor --cov-report=term-missing` after `scripts/reproducibility_check.py`; coverage gate `fail_under = 70` from `pyproject.toml` (REL-002; suite at 113 tests at revision 1.5) |
 
 ### 23.2 Verification Principles
 - **Zero Locked-Test Contact:** CI test suites execute exclusively using synthetic, programmatically generated test images (tensors generated via `torch.randn` or PIL shapes), preventing test-set exposure during automated runs.
@@ -1214,6 +1243,9 @@ gitGraph
 ### 26.2 Lineage Node Registry
 - **`FINAL-001` (`48dd3aeb757ecda15a9bf53665ef7f0adad118c2`):** Authoritative production release baseline containing frozen models `CLS-001` and `SEG-001`.
 - **`CORRECTION-002` (`ad01b73ce4fcdf6a40bb97674e06144cea4b8919`):** Documentation maintenance commit on branch `final-001`. Regenerated `docs/release_manifest.md` to update two stale file hashes and removed an obsolete traceability reference. **Made zero changes** to code, weights, configurations, or interfaces.
+- **`SB-1` (`0f496a6`):** Immutable submission baseline on `final-001` (image-MIME hardening + release-manifest refresh). Declared immutable: no subsequent increment amends or rewrites it.
+- **Phase-E API capture (`73c4396`):** Verbatim snapshot of the pre-REL-002 `app/api/main.py` wrapper state (request-ID middleware, Prometheus metrics via direct per-endpoint `.labels()` calls, unbounded `/analyze_batch`), committed under its own label so the REL-002 diff is a pure single-scope delta (release-provenance discipline introduced at SB-1).
+- **`REL-002` (`b4a002a`):** Production boundary hardening — declared `filetype`/`prometheus-client`/`python-multipart`; regenerated `requirements.lock` (repairing an unresolvable lock: `streamlit==1.50.0` requires `pandas<3` vs pinned `pandas==3.0.3`, proven by clean-venv install failure); `/analyze_batch` resource bounds (8 files / 32 MB aggregate / 64 MP aggregate pixels, pre-parse rejection); middleware-level `INFERENCE_REQUESTS` accounting; `/health` TTL-cached integrity report; container profile (§22.1). Release status **CONDITIONAL**: container build UNVERIFIED (daemon unavailable); evidence in `docs/rel002_gate_report.md`. Full suite at revision 1.5: 113 tests passing.
 - **`GEN-001` (`051487b`):** Isolated experimental branch for Attention U-Net evaluations.
 
 ### 26.3 Cryptographic Release Manifest (Selected Core Artifacts)

@@ -13,14 +13,17 @@ from brain_tumor.reliability.engine import reliability_report  # noqa: E402
 
 def test_stable_all_good():
     r = reliability_report(
-        classification={"predicted_class": "meningioma", "confidence": 0.9977,
-                        "classification_state": "confident"},
+        classification={
+            "predicted_class": "meningioma",
+            "confidence": 0.9977,
+            "classification_state": "confident",
+        },
         consistency={"k": 8, "agreement_fraction": 1.0, "flagged": False},
         quality={"verdict": "accept", "failed": [], "facts": {}},
         segmentation_state="nonempty",
-        localization={"bbox": (82, 183, 170, 264), "centroid": (123.1, 223.2),
-                      "area_pixels": 1835},
-        system_state="tumor_localized")
+        localization={"bbox": (82, 183, 170, 264), "centroid": (123.1, 223.2), "area_pixels": 1835},
+        system_state="tumor_localized",
+    )
     assert r["reliability"]["summary"] == "stable"
     assert r["reliability"]["clinical_meaning"] is False
     assert len(r["reliability"]["basis"]) == 4
@@ -28,21 +31,27 @@ def test_stable_all_good():
 
 
 def test_review_each_failure_mode():
-    base = dict(classification={"predicted_class": "glioma", "confidence": 0.99,
-                                "classification_state": "confident"},
-                consistency={"k": 8, "agreement_fraction": 1.0, "flagged": False},
-                quality={"verdict": "accept", "failed": [], "facts": {}},
-                segmentation_state="nonempty",
-                localization={"bbox": (0, 0, 10, 10), "centroid": (5.0, 5.0),
-                              "area_pixels": 50},
-                system_state="tumor_localized")
+    base = dict(
+        classification={
+            "predicted_class": "glioma",
+            "confidence": 0.99,
+            "classification_state": "confident",
+        },
+        consistency={"k": 8, "agreement_fraction": 1.0, "flagged": False},
+        quality={"verdict": "accept", "failed": [], "facts": {}},
+        segmentation_state="nonempty",
+        localization={"bbox": (0, 0, 10, 10), "centroid": (5.0, 5.0), "area_pixels": 50},
+        system_state="tumor_localized",
+    )
     import copy
+
     cases = [
-        ("classification", {"predicted_class": "glioma", "confidence": 0.5,
-                            "classification_state": "uncertain"}),
+        (
+            "classification",
+            {"predicted_class": "glioma", "confidence": 0.5, "classification_state": "uncertain"},
+        ),
         ("consistency", {"k": 8, "agreement_fraction": 0.875, "flagged": True}),
-        ("quality", {"verdict": "reject", "failed": ["Q05_blank_or_uniform"],
-                     "facts": {}}),
+        ("quality", {"verdict": "reject", "failed": ["Q05_blank_or_uniform"], "facts": {}}),
         ("segmentation_state", "empty"),
     ]
     for key, val in cases:

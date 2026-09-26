@@ -29,9 +29,8 @@ def _png_bytes(size_px: int = 32) -> bytes:
 
 @pytest.fixture()
 def client():
-    from fastapi.testclient import TestClient
-
     import main as api_main
+    from fastapi.testclient import TestClient
 
     return TestClient(api_main.app)
 
@@ -105,9 +104,7 @@ def test_batch_aggregate_pixels_rejected_during_decode(client, monkeypatch):
     monkeypatch.setattr(api_main._service, "analyze_batch", _spy)
     # Force the per-image decode to yield a large image so the aggregate
     # pixel budget trips while file/byte gates still pass.
-    monkeypatch.setattr(
-        api_main, "_decode", lambda data: (Image.new("RGB", (4096, 4096)), None)
-    )
+    monkeypatch.setattr(api_main, "_decode", lambda data: (Image.new("RGB", (4096, 4096)), None))
     r = _post_batch(client, 4)
     assert r.status_code == 413
     assert r.json()["error"] == "aggregate_too_large"
@@ -120,8 +117,8 @@ def test_batch_bounds_are_frozen_contract_values():
     import main as api_main
 
     assert 1 <= api_main._MAX_BATCH_FILES <= 16
-    assert 0 < api_main._MAX_BATCH_AGGREGATE_BYTES
-    assert 0 < api_main._MAX_BATCH_AGGREGATE_PIXELS
+    assert api_main._MAX_BATCH_AGGREGATE_BYTES > 0
+    assert api_main._MAX_BATCH_AGGREGATE_PIXELS > 0
     # The aggregate cap must actually bound: smaller than files x per-file limit.
     assert api_main._MAX_BATCH_AGGREGATE_BYTES < api_main._MAX_BATCH_FILES * api_main._LIMIT
 
@@ -144,16 +141,13 @@ _INFERENCE_ENDPOINTS = [
 
 def test_all_inference_endpoints_accounted_once_on_rejection(client):
     """Terminal validation status => exactly ONE INFERENCE_REQUESTS observation."""
-    from prometheus_client import REGISTRY
-
     import main as api_main
 
     def _samples(endpoint):
         return sum(
             s.value
             for s in api_main.INFERENCE_REQUESTS.collect()[0].samples
-            if s.name == "inference_requests_total"
-            and s.labels.get("endpoint") == endpoint
+            if s.name == "inference_requests_total" and s.labels.get("endpoint") == endpoint
         )
 
     for endpoint in _INFERENCE_ENDPOINTS:
@@ -162,13 +156,43 @@ def test_all_inference_endpoints_accounted_once_on_rejection(client):
             r = _post_batch(client, api_main._MAX_BATCH_FILES + 1)
             expected_status = 413  # file-count gate is the terminal status
         else:
-            r = client.post(
-                endpoint, files={"file": ("t.png", b"x", "text/plain")}
-            )
+            r = client.post(endpoint, files={"file": ("t.png", b"x", "text/plain")})
             expected_status = 415
         assert r.status_code == expected_status, endpoint
         after = _samples(endpoint)
         assert after - before == 1, f"{endpoint}: expected 1 observation, got {after - before}"
+
+
+def test_validation_rejection_is_counted_middleware_level(client):
+    """Round-2 audit rule: accounting lives in RequestIDMiddleware, so a
+    FastAPI validation rejection (422, handler never runs) is still exactly
+    one observation — the in-handler scheme could never see these."""
+    import main as api_main
+
+    def _samples(endpoint):
+        return sum(
+            s.value
+            for s in api_main.INFERENCE_REQUESTS.collect()[0].samples
+            if s.name == "inference_requests_total" and s.labels.get("endpoint") == endpoint
+        )
+
+    before = _samples("/classify")
+    r = client.post("/classify")  # no file => 422 before any handler code
+    assert r.status_code == 422
+    assert _samples("/classify") - before == 1
+
+
+def test_health_and_metrics_are_not_counted(client):
+    """Non-inference endpoints stay outside the accounting rule."""
+    import main as api_main
+
+    def _total():
+        return sum(s.value for s in api_main.INFERENCE_REQUESTS.collect()[0].samples)
+
+    before = _total()
+    assert client.get("/health").status_code == 200
+    assert client.get("/metrics").status_code == 200
+    assert _total() == before
 
 
 def test_metric_accounting_helper_is_the_only_direct_labeler():
@@ -176,9 +200,7 @@ def test_metric_accounting_helper_is_the_only_direct_labeler():
     .labels() may appear only inside _count_request's own body."""
     source = Path(__file__).resolve().parents[2] / "app" / "api" / "main.py"
     lines = source.read_text(encoding="utf-8").splitlines()
-    helper_start = next(
-        i for i, ln in enumerate(lines) if "def _count_request(" in ln
-    )
+    helper_start = next(i for i, ln in enumerate(lines) if "def _count_request(" in ln)
     helper_end = next(
         i
         for i in range(helper_start + 1, len(lines))

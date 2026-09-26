@@ -41,8 +41,9 @@ def main() -> int:
     norm = json.loads((root / "outputs" / "SEG-001" / "metrics.json").read_text())["norm"]
     tf = build_seg_pair_transform(False, image_size=256, mean=norm["mean"], std=norm["std"])
 
-    ckpt = torch.load(root / "checkpoints" / "SEG-001" / "best.pt",
-                      map_location="cpu", weights_only=False)  # own file
+    ckpt = torch.load(
+        root / "checkpoints" / "SEG-001" / "best.pt", map_location="cpu", weights_only=False
+    )  # own file
     model = UNet()
     model.load_state_dict(ckpt["state"])
     model.eval()
@@ -63,6 +64,7 @@ def main() -> int:
             cls = TUMOR.get(img_p.stem.split("_")[3], "?")
             # localization verification on ORIGINAL-size frame
             from PIL import Image
+
             ow, oh = Image.open(img_p).size
             loc, w = extract(prob, (oh, ow))
             if loc.area_pixels == 0:
@@ -77,10 +79,16 @@ def main() -> int:
                 loc_ok["nonempty_box"] += 1
             if "multiple_components" in w:
                 loc_ok["multi"] += 1
-            per_image.append({"stem": img_p.stem, "class": cls, "dice": d,
-                              "area": loc.area_pixels,
-                              "empty_pred": loc.area_pixels == 0,
-                              "gt_empty": bool((g > 0.5).sum() == 0)})
+            per_image.append(
+                {
+                    "stem": img_p.stem,
+                    "class": cls,
+                    "dice": d,
+                    "area": loc.area_pixels,
+                    "empty_pred": loc.area_pixels == 0,
+                    "gt_empty": bool((g > 0.5).sum() == 0),
+                }
+            )
             if i % 100 == 0:
                 print(f"val {i}/{len(va)}", flush=True)
 
@@ -98,32 +106,49 @@ def main() -> int:
     by_cls = {}
     for cls in ("glioma", "meningioma", "pituitary"):
         v = np.array([p["dice"] for p in per_image if p["class"] == cls])
-        by_cls[cls] = {"n": len(v), "mean": float(v.mean()), "median": float(np.median(v)),
-                       "p10": float(np.percentile(v, 10))}
+        by_cls[cls] = {
+            "n": len(v),
+            "mean": float(v.mean()),
+            "median": float(np.median(v)),
+            "p10": float(np.percentile(v, 10)),
+        }
     worst = sorted(per_image, key=lambda p: p["dice"])[:10]
     best = sorted(per_image, key=lambda p: p["dice"])[-3:]
-    med = sorted(per_image, key=lambda p: p["dice"])[len(per_image) // 2 - 1:len(per_image) // 2 + 2]
+    med = sorted(per_image, key=lambda p: p["dice"])[
+        len(per_image) // 2 - 1 : len(per_image) // 2 + 2
+    ]
 
     # qualitative overlays (validation only)
     from PIL import Image
+
     for tag, picks in (("worst", worst[:3]), ("median", med), ("best", best)):
         for p in picks:
             img_p = next(q for q, _ in va.pairs if q.stem == p["stem"])
             base = np.asarray(Image.open(img_p).convert("RGB"))
             Image.fromarray(base).save(art / f"{tag}_{p['stem']}_input.png")
 
-    report = {"n_val": len(per_image), "n_train_subset": len(tr_dice),
-              "val_dice": {"mean": float(dices.mean()), "median": float(np.median(dices)),
-                           "iqr": [float(np.percentile(dices, 25)), float(np.percentile(dices, 75))],
-                           "p10": float(np.percentile(dices, 10)),
-                           "min": float(dices.min()), "max": float(dices.max())},
-              "train_subset_dice_mean": float(np.mean(tr_dice)),
-              "by_class": by_cls,
-              "localization_val": loc_ok,
-              "gt_empty_in_val": sum(1 for p in per_image if p["gt_empty"]),
-              "worst_10": [{k: (round(v, 4) if isinstance(v, float) else v) for k, v in p.items()
-                             if k != "area"} | {"area": p["area"]} for p in worst],
-              "pipeline_change_required": False}
+    report = {
+        "n_val": len(per_image),
+        "n_train_subset": len(tr_dice),
+        "val_dice": {
+            "mean": float(dices.mean()),
+            "median": float(np.median(dices)),
+            "iqr": [float(np.percentile(dices, 25)), float(np.percentile(dices, 75))],
+            "p10": float(np.percentile(dices, 10)),
+            "min": float(dices.min()),
+            "max": float(dices.max()),
+        },
+        "train_subset_dice_mean": float(np.mean(tr_dice)),
+        "by_class": by_cls,
+        "localization_val": loc_ok,
+        "gt_empty_in_val": sum(1 for p in per_image if p["gt_empty"]),
+        "worst_10": [
+            {k: (round(v, 4) if isinstance(v, float) else v) for k, v in p.items() if k != "area"}
+            | {"area": p["area"]}
+            for p in worst
+        ],
+        "pipeline_change_required": False,
+    }
     (out / "seg_val_analysis.json").write_text(json.dumps(report, indent=1))
     print(json.dumps({k: v for k, v in report.items() if k != "worst_10"}, indent=1))
     return 0

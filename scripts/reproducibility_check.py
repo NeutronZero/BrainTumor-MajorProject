@@ -19,6 +19,7 @@ from brain_tumor.inference.service import InferenceService  # noqa: E402
 
 def main() -> int:
     from PIL import Image
+
     svc = InferenceService.from_registry()
     rng = np.random.RandomState(31)
     buf = io.BytesIO()
@@ -31,8 +32,10 @@ def main() -> int:
     assert r1["system_state"] == r2["system_state"], "nondeterministic state"
     assert r1["probabilities"], "empty probabilities"
     assert abs(sum(r1["probabilities"].values()) - 1.0) < 0.01
-    print("reproducibility_check: OK",
-          json.dumps({"class": r1["predicted_class"], "state": r1["system_state"]}))
+    print(
+        "reproducibility_check: OK",
+        json.dumps({"class": r1["predicted_class"], "state": r1["system_state"]}),
+    )
     return 0
 
 

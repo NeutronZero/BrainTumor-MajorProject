@@ -13,8 +13,9 @@ from brain_tumor.preprocessing.pipeline import (  # noqa: E402
 
 
 def _mri():
-    from PIL import Image
     import numpy as np
+    from PIL import Image
+
     rng = np.random.RandomState(0)
     return Image.fromarray((rng.rand(300, 260) * 255).astype("uint8"), mode="L")
 
@@ -28,8 +29,9 @@ def test_cls_eval_parity():
 
 
 def test_seg_pair_sync_and_binary():
-    from PIL import Image
     import numpy as np
+    from PIL import Image
+
     img = _mri()
     m = Image.fromarray((np.array(img) > 100).astype("uint8") * 255, mode="L")
     t = build_seg_pair_transform(False)
@@ -42,9 +44,11 @@ def test_seg_pair_sync_and_binary():
 
 def test_seg_noise_default_off_frozen():
     """ROB-001 factor defaults off: train transform without sigma == SEG-001 behavior."""
-    from PIL import Image
-    import numpy as np
     import random
+
+    import numpy as np
+    from PIL import Image
+
     torch.manual_seed(0)
     img = _mri()
     m = Image.fromarray((np.array(img) > 100).astype("uint8") * 255, mode="L")
@@ -60,9 +64,11 @@ def test_seg_noise_default_off_frozen():
 
 def test_seg_noise_photometric_only():
     """Train-only noise perturbs the image, never the mask or geometry (§30)."""
-    from PIL import Image
-    import numpy as np
     import random
+
+    import numpy as np
+    from PIL import Image
+
     img = _mri()
     m = Image.fromarray((np.array(img) > 100).astype("uint8") * 255, mode="L")
     t = build_seg_pair_transform(True, gauss_noise_sigma=0.05)

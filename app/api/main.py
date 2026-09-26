@@ -26,9 +26,9 @@ from typing import Any
 import filetype
 from fastapi import FastAPI, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, ConfigDict, Field
 from PIL import ImageFile
 from prometheus_client import Counter, Histogram, generate_latest
+from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # Harden PIL: disable truncated image loading, decompression bomb guard
@@ -49,22 +49,42 @@ REQUEST_LATENCY = Histogram(
 def _count_request(endpoint: str, status: int) -> None:
     """Single accounting point for INFERENCE_REQUESTS (REL-002).
 
-    Rule: every inference endpoint reports exactly ONE observation per
-    request — its terminal status (413/415/422 validation, 200 success,
-    500 failure). /health and /metrics are not inference endpoints and
-    are deliberately excluded. New inference endpoints MUST call this at
-    each terminal exit point instead of touching the counter directly.
+    Called ONLY by RequestIDMiddleware at the terminal HTTP status, so the
+    "exactly one observation per request" rule holds for every inference
+    response — including FastAPI validation rejections (422) that never
+    reach a handler, and pre-parse batch rejections (round-2 audit fix;
+    the in-handler approach left those uncounted). /health and /metrics
+    are not inference endpoints and are deliberately excluded.
     """
     INFERENCE_REQUESTS.labels(endpoint=endpoint, status=str(status)).inc()
 
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-from brain_tumor.inference.service import InferenceService, get_request_id, set_request_id, _request_id_var  # noqa: E402
+from brain_tumor.inference.service import (  # noqa: E402
+    InferenceService,
+    _request_id_var,
+    set_request_id,
+)
 
 # ---- request ID propagation ---------------------------------------------------
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Extract or generate request ID, propagate via context var and response header."""
+
+    # Inference endpoints only (REL-002 accounting rule); /health, /metrics,
+    # /docs, /openapi.json are excluded.
+    _INFERENCE_PATHS = {
+        "/classify",
+        "/segment",
+        "/localize",
+        "/quality",
+        "/consistency",
+        "/analyze",
+        "/analyze_batch",
+        "/reliability",
+        "/explain",
+    }
 
     async def dispatch(self, request: Request, call_next):
         req_id = request.headers.get("x-request-id") or set_request_id()
@@ -73,8 +93,16 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         finally:
             _request_id_var.reset(token)
+        # REL-002 metric accounting (round-2 audit fix): one observation per
+        # inference request at its terminal HTTP status, counted at the
+        # middleware layer so validation rejections (422) are included and
+        # no handler can forget an exit path. Handlers never touch the
+        # counter directly.
+        if request.url.path in self._INFERENCE_PATHS:
+            _count_request(request.url.path, response.status_code)
         response.headers["x-request-id"] = req_id
         return response
+
 
 # ---- integrity verification --------------------------------------------------
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -103,6 +131,25 @@ def _sha256_file(path: Path) -> str | None:
 def _integrity_report() -> dict[str, str | None]:
     """Compute integrity hashes for all tracked artifacts."""
     return {k: _sha256_file(v) for k, v in _INTEGRITY_FILES.items()}
+
+
+# /health integrity cache (round-2 audit fix): the tracked artifacts total
+# ~600MB; rehashing them on every probe makes /health unusable as a liveness
+# check and invites over-polling. Hashes are content-addressed at rest, so a
+# short TTL only delays detection of out-of-band tampering — full rehash
+# remains available via scripts/release/build_manifest.py.
+_INTEGRITY_TTL_SECONDS = 300.0
+_INTEGRITY_CACHE: dict[str, Any] = {"at": 0.0, "value": None}
+
+
+def _integrity_report_cached() -> dict[str, str | None]:
+    """TTL-cached integrity report for /health (300s)."""
+    now = time.time()
+    if _INTEGRITY_CACHE["value"] is None or now - _INTEGRITY_CACHE["at"] >= _INTEGRITY_TTL_SECONDS:
+        _INTEGRITY_CACHE["value"] = _integrity_report()
+        _INTEGRITY_CACHE["at"] = now
+    return _INTEGRITY_CACHE["value"]
+
 
 API_DISCLAIMER = (
     "Engineering prototype output — not a medical diagnosis. "
@@ -353,7 +400,7 @@ def health():
     seg = "loaded" if _service.segmentation_available else "unavailable"
     clf = "loaded" if _service.clf is not None else "unavailable"
     status = "ok" if (seg == "loaded" and clf == "loaded") else "degraded"
-    integrity = _integrity_report()
+    integrity = _integrity_report_cached()
     integrity_ok = all(v is not None for v in integrity.values())
     return _with_disclaimer(
         {
@@ -375,14 +422,11 @@ def health():
 async def classify(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
-        _count_request("/classify", err.status_code)
         return err
     try:
         result = _with_disclaimer(_service.classify(img))
-        _count_request("/classify", 200)
         return result
     except Exception as e:  # noqa: BLE001 — never leak stack/paths (§64)
-        _count_request("/classify", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -392,16 +436,13 @@ async def classify(file: UploadFile):
 async def segment(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
-        _count_request("/segment", err.status_code)
         return err
     try:
         s = _service.segment(img)
         s["localization"] = s["localization"].model_dump()
         result = _with_disclaimer(s)
-        _count_request("/segment", 200)
         return result
     except Exception as e:  # noqa: BLE001
-        _count_request("/segment", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -411,14 +452,11 @@ async def segment(file: UploadFile):
 async def localize(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
-        _count_request("/localize", err.status_code)
         return err
     try:
         result = _with_disclaimer(_service.localize(img).model_dump())
-        _count_request("/localize", 200)
         return result
     except Exception as e:  # noqa: BLE001
-        _count_request("/localize", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -428,14 +466,11 @@ async def localize(file: UploadFile):
 async def quality(file: UploadFile):
     data, err = await _read_bounded(file)
     if err is not None:
-        _count_request("/quality", err.status_code)
         return err
     try:
         result = _with_disclaimer(_service.quality(data))
-        _count_request("/quality", 200)
         return result
     except Exception as e:  # noqa: BLE001
-        _count_request("/quality", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -445,14 +480,11 @@ async def quality(file: UploadFile):
 async def consistency(file: UploadFile):
     img, err = await _image(file)
     if err is not None:
-        _count_request("/consistency", err.status_code)
         return err
     try:
         result = _with_disclaimer(_service.consistency(img))
-        _count_request("/consistency", 200)
         return result
     except Exception as e:  # noqa: BLE001
-        _count_request("/consistency", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -462,11 +494,9 @@ async def consistency(file: UploadFile):
 async def analyze(file: UploadFile, consistency_probes: bool = True):
     data, err = await _read_bounded(file)
     if err is not None:
-        _count_request("/analyze", err.status_code)
         return err
     img, err = _decode(data)
     if err is not None:
-        _count_request("/analyze", err.status_code)
         return err
     try:
         # Compute each stage once; thread precomputed outputs into the
@@ -486,10 +516,8 @@ async def analyze(file: UploadFile, consistency_probes: bool = True):
         payload["reliability"] = _service.reliability(
             img, raw=data, result=result, con=con, qual=qual
         )
-        _count_request("/analyze", 200)
         return _with_disclaimer(payload)
     except Exception as e:  # noqa: BLE001 — never leak stack/paths (§64)
-        _count_request("/analyze", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -500,18 +528,14 @@ async def reliability(file: UploadFile):
     """REL-001 descriptive report (observer; SB-1 outputs unchanged)."""
     data, err = await _read_bounded(file)
     if err is not None:
-        _count_request("/reliability", err.status_code)
         return err
     img, err = _decode(data)
     if err is not None:
-        _count_request("/reliability", err.status_code)
         return err
     try:
         result = _with_disclaimer(_service.reliability(img, raw=data))
-        _count_request("/reliability", 200)
         return result
     except Exception as e:  # noqa: BLE001
-        _count_request("/reliability", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -522,18 +546,14 @@ async def explain(file: UploadFile):
     """EXPL-001 unified explanation (observer; inference outputs identical)."""
     data, err = await _read_bounded(file)
     if err is not None:
-        _count_request("/explain", err.status_code)
         return err
     img, err = _decode(data)
     if err is not None:
-        _count_request("/explain", err.status_code)
         return err
     try:
         result = _with_disclaimer(_service.explain(img, raw=data))
-        _count_request("/explain", 200)
         return result
     except Exception as e:  # noqa: BLE001
-        _count_request("/explain", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )
@@ -552,14 +572,13 @@ async def analyze_batch(files: list[UploadFile], consistency_probes: bool = True
     still apply to every file individually.
     """
     if not files:
+        # Empty batch is a valid terminal 200 — still exactly one observation
+        # (round-2 audit fix: this exit previously bypassed accounting).
         return []
 
     # Gate 1: file count (pre-parse — no bytes read).
     if len(files) > _MAX_BATCH_FILES:
-        _count_request("/analyze_batch", 413)
-        return _batch_limit_response(
-            "too_many_files", f"max {_MAX_BATCH_FILES} files per batch"
-        )
+        return _batch_limit_response("too_many_files", f"max {_MAX_BATCH_FILES} files per batch")
 
     # Gate 2: aggregate declared size (pre-parse — Starlette records each
     # part's size from headers before the body is read).
@@ -567,7 +586,6 @@ async def analyze_batch(files: list[UploadFile], consistency_probes: bool = True
     for f in files:
         declared_total += await _upload_size(f)
     if declared_total > _MAX_BATCH_AGGREGATE_BYTES:
-        _count_request("/analyze_batch", 413)
         return _batch_limit_response(
             "aggregate_too_large",
             f"aggregate limit {_MAX_BATCH_AGGREGATE_BYTES} bytes",
@@ -580,15 +598,12 @@ async def analyze_batch(files: list[UploadFile], consistency_probes: bool = True
     for file in files:
         data, err = await _read_bounded(file)
         if err is not None:
-            _count_request("/analyze_batch", err.status_code)
             return err
         img, err = _decode(data)
         if err is not None:
-            _count_request("/analyze_batch", err.status_code)
             return err
         decoded_pixels += img.width * img.height
         if decoded_pixels > _MAX_BATCH_AGGREGATE_PIXELS:
-            _count_request("/analyze_batch", 413)
             return _batch_limit_response(
                 "aggregate_too_large",
                 f"aggregate decoded-pixel limit {_MAX_BATCH_AGGREGATE_PIXELS}",
@@ -608,14 +623,15 @@ async def analyze_batch(files: list[UploadFile], consistency_probes: bool = True
                     images[i], clean_pred=result.predicted_class
                 )
             payload["reliability"] = _service.reliability(
-                images[i], raw=raw_bytes_list[i], result=result,
-                con=payload.get("consistency"), qual=payload["quality"]
+                images[i],
+                raw=raw_bytes_list[i],
+                result=result,
+                con=payload.get("consistency"),
+                qual=payload["quality"],
             )
             payloads.append(_with_disclaimer(payload))
-        _count_request("/analyze_batch", 200)
         return payloads
     except Exception as e:  # noqa: BLE001 — never leak stack/paths
-        _count_request("/analyze_batch", 500)
         return JSONResponse(
             {"error": "inference_failed", "detail": str(type(e).__name__)}, status_code=500
         )

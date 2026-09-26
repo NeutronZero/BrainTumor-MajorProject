@@ -1,11 +1,10 @@
 """Quality-gate unit tests: coded checks on synthetic inputs (fast, no data)."""
 
 import io
-
-import numpy as np
-
 import sys
 from pathlib import Path
+
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from brain_tumor.quality.gate import assess  # noqa: E402
@@ -13,6 +12,7 @@ from brain_tumor.quality.gate import assess  # noqa: E402
 
 def _png(array: np.ndarray) -> bytes:
     from PIL import Image
+
     buf = io.BytesIO()
     Image.fromarray(array.astype("uint8")).save(buf, format="PNG")
     return buf.getvalue()
@@ -26,7 +26,9 @@ def test_accept_textured():
 
 def test_reject_undecodable():
     a = assess(b"not an image at all")
-    assert a["verdict"] == "reject" and a["failed"] == ["Q01_undecodable"]
+    assert a["verdict"] == "reject"
+    assert "Q01_undecodable" in a["failed"]
+    assert "Q10_mime_mismatch" in a["failed"]
 
 
 def test_reject_blank_uniform():

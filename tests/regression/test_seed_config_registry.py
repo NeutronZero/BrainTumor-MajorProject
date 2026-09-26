@@ -59,7 +59,9 @@ def test_make_generator_seeded():
     g2 = make_generator(7)
     assert g1 is not None and g2 is not None
     assert torch.rand(4, generator=g1).tolist() == torch.rand(4, generator=g2).tolist()
-    assert torch.rand(4, generator=g1).tolist() != torch.rand(4, generator=make_generator(8)).tolist()
+    assert (
+        torch.rand(4, generator=g1).tolist() != torch.rand(4, generator=make_generator(8)).tolist()
+    )
 
 
 def test_sha256_file_matches_hashlib(tmp_path):
@@ -98,8 +100,9 @@ def test_registry_register_get_available(tmp_path):
     entry = ModelEntry(name="classifier", experiment_id="CLS-001", checkpoint=present)
     assert entry.sha256 is None
     reg.register(entry)
-    reg.register(ModelEntry(name="missing", experiment_id="SEG-001",
-                            checkpoint=tmp_path / "sub" / "best.pt"))
+    reg.register(
+        ModelEntry(name="missing", experiment_id="SEG-001", checkpoint=tmp_path / "sub" / "best.pt")
+    )
     assert reg.get("classifier").experiment_id == "CLS-001"
     assert reg.available() == {"classifier": True, "missing": False}
     with pytest.raises(KeyError):

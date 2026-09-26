@@ -34,4 +34,7 @@ EXPOSE 8000
 
 # Self-audit at boot: identical to the clean-checkout property proven in G2
 # (import application + load checkpoints). Fails fast on missing artifacts.
-CMD ["python", "-m", "uvicorn", "app.api.main:app", "--app-dir", "app/api", "--host", "0.0.0.0", "--port", "8000"]
+# app/api is the import root (main.py self-bootstraps src/ onto sys.path);
+# module is `main`, not `app.api.main` (round-2 audit fix: --app-dir +
+# package-style path contradicted each other and would crashloop at boot).
+CMD ["python", "-m", "uvicorn", "main:app", "--app-dir", "app/api", "--host", "0.0.0.0", "--port", "8000"]

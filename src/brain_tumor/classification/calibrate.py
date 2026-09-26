@@ -9,6 +9,7 @@ def fit_temperature(logits: torch.Tensor, labels: torch.Tensor, init: float = 1.
     """LBFGS on validation NLL. Fail-safe: any optimizer failure returns T=1.0
     with a flag-free honest value (caller records temperature; T=1.0 = no-op)."""
     import torch.nn as nn
+
     logits, labels = logits.detach().cpu(), labels.detach().cpu()
     T = torch.nn.Parameter(torch.tensor([init]))
     opt = torch.optim.LBFGS([T], lr=0.1, max_iter=50)
@@ -37,7 +38,9 @@ def ece(probs: torch.Tensor, labels: torch.Tensor, bins: int = 15) -> float:
     for i in range(bins):
         m = (conf > edges[i]) & (conf <= edges[i + 1])
         if m.any():
-            out += (m.float().mean() * abs(pred[m].eq(labels[m]).float().mean() - conf[m].mean())).item()
+            out += (
+                m.float().mean() * abs(pred[m].eq(labels[m]).float().mean() - conf[m].mean())
+            ).item()
     return out
 
 
@@ -46,6 +49,7 @@ def select_taus(probs: torch.Tensor, labels: torch.Tensor):
     val_macro_f1 - 0.5 * uncertain_rate. Validation only. Criterion recorded
     in run metrics; thresholds locked before any test evaluation."""
     from sklearn.metrics import f1_score
+
     top2 = probs.topk(2, dim=1).values
     conf, margin = top2[:, 0], top2[:, 0] - top2[:, 1]
     pred = probs.argmax(dim=1).numpy()
@@ -56,12 +60,20 @@ def select_taus(probs: torch.Tensor, labels: torch.Tensor):
     for a in t1:
         for b in t2:
             certain = (conf.numpy() >= a) & (margin.numpy() >= b)
-            score_f1 = f1_score(y[certain], pred[certain], average="macro", zero_division=0) if certain.any() else 0.0
+            score_f1 = (
+                f1_score(y[certain], pred[certain], average="macro", zero_division=0)
+                if certain.any()
+                else 0.0
+            )
             score = score_f1 - 0.5 * (1 - certain.mean())
             if score > best[0]:
                 best = (score, a, b)
-    return {"criterion": "val_macro_f1_minus_half_uncertain_rate",
-            "tau1": best[1], "tau2": best[2], "score": best[0]}
+    return {
+        "criterion": "val_macro_f1_minus_half_uncertain_rate",
+        "tau1": best[1],
+        "tau2": best[2],
+        "score": best[0],
+    }
 
 
 def np_arange(a: float, b: float, s: float):

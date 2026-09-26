@@ -18,7 +18,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from data_gate.common import outputs_dir, sha256_file, write_json  # noqa: E402
-from data_gate.layout import CLS_IMG_EXTS, cls_split_dirs, find_release_root, list_files  # noqa: E402
+from data_gate.layout import (  # noqa: E402
+    CLS_IMG_EXTS,
+    cls_split_dirs,
+    find_release_root,
+    list_files,
+)
 
 TRIPLET = ("brisc2025_train_04176", "brisc2025_train_04177", "brisc2025_train_04178")
 
@@ -45,9 +50,16 @@ def main() -> dict:
     for h, paths in groups:
         labels = sorted({Path(p).parent.name for p in paths})
         stems = sorted({Path(p).stem for p in paths})
-        group_records.append({"sha256": h, "multiplicity": len(paths),
-                              "labels": labels, "stems": stems, "paths": paths,
-                              "also_in_test": h in test_hashes})
+        group_records.append(
+            {
+                "sha256": h,
+                "multiplicity": len(paths),
+                "labels": labels,
+                "stems": stems,
+                "paths": paths,
+                "also_in_test": h in test_hashes,
+            }
+        )
 
     trip_info = {}
     for key in ("04176", "04177", "04178"):
@@ -58,35 +70,46 @@ def main() -> dict:
             continue
         h = sha256_file(hits[0])
         members = sorted(train_map[h])
-        trip_info[stem] = {"present_in_train": True, "sha256": h,
-                           "group_multiplicity": len(members),
-                           "group_members": [Path(m).stem for m in members],
-                           "group_labels": sorted({Path(m).parent.name for m in members}),
-                           "also_in_test": h in test_hashes}
+        trip_info[stem] = {
+            "present_in_train": True,
+            "sha256": h,
+            "group_multiplicity": len(members),
+            "group_members": [Path(m).stem for m in members],
+            "group_labels": sorted({Path(m).parent.name for m in members}),
+            "also_in_test": h in test_hashes,
+        }
 
     trip_hashes = {v["sha256"] for v in trip_info.values() if v.get("present_in_train")}
     bridging = [g for g in group_records if g["sha256"] in trip_hashes and g["also_in_test"]]
 
-    result = {"check": "forensic_within_train",
-              "n_train_files": len(train),
-              "n_unique_train_hashes": len(train_map),
-              "n_within_train_groups": len(groups),
-              "n_excess": sum(len(v) - 1 for _, v in groups),
-              "groups": group_records,
-              "triplet": trip_info,
-              "triplet_distinct_hashes": len(trip_hashes),
-              "triplet_bridges_cross_split": bool(bridging),
-              "bridging_groups": bridging}
+    result = {
+        "check": "forensic_within_train",
+        "n_train_files": len(train),
+        "n_unique_train_hashes": len(train_map),
+        "n_within_train_groups": len(groups),
+        "n_excess": sum(len(v) - 1 for _, v in groups),
+        "groups": group_records,
+        "triplet": trip_info,
+        "triplet_distinct_hashes": len(trip_hashes),
+        "triplet_bridges_cross_split": bool(bridging),
+        "bridging_groups": bridging,
+    }
     write_json("forensic_within_train.json", result)
-    lines = ["# Forensic: within-train duplicate groups",
-             f"groups={len(groups)} excess={result['n_excess']} unique={len(train_map)}",
-             f"triplet distinct hashes={len(trip_hashes)} bridges_cross={bool(bridging)}", ""]
+    lines = [
+        "# Forensic: within-train duplicate groups",
+        f"groups={len(groups)} excess={result['n_excess']} unique={len(train_map)}",
+        f"triplet distinct hashes={len(trip_hashes)} bridges_cross={bool(bridging)}",
+        "",
+    ]
     for g in group_records:
-        lines.append(f"- {g['sha256'][:12]} x{g['multiplicity']} labels={g['labels']} "
-                     f"cross={g['also_in_test']} stems={g['stems']}")
+        lines.append(
+            f"- {g['sha256'][:12]} x{g['multiplicity']} labels={g['labels']} "
+            f"cross={g['also_in_test']} stems={g['stems']}"
+        )
     (out / "forensic_within_train.md").write_text("\n".join(lines), encoding="utf-8")
-    print(f"forensic: groups={len(groups)} triplet_hashes={len(trip_hashes)} "
-          f"bridges={bool(bridging)}")
+    print(
+        f"forensic: groups={len(groups)} triplet_hashes={len(trip_hashes)} bridges={bool(bridging)}"
+    )
     print(json.dumps(trip_info, indent=1))
     return result
 

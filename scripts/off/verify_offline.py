@@ -65,9 +65,12 @@ def main() -> int:
 
     # Engage socket block for everything below.
     socket.socket = _GuardedSocket  # type: ignore
-    env = {"guard": "non-loopback socket connects raise; loopback exempt "
-                    "(asyncio teardown); external attempts counted",
-           "control": None, "inference_blocked_calls": None}
+    env = {
+        "guard": "non-loopback socket connects raise; loopback exempt "
+        "(asyncio teardown); external attempts counted",
+        "control": None,
+        "inference_blocked_calls": None,
+    }
 
     # Control: outbound attempt through the PATCHED class must fail.
     try:
@@ -81,37 +84,56 @@ def main() -> int:
     # Startup + checkpoint load under guard.
     t0 = time.perf_counter()
     svc = InferenceService.from_registry()
-    startup = {"classifier": svc.clf is not None, "segmenter": svc.seg is not None,
-               "load_s": round(time.perf_counter() - t0, 2),
-               "T": svc.T, "tau1": svc.tau1, "tau2": svc.tau2}
+    startup = {
+        "classifier": svc.clf is not None,
+        "segmenter": svc.seg is not None,
+        "load_s": round(time.perf_counter() - t0, 2),
+        "T": svc.T,
+        "tau1": svc.tau1,
+        "tau2": svc.tau2,
+    }
     (out / "startup.json").write_text(json.dumps(startup, indent=1))
 
     # Deterministic synthetic inference (established expectations).
     from PIL import Image
+
     rng = np.random.RandomState(31)
     buf = io.BytesIO()
     Image.fromarray((rng.rand(256, 256) * 255).astype("uint8")).save(buf, format="PNG")
     raw, img = buf.getvalue(), Image.open(io.BytesIO(buf.getvalue()))
     r = svc.analyze(img).model_dump()
-    inference = {"predicted_class": r["predicted_class"],
-                 "system_state": r["system_state"],
-                 "matches_established": (r["predicted_class"] == "pituitary"
-                                         and r["system_state"] == "tumor_unlocalized"),
-                 "consistency_k": svc.consistency(img)["k"],
-                 "quality": svc.quality(raw)["verdict"]}
+    inference = {
+        "predicted_class": r["predicted_class"],
+        "system_state": r["system_state"],
+        "matches_established": (
+            r["predicted_class"] == "pituitary" and r["system_state"] == "tumor_unlocalized"
+        ),
+        "consistency_k": svc.consistency(img)["k"],
+        "quality": svc.quality(raw)["verdict"],
+    }
     (out / "inference.json").write_text(json.dumps(inference, indent=1))
 
     # API path under guard (in-process transport, no sockets by design).
     import main as api_main
     from fastapi.testclient import TestClient
+
     client = TestClient(api_main.app)
     h = client.get("/health").json()
     a = client.post("/analyze", files={"file": ("t.png", raw, "image/png")}).json()
-    api = {"health": h["status"], "analyze_state": a["system_state"],
-           "cross_match": a["system_state"] == r["system_state"]}
-    (out / "network_check.json").write_text(json.dumps({
-        "blocked_calls_during_inference": BLOCKED["count"] - env["control_probe_blocks"],
-        "api_path_works_offline": api["health"] == "ok"}, indent=1))
+    api = {
+        "health": h["status"],
+        "analyze_state": a["system_state"],
+        "cross_match": a["system_state"] == r["system_state"],
+    }
+    (out / "network_check.json").write_text(
+        json.dumps(
+            {
+                "blocked_calls_during_inference": BLOCKED["count"] - env["control_probe_blocks"],
+                "api_path_works_offline": api["health"] == "ok",
+            },
+            indent=1,
+        )
+    )
 
     verdict = {
         "guard_effective": env["control"].startswith("guard effective"),

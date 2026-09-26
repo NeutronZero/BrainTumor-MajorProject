@@ -18,8 +18,7 @@ CLAIMED_F1 = [0.9904, 0.999101]  # 0.990400 at 6 dp
 
 
 def _run() -> str:
-    r = subprocess.run([sys.executable, str(SCRIPT)], cwd=ROOT,
-                       capture_output=True, text=True)
+    r = subprocess.run([sys.executable, str(SCRIPT)], cwd=ROOT, capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
     out = ROOT / "outputs" / "PBA-001" / "bootstrap_ci.json"
     assert out.is_file()

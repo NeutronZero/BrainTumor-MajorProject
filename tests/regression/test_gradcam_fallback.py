@@ -68,6 +68,7 @@ def test_model_without_conv2d_raises_runtime_error():
 
 def test_frozen_convnext_resolves_features_7_2_block_0():
     from brain_tumor.classification.models import build_classifier
+
     m = build_classifier("convnext_tiny")
     name, mod = resolve_target_layer(m)
     assert name == "features.7.2.block.0"

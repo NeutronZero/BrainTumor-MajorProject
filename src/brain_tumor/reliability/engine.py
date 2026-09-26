@@ -16,35 +16,40 @@ Fixed rule (pre-specified, never tuned):
 from __future__ import annotations
 
 
-def reliability_report(classification: dict, consistency: dict,
-                       quality: dict | None, segmentation_state: str,
-                       localization: dict, system_state: str) -> dict:
+def reliability_report(
+    classification: dict,
+    consistency: dict,
+    quality: dict | None,
+    segmentation_state: str,
+    localization: dict,
+    system_state: str,
+) -> dict:
     basis: list[str] = []
     ok = True
 
     conf = classification.get("confidence")
     conf_numeric = isinstance(conf, (int, float)) and not isinstance(conf, bool)
     if classification.get("classification_state") == "confident" and conf_numeric:
-        basis.append(f"calibrated confidence {conf:.4f} "
-                     f"({classification.get('predicted_class')})")
+        basis.append(f"calibrated confidence {conf:.4f} ({classification.get('predicted_class')})")
     elif classification.get("classification_state") == "confident":
         # Confident state but non-numeric/missing confidence (e.g. None):
         # never crash on the format string — degrade to review with a clear
         # basis entry stating the inconsistency.
         ok = False
-        basis.append(f"confidence {conf!r} non-numeric despite confident "
-                     "classification_state — review")
+        basis.append(
+            f"confidence {conf!r} non-numeric despite confident classification_state — review"
+        )
     else:
         ok = False
         basis.append("classification uncertain — review")
 
     if consistency.get("agreement_fraction") == 1.0:
-        basis.append(f"{consistency.get('k', 8)}/{consistency.get('k', 8)} "
-                     "perturbation agreement (stable)")
+        basis.append(
+            f"{consistency.get('k', 8)}/{consistency.get('k', 8)} perturbation agreement (stable)"
+        )
     else:
         ok = False
-        basis.append(f"perturbation agreement {consistency.get('agreement_fraction')} "
-                     "— review")
+        basis.append(f"perturbation agreement {consistency.get('agreement_fraction')} — review")
 
     if quality is None:
         basis.append("input quality not assessed")
@@ -63,24 +68,34 @@ def reliability_report(classification: dict, consistency: dict,
         basis.append(f"segmentation {segmentation_state} with tumor prediction — review")
 
     return {
-        "classification": {"class": classification.get("predicted_class"),
-                           "confidence": classification.get("confidence"),
-                           "state": classification.get("classification_state")},
-        "consistency": {"k": consistency.get("k"),
-                        "agreement": consistency.get("agreement_fraction"),
-                        "state": "stable" if consistency.get("agreement_fraction") == 1.0
-                        else "unstable"},
-        "quality": {"state": "acceptable" if (quality or {}).get("verdict") == "accept"
-                    else ("rejected" if quality else "not_assessed")},
-        "segmentation": {"nonempty": segmentation_state == "nonempty",
-                         "area_px": localization.get("area_pixels", 0)},
-        "localization": {"state": "localized"
-                         if (segmentation_state == "nonempty"
-                             and localization.get("area_pixels", 0) > 0)
-                         else ("empty" if segmentation_state == "empty"
-                               else segmentation_state)},
-        "reliability": {"summary": "stable" if ok else "review",
-                        "basis": basis,
-                        "clinical_meaning": False},
+        "classification": {
+            "class": classification.get("predicted_class"),
+            "confidence": classification.get("confidence"),
+            "state": classification.get("classification_state"),
+        },
+        "consistency": {
+            "k": consistency.get("k"),
+            "agreement": consistency.get("agreement_fraction"),
+            "state": "stable" if consistency.get("agreement_fraction") == 1.0 else "unstable",
+        },
+        "quality": {
+            "state": "acceptable"
+            if (quality or {}).get("verdict") == "accept"
+            else ("rejected" if quality else "not_assessed")
+        },
+        "segmentation": {
+            "nonempty": segmentation_state == "nonempty",
+            "area_px": localization.get("area_pixels", 0),
+        },
+        "localization": {
+            "state": "localized"
+            if (segmentation_state == "nonempty" and localization.get("area_pixels", 0) > 0)
+            else ("empty" if segmentation_state == "empty" else segmentation_state)
+        },
+        "reliability": {
+            "summary": "stable" if ok else "review",
+            "basis": basis,
+            "clinical_meaning": False,
+        },
         "system_state_unchanged": system_state,
     }

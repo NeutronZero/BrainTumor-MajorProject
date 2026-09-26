@@ -26,6 +26,7 @@ EXPECTED = {
 def test_all_nine_endpoints_declare_response_model():
     import main as api_main
     from fastapi.routing import APIRoute
+
     seen = {}
     for r in api_main.app.routes:
         if isinstance(r, APIRoute):
@@ -45,28 +46,29 @@ def test_analyze_response_model_allows_absent_consistency():
     AND serialize as absent (not null) to preserve the wire shape."""
     import main as api_main
     from fastapi.routing import APIRoute
-    analyze = next(r for r in api_main.app.routes
-                   if isinstance(r, APIRoute) and r.path == "/analyze")
+
+    analyze = next(
+        r for r in api_main.app.routes if isinstance(r, APIRoute) and r.path == "/analyze"
+    )
     model = analyze.response_model
     field = model.model_fields["consistency"]
     assert field.is_required() is False
     # round-trip: dict without consistency must stay without consistency
-    dumped = model.model_validate({"predicted_class": "notumor",
-                                   "probabilities": {"glioma": 0.0,
-                                                     "meningioma": 0.0,
-                                                     "pituitary": 0.0,
-                                                     "notumor": 1.0},
-                                   "confidence": 1.0,
-                                   "classification_state": "confident",
-                                   "segmentation_state": "empty",
-                                   "localization": {"bbox": None,
-                                                    "centroid": None,
-                                                    "area_pixels": 0},
-                                   "warnings": [],
-                                   "system_state": "healthy",
-                                   "quality": {"verdict": "accept"},
-                                   "reliability": {},
-                                   "disclaimer": "x"}).model_dump()
+    dumped = model.model_validate(
+        {
+            "predicted_class": "notumor",
+            "probabilities": {"glioma": 0.0, "meningioma": 0.0, "pituitary": 0.0, "notumor": 1.0},
+            "confidence": 1.0,
+            "classification_state": "confident",
+            "segmentation_state": "empty",
+            "localization": {"bbox": None, "centroid": None, "area_pixels": 0},
+            "warnings": [],
+            "system_state": "healthy",
+            "quality": {"verdict": "accept"},
+            "reliability": {},
+            "disclaimer": "x",
+        }
+    ).model_dump()
     assert "consistency" not in dumped
 
 
@@ -74,6 +76,7 @@ def test_error_envelope_bypasses_response_model():
     """415 envelope carries no disclaimer and is not validated/filtered."""
     import main as api_main
     from fastapi.testclient import TestClient
+
     client = TestClient(api_main.app)
     r = client.post("/classify", files={"file": ("t.png", b"x", "text/plain")})
     assert r.status_code == 415

@@ -1,4 +1,5 @@
 """Verify PBA-003 outputs: control==locked eval, no aggregate score, per-arm completeness."""
+
 import json
 from pathlib import Path
 
@@ -13,13 +14,37 @@ assert "robustness_score" not in blob.replace("no aggregate robustness score", "
 print("no aggregate score: OK")
 for k, v in s["per_perturbation"].items():
     c, g = v["cls"], v["seg"]
-    print(k, "| cls acc", c["accuracy"], "d", c["d_acc"], "f1", c["macro_f1"],
-          "ece", c["ece_frozen_T"], "unc", c["uncertain_n"], "err", c["errors_n"],
-          "cbw", c["cbw_n"], "new", len(c["new_errors_vs_control"]),
-          "recov", len(c["recovered_vs_control"]),
-          "| seg dice", g["mean_dice"], "d", g["d_dice"],
-          "empty", g["empty_pred"], "multi", g["multi_component"],
-          "bycls", g["by_class_mean_dice"])
+    print(
+        k,
+        "| cls acc",
+        c["accuracy"],
+        "d",
+        c["d_acc"],
+        "f1",
+        c["macro_f1"],
+        "ece",
+        c["ece_frozen_T"],
+        "unc",
+        c["uncertain_n"],
+        "err",
+        c["errors_n"],
+        "cbw",
+        c["cbw_n"],
+        "new",
+        len(c["new_errors_vs_control"]),
+        "recov",
+        len(c["recovered_vs_control"]),
+        "| seg dice",
+        g["mean_dice"],
+        "d",
+        g["d_dice"],
+        "empty",
+        g["empty_pred"],
+        "multi",
+        g["multi_component"],
+        "bycls",
+        g["by_class_mean_dice"],
+    )
 ev = json.loads((root / "outputs" / "test_evaluation_7b860dca72ea.json").read_text())
 assert s["control_values"]["cls_acc"] == ev["cls_primary"]["accuracy"] == 0.995
 assert abs(s["control_values"]["seg_dice"] - ev["seg_primary"]["mean_dice"]) < 1e-4

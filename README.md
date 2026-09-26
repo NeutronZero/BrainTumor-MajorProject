@@ -1,21 +1,73 @@
-# BrainTumor-MajorProject v2.3 — STEP 0/1 scaffold
+# BrainTumor-MajorProject v2.3 — modular MRI analysis
 
-AUTHORITATIVE plan: `BrainTumor_MajorProject_Plan.md` v2.3 (repo parent dir).
-Research/educational prototype — **not a clinical diagnostic device**.
+Research/educational prototype — **not a clinical diagnostic device.
+Never use for diagnosis, triage, or therapy planning.**
 
-## Frozen contracts (§21-25 + 5 freezes)
-- classes: `glioma | meningioma | pituitary | notumor`; `tumor_detected` derived
-- localization: bbox `xyxy` original pixels, centroid of largest, area=sum, empty=`None/None/0`
-- calibration: T + τ1/τ2 on validation only, then LOCK
-- split: test 1000 LOCKED; pool 5000 → 4000/1000, stratified, seed 42
-- one `InferenceService` (`src/brain_tumor/inference/service.py`); Streamlit direct-call
+Thin UIs over one shared `InferenceService`
+(`src/brain_tumor/inference/service.py`): FastAPI (`app/api/`) and
+Streamlit (`app/streamlit/`, direct in-process calls, no HTTP hop).
 
-## Run Data Gate 0
+## Prerequisites
+
+- Python 3.11+ (3.14 baseline per `requirements.lock`)
+- git + [git-lfs](https://git-lfs.com) — checkpoints (`*.pt`) ride via LFS
+- Docker (optional, API only)
+
+## Setup
+
 ```powershell
-python scripts/data_gate/run_gate.py
+git clone https://github.com/NeutronZero/BrainTumor-MajorProject.git
+cd BrainTumor-MajorProject
+git lfs pull
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.lock
+python scripts/fetch_models.py   # verifies checkpoints/CLS-001, SEG-001, ROB-001
 ```
-Exit 0=PASS, 2=FAIL. Evidence → `outputs/data_gate_0/`.
-Place dataset under `data/` first; Gate FAILs honestly when absent.
 
-## Layout
-`configs/ docs/ src/brain_tumor/ app/api app/streamlit scripts/data_gate tests/`
+Bash equivalent: `python3 -m venv .venv && source .venv/bin/activate`
+(then same `pip install`).
+
+## Run
+
+```powershell
+python scripts/launch.py check   # smoke test, <30s, no data needed — start here
+python scripts/launch.py api     # FastAPI → http://127.0.0.1:8000 (docs: /docs, health: /health)
+python scripts/launch.py ui      # Streamlit → http://localhost:8501
+```
+
+Raw equivalents: `uvicorn app.api.main:app --host 127.0.0.1 --port 8000`
+(from root) and `streamlit run app/streamlit/app.py`.
+
+Docker (API, needs checkpoints + outputs mounted — they are LFS/release
+artifacts, not baked into the image):
+
+```powershell
+docker build -t braintumor-api .
+docker run --rm -p 8000:8000 `
+  -v ./checkpoints:/app/checkpoints:ro -v ./outputs:/app/outputs:ro `
+  braintumor-api
+```
+
+## Verify
+
+```powershell
+python scripts/reproducibility_check.py
+python -m pytest -q
+```
+
+## Data
+
+`data/` is gitignored. Place the dataset under `data/`, then
+`python scripts/data_gate/run_gate.py` (exit 0 = PASS, 2 = FAIL;
+evidence → `outputs/data_gate_0/`). Without data the app still runs —
+upload an MRI in the UI or POST to `/analyze`.
+
+## Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| `classifier_unavailable` / `inference_failed` | checkpoints missing or LFS pointers — `git lfs pull`, re-run `fetch_models.py` |
+| `pytest` collection error on `hypothesis` | stale env — reinstall: `pip install -r requirements.lock` |
+| Streamlit port busy | `streamlit run app/streamlit/app.py --server.port 8502` |
+| `/health` not `"ok"` (Docker) | checkpoints/outputs mounts missing — see `docker run` above |

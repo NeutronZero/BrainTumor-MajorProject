@@ -18,10 +18,11 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pba"))
+from pba003_robustness import SEED, apply_perturb  # noqa: E402
+
 from brain_tumor.classification.models import build_classifier  # noqa: E402
 from brain_tumor.data.brisc import load_manifest  # noqa: E402
 from brain_tumor.preprocessing.pipeline import build_cls_transform  # noqa: E402
-from pba003_robustness import SEED, apply_perturb  # noqa: E402
 
 CLASSES = ["glioma", "meningioma", "pituitary", "notumor"]
 K = 8
@@ -57,8 +58,11 @@ def main() -> int:
     clean = {c["path"]: c for c in clean}
 
     clf = build_classifier("convnext_tiny")
-    clf.load_state_dict(torch.load(root / "checkpoints" / "CLS-001" / "best.pt",
-                                   map_location="cpu", weights_only=False)["state"])
+    clf.load_state_dict(
+        torch.load(
+            root / "checkpoints" / "CLS-001" / "best.pt", map_location="cpu", weights_only=False
+        )["state"]
+    )
     clf.eval()
     tf = build_cls_transform(False)
 
@@ -67,11 +71,12 @@ def main() -> int:
         for idx, r in enumerate(rows):
             base = Image.open(root / r["path"]).convert("RGB")
             for k in range(K):
-                spec = {"id": "gauss_noise_s0p05",
-                        "params": {"sigma": 0.05, "seed": SEED + idx * 16 + k}}
+                spec = {
+                    "id": "gauss_noise_s0p05",
+                    "params": {"sigma": 0.05, "seed": SEED + idx * 16 + k},
+                }
                 jobs.append((idx, f"p{k}", tf(apply_perturb(base, spec, idx))))
-            espec = {"id": "gauss_noise_s0p05",
-                     "params": {"sigma": 0.05, "seed": EVAL_SEED + idx}}
+            espec = {"id": "gauss_noise_s0p05", "params": {"sigma": 0.05, "seed": EVAL_SEED + idx}}
             jobs.append((idx, "eval", tf(apply_perturb(base, espec, idx))))
             if (idx + 1) % 250 == 0:
                 print(f"prepared {idx + 1}/1000", flush=True)
@@ -80,7 +85,7 @@ def main() -> int:
         eval_pred = np.zeros(len(rows), dtype=int)
         eval_certain = np.zeros(len(rows), dtype=bool)
         for s in range(0, len(jobs), BATCH):
-            chunk = jobs[s:s + BATCH]
+            chunk = jobs[s : s + BATCH]
             probs = torch.softmax(clf(torch.stack([t for _, _, t in chunk])) / T, dim=1)
             top2 = probs.topk(2).values
             for (idx, kind, _), pr, t2v in zip(chunk, probs, top2):
@@ -98,14 +103,20 @@ def main() -> int:
         cc = clean[r["path"]]
         cp = CLASSES.index(cc["pred"])
         agree = float((probe_pred[idx] == cp).mean())
-        per_case.append({"path": r["path"], "true": r["class"],
-                         "clean_pred": cc["pred"], "clean_certain": cc["certain"],
-                         "clean_correct": bool(cc["pred"] == r["class"]),
-                         "agreement_fraction": round(agree, 4),
-                         "flagged": bool(agree < 1.0),
-                         "eval_pred": CLASSES[int(eval_pred[idx])],
-                         "eval_correct": bool(eval_pred[idx] == CLASSES.index(r["class"])),
-                         "eval_certain": bool(eval_certain[idx])})
+        per_case.append(
+            {
+                "path": r["path"],
+                "true": r["class"],
+                "clean_pred": cc["pred"],
+                "clean_certain": cc["certain"],
+                "clean_correct": bool(cc["pred"] == r["class"]),
+                "agreement_fraction": round(agree, 4),
+                "flagged": bool(agree < 1.0),
+                "eval_pred": CLASSES[int(eval_pred[idx])],
+                "eval_correct": bool(eval_pred[idx] == CLASSES.index(r["class"])),
+                "eval_certain": bool(eval_certain[idx]),
+            }
+        )
     (out / "per_case_test.json").write_text(json.dumps(per_case))
 
     Y = np.array([CLASSES.index(c["true"]) for c in per_case])
@@ -125,13 +136,14 @@ def main() -> int:
     rep = {
         "N": len(per_case),
         "clean_locked_baseline": "existing CLS-001 result reused, not recomputed "
-                                 "(acc 0.9950, macro-F1 0.9952, 5 errors, 4 uncertain)",
+        "(acc 0.9950, macro-F1 0.9952, 5 errors, 4 uncertain)",
         "detection": {
             "eval_noise_errors": int(eval_err.sum()),
             "flagged_among_eval_errors": int((FL & eval_err).sum()),
             "detection_rate": rate(eval_err),
             "baseline_detection_rate": round(float((~eval_certain[eval_err]).mean()), 6)
-            if eval_err.any() else None,
+            if eval_err.any()
+            else None,
             "cbw_eval_errors": int(cbw.sum()),
             "cbw_detection_rate": rate(cbw),
         },
@@ -140,8 +152,9 @@ def main() -> int:
             "flag_rate_overall": round(float(FL.mean()), 6),
             "false_alert_rate": rate(clean_ok),
         },
-        "agreement_distribution": {f"{i}/{K}": int((agree_counts == i).sum())
-                                     for i in range(K + 1)},
+        "agreement_distribution": {
+            f"{i}/{K}": int((agree_counts == i).sum()) for i in range(K + 1)
+        },
         "by_class": {},
         "confusion_eval_noise": confusion_matrix(Y, EP, labels=list(range(4))).tolist(),
         "confusion_labels": CLASSES,
@@ -154,18 +167,27 @@ def main() -> int:
         "note": "no re-cut; outcome accepted as observed",
     }
     for i, c in enumerate(CLASSES):
-        m = Y == i
-        rep["by_class"][c] = {"n": int(m.sum()),
-                              "eval_errors": int((m & eval_err).sum()),
-                              "detection_rate": rate(m & eval_err),
-                              "false_alert_rate": rate(m & clean_ok)}
+        m = i == Y
+        rep["by_class"][c] = {
+            "n": int(m.sum()),
+            "eval_errors": int((m & eval_err).sum()),
+            "detection_rate": rate(m & eval_err),
+            "false_alert_rate": rate(m & clean_ok),
+        }
     (out / "unc001_locked.json").write_text(json.dumps(rep, indent=1))
-    print(json.dumps({"eval_errors": rep["detection"]["eval_noise_errors"],
-                      "detect": rep["detection"]["detection_rate"],
-                      "baseline": rep["detection"]["baseline_detection_rate"],
-                      "cbw": rep["detection"]["cbw_detection_rate"],
-                      "false_alert": rep["burden"]["false_alert_rate"],
-                      "flagged": rep["burden"]["flagged_total"]}, indent=1))
+    print(
+        json.dumps(
+            {
+                "eval_errors": rep["detection"]["eval_noise_errors"],
+                "detect": rep["detection"]["detection_rate"],
+                "baseline": rep["detection"]["baseline_detection_rate"],
+                "cbw": rep["detection"]["cbw_detection_rate"],
+                "false_alert": rep["burden"]["false_alert_rate"],
+                "flagged": rep["burden"]["flagged_total"],
+            },
+            indent=1,
+        )
+    )
     return 0
 
 

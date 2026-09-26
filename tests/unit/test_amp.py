@@ -11,6 +11,7 @@ from brain_tumor.utils.amp import (  # noqa: E402
 
 def test_cpu_paths_never_crash():
     import torch
+
     assert make_grad_scaler(True) is None or torch.cuda.is_available()
     with autocast_if_cuda(True):
         pass

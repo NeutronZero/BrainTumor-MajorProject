@@ -17,10 +17,11 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pba"))
+from pba003_robustness import SEED, apply_perturb  # noqa: E402
+
 from brain_tumor.classification.models import build_classifier  # noqa: E402
 from brain_tumor.data.brisc import load_manifest  # noqa: E402
 from brain_tumor.preprocessing.pipeline import build_cls_transform  # noqa: E402
-from pba003_robustness import SEED, apply_perturb  # noqa: E402
 
 CLASSES = ["glioma", "meningioma", "pituitary", "notumor"]
 K = 8
@@ -29,13 +30,14 @@ EVAL_SEED = 9000
 
 
 def _probe_spec(idx: int, k: int) -> dict:
-    return {"id": "gauss_noise_s0p05",
-            "params": {"sigma": 0.05, "seed": SEED + idx * 16 + k, "_k": k}}
+    return {
+        "id": "gauss_noise_s0p05",
+        "params": {"sigma": 0.05, "seed": SEED + idx * 16 + k, "_k": k},
+    }
 
 
 def _eval_spec(idx: int) -> dict:
-    return {"id": "gauss_noise_s0p05",
-            "params": {"sigma": 0.05, "seed": EVAL_SEED + idx}}
+    return {"id": "gauss_noise_s0p05", "params": {"sigma": 0.05, "seed": EVAL_SEED + idx}}
 
 
 def main() -> int:
@@ -48,22 +50,33 @@ def main() -> int:
     assert freeze["probe"]["K"] == K
     cal = json.loads((root / "outputs" / "CLS-001" / "calibration_frozen.json").read_text())
     T, t1, t2 = cal["temperature"], cal["tau1"], cal["tau2"]
-    assert (T, t1, t2) == (freeze["frozen_reference"]["T"], freeze["frozen_reference"]["tau1"],
-                           freeze["frozen_reference"]["tau2"])
+    assert (T, t1, t2) == (
+        freeze["frozen_reference"]["T"],
+        freeze["frozen_reference"]["tau1"],
+        freeze["frozen_reference"]["tau2"],
+    )
 
     manifest = load_manifest(root / "outputs" / "data_gate_0" / "project_manifest.csv")
-    rows = [r for r in manifest if r["population"] == "official_train_pool"
-            and r["project_split"] == "val"]
+    rows = [
+        r
+        for r in manifest
+        if r["population"] == "official_train_pool" and r["project_split"] == "val"
+    ]
     assert len(rows) == 1000, f"val membership changed: {len(rows)}"
     assert not any(r["population"] == "official_test_locked" for r in rows)
 
-    clean = {c["path"]: c for c in
-             json.loads((root / "outputs" / "PBA-001" / "per_case_val.json").read_text())}
+    clean = {
+        c["path"]: c
+        for c in json.loads((root / "outputs" / "PBA-001" / "per_case_val.json").read_text())
+    }
     assert len(clean) == 1000
 
     clf = build_classifier("convnext_tiny")
-    clf.load_state_dict(torch.load(root / "checkpoints" / "CLS-001" / "best.pt",
-                                   map_location="cpu", weights_only=False)["state"])
+    clf.load_state_dict(
+        torch.load(
+            root / "checkpoints" / "CLS-001" / "best.pt", map_location="cpu", weights_only=False
+        )["state"]
+    )
     clf.eval()
     tf = build_cls_transform(False)
 
@@ -75,10 +88,17 @@ def main() -> int:
             for k in range(K):
                 spec = _probe_spec(idx, k)
                 assert spec["params"]["seed"] == SEED + idx * 16 + k
-                jobs.append((idx, f"p{k}", tf(apply_perturb(base, spec, idx)),
-                             CLASSES.index(r["class"])))
-            jobs.append((idx, "eval", tf(apply_perturb(base, _eval_spec(idx), idx)),
-                         CLASSES.index(r["class"])))
+                jobs.append(
+                    (idx, f"p{k}", tf(apply_perturb(base, spec, idx)), CLASSES.index(r["class"]))
+                )
+            jobs.append(
+                (
+                    idx,
+                    "eval",
+                    tf(apply_perturb(base, _eval_spec(idx), idx)),
+                    CLASSES.index(r["class"]),
+                )
+            )
             if (idx + 1) % 250 == 0:
                 print(f"prepared {idx + 1}/1000", flush=True)
 
@@ -87,7 +107,7 @@ def main() -> int:
         eval_pred = np.zeros(len(rows), dtype=int)
         eval_certain = np.zeros(len(rows), dtype=bool)
         for s in range(0, len(jobs), BATCH):
-            chunk = jobs[s:s + BATCH]
+            chunk = jobs[s : s + BATCH]
             probs = torch.softmax(clf(torch.stack([t for _, _, t, _ in chunk])) / T, dim=1)
             top2 = probs.topk(2).values
             for (idx, kind, _, _), pr, t2v in zip(chunk, probs, top2):
@@ -107,15 +127,21 @@ def main() -> int:
         cc = clean[r["path"]]
         cp = CLASSES.index(cc["pred"])
         agree = float((probe_pred[idx] == cp).mean())
-        per_case.append({"path": r["path"], "true": r["class"],
-                         "clean_pred": cc["pred"], "clean_certain": cc["certain"],
-                         "clean_correct": bool(cc["pred"] == r["class"]),
-                         "agreement_fraction": round(agree, 4),
-                         "flagged": bool(agree < 1.0),
-                         "min_probe_conf": round(float(probe_conf[idx].min()), 4),
-                         "eval_pred": CLASSES[int(eval_pred[idx])],
-                         "eval_correct": bool(eval_pred[idx] == CLASSES.index(r["class"])),
-                         "eval_certain": bool(eval_certain[idx])})
+        per_case.append(
+            {
+                "path": r["path"],
+                "true": r["class"],
+                "clean_pred": cc["pred"],
+                "clean_certain": cc["certain"],
+                "clean_correct": bool(cc["pred"] == r["class"]),
+                "agreement_fraction": round(agree, 4),
+                "flagged": bool(agree < 1.0),
+                "min_probe_conf": round(float(probe_conf[idx].min()), 4),
+                "eval_pred": CLASSES[int(eval_pred[idx])],
+                "eval_correct": bool(eval_pred[idx] == CLASSES.index(r["class"])),
+                "eval_certain": bool(eval_certain[idx]),
+            }
+        )
     (out / "per_case_val.json").write_text(json.dumps(per_case))
 
     Y = np.array([CLASSES.index(c["true"]) for c in per_case])
@@ -140,7 +166,8 @@ def main() -> int:
             "detection_rate": rate(eval_err),
             "baseline_uncertain_among_eval_errors": int(((~eval_certain) & eval_err).sum()),
             "baseline_detection_rate": round(float((~eval_certain[eval_err]).mean()), 6)
-            if eval_err.any() else None,
+            if eval_err.any()
+            else None,
             "cbw_eval_errors": int(cbw.sum()),
             "flagged_among_cbw": int((FL & cbw).sum()),
             "cbw_detection_rate": rate(cbw),
@@ -153,28 +180,37 @@ def main() -> int:
             "false_alert_rate": rate(clean_ok),
         },
         "agreement_distribution": {
-            f"{i}/{K}": int((((probe_pred == CP[:, None]).sum(1)) == i).sum())
-            for i in range(K + 1)},
+            f"{i}/{K}": int((((probe_pred == CP[:, None]).sum(1)) == i).sum()) for i in range(K + 1)
+        },
         "by_class": {},
         "confusion_clean": confusion_matrix(Y, CP, labels=list(range(4))).tolist(),
         "confusion_eval_noise": confusion_matrix(Y, EP, labels=list(range(4))).tolist(),
         "note": "PI judges H-UNCERT-001; no single uncertainty score constructed",
     }
     for i, c in enumerate(CLASSES):
-        m = Y == i
-        rep["by_class"][c] = {"n": int(m.sum()),
-                              "eval_errors": int((m & eval_err).sum()),
-                              "detection_rate": rate(m & eval_err),
-                              "false_alert_rate": rate(m & clean_ok)}
+        m = i == Y
+        rep["by_class"][c] = {
+            "n": int(m.sum()),
+            "eval_errors": int((m & eval_err).sum()),
+            "detection_rate": rate(m & eval_err),
+            "false_alert_rate": rate(m & clean_ok),
+        }
     # confusion labels order
     rep["confusion_labels"] = CLASSES
     (out / "unc001.json").write_text(json.dumps(rep, indent=1))
-    print(json.dumps({"eval_errors": rep["detection"]["eval_noise_errors"],
-                      "detect": rep["detection"]["detection_rate"],
-                      "baseline": rep["detection"]["baseline_detection_rate"],
-                      "cbw": rep["detection"]["cbw_detection_rate"],
-                      "false_alert": rep["burden"]["false_alert_rate"],
-                      "flagged": rep["burden"]["flagged_total"]}, indent=1))
+    print(
+        json.dumps(
+            {
+                "eval_errors": rep["detection"]["eval_noise_errors"],
+                "detect": rep["detection"]["detection_rate"],
+                "baseline": rep["detection"]["baseline_detection_rate"],
+                "cbw": rep["detection"]["cbw_detection_rate"],
+                "false_alert": rep["burden"]["false_alert_rate"],
+                "flagged": rep["burden"]["flagged_total"],
+            },
+            indent=1,
+        )
+    )
     return 0
 
 

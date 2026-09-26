@@ -15,16 +15,14 @@ system_state precedence: degraded > uncertain > tumor_unlocalized
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 ClassLabel = Literal["glioma", "meningioma", "pituitary", "notumor"]
 ClassificationState = Literal["confident", "uncertain"]
 SegmentationState = Literal["available", "unavailable", "empty", "nonempty"]
-SystemState = Literal[
-    "degraded", "uncertain", "tumor_unlocalized", "tumor_localized", "healthy"
-]
+SystemState = Literal["degraded", "uncertain", "tumor_unlocalized", "tumor_localized", "healthy"]
 WarningCode = Literal[
     "segmentation_unavailable",
     "segmentation_empty",
@@ -73,7 +71,7 @@ class ClassificationResult(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _check_confidence_consistent(self) -> "ClassificationResult":
+    def _check_confidence_consistent(self) -> ClassificationResult:
         top = max(self.probabilities.values())
         if abs(top - self.confidence) > 1e-6:
             raise ValueError("confidence must equal max(probabilities)")
@@ -86,12 +84,12 @@ class ClassificationResult(BaseModel):
 class LocalizationResult(BaseModel):
     """Frozen: bbox xyxy ints in original input pixels; None when empty."""
 
-    bbox: Optional[tuple[int, int, int, int]] = None
-    centroid: Optional[tuple[float, float]] = None
+    bbox: tuple[int, int, int, int] | None = None
+    centroid: tuple[float, float] | None = None
     area_pixels: int = Field(ge=0)
 
     @model_validator(mode="after")
-    def _check_empty_consistent(self) -> "LocalizationResult":
+    def _check_empty_consistent(self) -> LocalizationResult:
         if self.area_pixels == 0:
             if self.bbox is not None or self.centroid is not None:
                 raise ValueError("empty localization must have bbox=None, centroid=None")
@@ -131,7 +129,7 @@ class BrainTumorResult(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _enforce_invariants(self) -> "BrainTumorResult":
+    def _enforce_invariants(self) -> BrainTumorResult:
         pc = self.predicted_class
         ss = self.system_state
         seg = self.segmentation_state
@@ -144,10 +142,8 @@ class BrainTumorResult(BaseModel):
             raise ValueError("healthy requires predicted_class == notumor")
         if ss == "healthy" and cs != "confident":
             raise ValueError("healthy requires confident classification")
-        if ss != "degraded" and (seg == "unavailable"
-                                 or "segmentation_unavailable" in w):
-            raise ValueError(
-                "segmentation unavailable must derive system_state == degraded")
+        if ss != "degraded" and (seg == "unavailable" or "segmentation_unavailable" in w):
+            raise ValueError("segmentation unavailable must derive system_state == degraded")
         if ss == "tumor_localized":
             if pc == "notumor":
                 raise ValueError("tumor_localized requires tumor class")

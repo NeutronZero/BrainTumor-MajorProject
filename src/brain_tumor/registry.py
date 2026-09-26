@@ -31,7 +31,7 @@ class ModelRegistry:
         return {k: v.checkpoint.exists() for k, v in self._entries.items()}
 
     @classmethod
-    def default(cls, project_root: Path) -> "ModelRegistry":
+    def default(cls, project_root: Path) -> ModelRegistry:
         reg = cls(project_root / "checkpoints")
         reg.register(
             ModelEntry(

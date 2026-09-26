@@ -20,6 +20,15 @@ dependencies = [
   "pytest>=8",
   "filetype>=1.2",        # MIME sniffing (app/api MIME-spoofing defense)
   "prometheus-client>=0.26",  # /metrics exposition (app/api/main.py)
+  "python-multipart>=0.0.3",  # multipart/form-data parsing for UploadFile endpoints
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.5",
+  "pyright>=1.1",
+  "hypothesis>=6.100",
+  "pip-audit>=2.7",
 ]
 
 [tool.pytest.ini_options]
@@ -33,3 +42,28 @@ omit = ["*/tests/*", "*/scripts/train/*"]
 
 [tool.coverage.report]
 fail_under = 70
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "T20"]
+ignore = ["S101", "T201"]
+exclude = [".venv", "checkpoints", "data", "demo_data", "outputs", ".pytest_cache", ".benchmarks", ".freebuff", "__pycache__"]
+src = ["src", "app", "tests", "scripts"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "T201"]
+
+[tool.pyright]
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+pythonVersion = "3.11"
+typeCheckingMode = "basic"

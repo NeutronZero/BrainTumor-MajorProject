@@ -11,9 +11,12 @@ class DoubleConv(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(cin, cout, 3, padding=1, bias=False),
-            nn.BatchNorm2d(cout), nn.ReLU(inplace=True),
+            nn.BatchNorm2d(cout),
+            nn.ReLU(inplace=True),
             nn.Conv2d(cout, cout, 3, padding=1, bias=False),
-            nn.BatchNorm2d(cout), nn.ReLU(inplace=True))
+            nn.BatchNorm2d(cout),
+            nn.ReLU(inplace=True),
+        )
 
     def forward(self, x):
         return self.net(x)
@@ -52,15 +55,25 @@ class UNet(nn.Module):
             x = up(x)
             if x.shape[-2:] != b.shape[-2:]:
                 import torch.nn.functional as F
+
                 x = F.interpolate(x, size=b.shape[-2:], mode="bilinear", align_corners=False)
             x = conv(torch.cat([b, x], dim=1))
         return self.final(x)
 
 
-def dice_bce_loss(logits: torch.Tensor, targets: torch.Tensor,
-                  dice_w: float = 1.0, bce_w: float = 1.0, smooth: float = 1e-6):
+def dice_bce_loss(
+    logits: torch.Tensor,
+    targets: torch.Tensor,
+    dice_w: float = 1.0,
+    bce_w: float = 1.0,
+    smooth: float = 1e-6,
+):
     probs = torch.sigmoid(logits)
     inter = (probs * targets).sum(dim=(1, 2, 3))
-    dice = 1 - (2 * inter + smooth) / (probs.sum(dim=(1, 2, 3)) + targets.sum(dim=(1, 2, 3)) + smooth)
-    bce = nn.functional.binary_cross_entropy_with_logits(logits, targets, reduction="none").mean(dim=(1, 2, 3))
+    dice = 1 - (2 * inter + smooth) / (
+        probs.sum(dim=(1, 2, 3)) + targets.sum(dim=(1, 2, 3)) + smooth
+    )
+    bce = nn.functional.binary_cross_entropy_with_logits(logits, targets, reduction="none").mean(
+        dim=(1, 2, 3)
+    )
     return (dice_w * dice + bce_w * bce).mean()

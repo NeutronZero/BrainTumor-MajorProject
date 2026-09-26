@@ -15,14 +15,17 @@ from brain_tumor.reliability.engine import reliability_report  # noqa: E402
 
 def _base(conf, state="confident"):
     return dict(
-        classification={"predicted_class": "glioma", "confidence": conf,
-                        "classification_state": state},
+        classification={
+            "predicted_class": "glioma",
+            "confidence": conf,
+            "classification_state": state,
+        },
         consistency={"k": 8, "agreement_fraction": 1.0, "flagged": False},
         quality={"verdict": "accept", "failed": [], "facts": {}},
         segmentation_state="nonempty",
-        localization={"bbox": (0, 0, 10, 10), "centroid": (5.0, 5.0),
-                      "area_pixels": 50},
-        system_state="tumor_localized")
+        localization={"bbox": (0, 0, 10, 10), "centroid": (5.0, 5.0), "area_pixels": 50},
+        system_state="tumor_localized",
+    )
 
 
 def test_none_confidence_with_confident_state_is_review():

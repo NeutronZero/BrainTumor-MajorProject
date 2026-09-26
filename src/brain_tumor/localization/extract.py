@@ -17,9 +17,11 @@ import numpy as np
 from brain_tumor.contracts import LocalizationResult
 
 
-def extract(prob_map: np.ndarray, orig_hw: tuple[int, int],
-            threshold: float = 0.5, min_area: int = 10) -> tuple[LocalizationResult, list[str]]:
+def extract(
+    prob_map: np.ndarray, orig_hw: tuple[int, int], threshold: float = 0.5, min_area: int = 10
+) -> tuple[LocalizationResult, list[str]]:
     from scipy import ndimage
+
     H, W = orig_hw
     h, w = prob_map.shape[-2:]
     binary = (prob_map > threshold).astype(np.uint8)
@@ -39,8 +41,13 @@ def extract(prob_map: np.ndarray, orig_hw: tuple[int, int],
     cy, cx = float(ys.mean()), float(xs.mean())
     # map model-frame coords back to original pixels
     sy, sx = H / h, W / w
-    x0, y0, x1, y1 = int(xs.min() * sx), int(ys.min() * sy), int((xs.max() + 1) * sx), int((ys.max() + 1) * sy)
-    loc = LocalizationResult(bbox=(x0, y0, x1, y1),
-                             centroid=(float(cx * sx), float(cy * sy)),
-                             area_pixels=total)
+    x0, y0, x1, y1 = (
+        int(xs.min() * sx),
+        int(ys.min() * sy),
+        int((xs.max() + 1) * sx),
+        int((ys.max() + 1) * sy),
+    )
+    loc = LocalizationResult(
+        bbox=(x0, y0, x1, y1), centroid=(float(cx * sx), float(cy * sy)), area_pixels=total
+    )
     return loc, warnings

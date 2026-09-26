@@ -26,6 +26,7 @@ def sha(p: Path) -> str:
 
 def main() -> int:
     from PIL import Image
+
     root = Path(__file__).resolve().parents[2]
     sys.path.insert(0, str(root / "src"))
     from brain_tumor.explain.gradcam import resolve_target_layer
@@ -42,8 +43,16 @@ def main() -> int:
     img = Image.open(buf)
     a = svc.analyze(img).model_dump()
     e1, e2 = svc.explain(img), svc.explain(img)
-    keys = ("predicted_class", "probabilities", "confidence", "classification_state",
-            "segmentation_state", "localization", "warnings", "system_state")
+    keys = (
+        "predicted_class",
+        "probabilities",
+        "confidence",
+        "classification_state",
+        "segmentation_state",
+        "localization",
+        "warnings",
+        "system_state",
+    )
     rep = {
         "target_layer": name,
         "module_hashes": {
@@ -52,13 +61,16 @@ def main() -> int:
             "inference/service.py": sha(root / "src/brain_tumor/inference/service.py")[:16],
         },
         "observer_equivalence": all(e1[k] == a[k] for k in keys),
-        "deterministic_heatmap": (e1["gradcam"]["heatmap_png_b64"]
-                                  == e2["gradcam"]["heatmap_png_b64"]),
+        "deterministic_heatmap": (
+            e1["gradcam"]["heatmap_png_b64"] == e2["gradcam"]["heatmap_png_b64"]
+        ),
         "report_disclaimer_present": "not a clinical" in e1["report_text"],
         "precision_note": "explanation forwards run FP32 on all devices (documented choice)",
-        "limitations": ["heatmap is a contribution visualization, not proof of attention",
-                        "no clinical-meaning claim without separate validation",
-                        "focus_in_bbox is descriptive, not a detection metric"],
+        "limitations": [
+            "heatmap is a contribution visualization, not proof of attention",
+            "no clinical-meaning claim without separate validation",
+            "focus_in_bbox is descriptive, not a detection metric",
+        ],
     }
     (out / "expl001.json").write_text(json.dumps(rep, indent=1))
     print(json.dumps(rep, indent=1))

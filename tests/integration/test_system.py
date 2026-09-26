@@ -24,6 +24,7 @@ _rng = np.random.RandomState(11)
 
 def _png(array: np.ndarray) -> bytes:
     from PIL import Image
+
     buf = io.BytesIO()
     Image.fromarray(array.astype("uint8")).save(buf, format="PNG")
     return buf.getvalue()
@@ -43,6 +44,7 @@ def gradient_img():
 @pytest.fixture(scope="module")
 def client():
     import main as api_main
+
     return TestClient(api_main.app)
 
 
@@ -70,8 +72,9 @@ def test_classify_contract(client, noise_img):
 def test_segment_localize_invariants(client, noise_img):
     seg = _post(client, "/segment", noise_img).json()
     assert seg["segmentation_state"] in ("empty", "nonempty")
-    loc = {k: v for k, v in _post(client, "/localize", noise_img).json().items()
-           if k != "disclaimer"}  # envelope notice is not part of the result
+    loc = {
+        k: v for k, v in _post(client, "/localize", noise_img).json().items() if k != "disclaimer"
+    }  # envelope notice is not part of the result
     if seg["segmentation_state"] == "empty":
         assert loc == {"bbox": None, "centroid": None, "area_pixels": 0}
     else:
@@ -85,8 +88,13 @@ def test_analyze_valid_result_and_states(client, noise_img, gradient_img):
     for img in (noise_img, gradient_img):
         body = _post(client, "/analyze", img).json()
         BrainTumorResult(**{k: v for k, v in body.items() if k != "consistency"})
-        assert body["system_state"] in ("degraded", "uncertain", "tumor_unlocalized",
-                                        "tumor_localized", "healthy")
+        assert body["system_state"] in (
+            "degraded",
+            "uncertain",
+            "tumor_unlocalized",
+            "tumor_localized",
+            "healthy",
+        )
         assert "consistency" in body
         assert body["consistency"]["k"] == 8
 
@@ -100,11 +108,14 @@ def test_analyze_determinism(client, noise_img):
 def test_consistency_batched_matches_sequential(noise_img):
     """Batching rung: identical seeds/rule must give identical decisions."""
     import io
-    import torch
+
     import numpy as _np
+    import torch
     from PIL import Image
+
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from brain_tumor.inference import service as svc_mod
+
     svc = svc_mod.InferenceService.from_registry()
     base = Image.open(io.BytesIO(noise_img)).convert("RGB")
     got = svc.consistency(base)
@@ -117,8 +128,7 @@ def test_consistency_batched_matches_sequential(noise_img):
             a = _np.asarray(base).astype(_np.float32) / 255.0
             a = _np.clip(a + rng.normal(0, 0.05, a.shape), 0, 1)
             noisy = Image.fromarray((a * 255).astype(_np.uint8))
-            probs = torch.softmax(
-                svc.clf(svc.cls_tf(noisy).unsqueeze(0)) / svc.T, dim=1)[0]
+            probs = torch.softmax(svc.clf(svc.cls_tf(noisy).unsqueeze(0)) / svc.T, dim=1)[0]
             if svc_mod.CLASSES[int(probs.argmax())] == clean_pred:
                 agree += 1
     assert got["agreement_fraction"] == round(agree / 8, 4)
@@ -127,11 +137,9 @@ def test_consistency_batched_matches_sequential(noise_img):
 
 def test_error_envelopes(client, noise_img):
     assert _post(client, "/analyze", noise_img, "text/plain").status_code == 415
-    big = client.post("/analyze", files={"file": ("t.png", b"x" * (11 * 1024 * 1024),
-                                                  "image/png")})
+    big = client.post("/analyze", files={"file": ("t.png", b"x" * (11 * 1024 * 1024), "image/png")})
     assert big.status_code == 413
-    bad = client.post("/analyze", files={"file": ("t.png", b"not-an-image",
-                                                  "image/png")})
+    bad = client.post("/analyze", files={"file": ("t.png", b"not-an-image", "image/png")})
     assert bad.status_code == 422
 
 
@@ -146,10 +154,13 @@ def test_healthy_path_no_validation_error():
     """Regression: notumor predictions must build valid empty localization
     (live-check caught bare LocalizationResult() on this path)."""
     import io
+
     import numpy as np
     from PIL import Image
+
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from brain_tumor.inference import service as svc_mod
+
     svc = svc_mod.InferenceService.from_registry()
     arr = (np.indices((256, 256)).sum(axis=0) % 2 * 255).astype("uint8")
     buf = io.BytesIO()
@@ -169,17 +180,21 @@ def test_degraded_paths_without_checkpoints(noise_img):
     with the FULL contract shape (localization + warnings), matching
     analyze()'s degraded path and the /segment endpoint contract."""
     import io
-    from PIL import Image
+
     import pytest
+    from PIL import Image
+
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from brain_tumor.contracts import LocalizationResult
     from brain_tumor.inference import service as svc_mod
+
     svc = svc_mod.InferenceService(classifier_ckpt=Path("none"), segmenter_ckpt=Path("none"))
     assert svc.segmentation_available is False
     assert svc.segment(Image.open(io.BytesIO(noise_img))) == {
         "segmentation_state": "unavailable",
         "localization": LocalizationResult(bbox=None, centroid=None, area_pixels=0),
-        "warnings": ["segmentation_unavailable"]}
+        "warnings": ["segmentation_unavailable"],
+    }
     with pytest.raises(RuntimeError, match="classifier_unavailable"):
         svc.classify(Image.open(io.BytesIO(noise_img)))
     with pytest.raises(RuntimeError, match="classifier_unavailable"):
@@ -190,10 +205,13 @@ def test_segment_endpoint_degraded_contract(noise_img):
     """H1 regression: /segment with unavailable segmenter must return 200
     with the frozen contract shape — never KeyError -> 500."""
     from unittest.mock import patch
+
     import main as api_main
+
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from brain_tumor.contracts import LocalizationResult
     from brain_tumor.inference import service as svc_mod
+
     svc = svc_mod.InferenceService(classifier_ckpt=Path("none"), segmenter_ckpt=Path("none"))
     client = TestClient(api_main.app)
     with patch.object(api_main, "_service", svc):
@@ -211,9 +229,19 @@ def test_segment_endpoint_degraded_contract(noise_img):
 def test_disclaimer_on_all_endpoints(noise_img):
     """H2 regression: every API payload must carry the non-diagnosis notice."""
     import main as api_main
+
     client = TestClient(api_main.app)
-    for path in ("/health", "/classify", "/segment", "/localize", "/quality",
-                 "/consistency", "/analyze", "/reliability", "/explain"):
+    for path in (
+        "/health",
+        "/classify",
+        "/segment",
+        "/localize",
+        "/quality",
+        "/consistency",
+        "/analyze",
+        "/reliability",
+        "/explain",
+    ):
         if path == "/health":
             r = client.get(path)
         else:
@@ -230,6 +258,7 @@ def test_truncated_image_is_422():
     """M8 regression: header-valid but truncated uploads must surface as 422
     at decode time, not as a 500 deep inside inference."""
     import main as api_main
+
     client = TestClient(api_main.app)
     truncated = _png(_rng.rand(256, 256) * 255)[:40]
     r = _post(client, "/classify", truncated)

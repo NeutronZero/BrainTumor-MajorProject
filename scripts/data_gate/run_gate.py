@@ -55,23 +55,38 @@ def main() -> int:
         core = ["classification", "segmentation", "localization"]
     else:
         decision = "FAIL"
-        core = ["classification", "calibration", "uncertainty", "explainability",
-                "optimization", "application"]
-    payload = {"gate": "Data Gate 0", "gate_tooling_rev": "A",
-               "decision": decision,
-               "hard_failures": hard_fail,
-               "masks_pass": bool(masks_ok),
-               "core_if_proceed": core,
-               "limitation": ("Complete patient-level independence between train and test "
-                               "cannot be claimed."),
-               "checks": {k: v.get("pass") for k, v in results.items()}}
+        core = [
+            "classification",
+            "calibration",
+            "uncertainty",
+            "explainability",
+            "optimization",
+            "application",
+        ]
+    payload = {
+        "gate": "Data Gate 0",
+        "gate_tooling_rev": "A",
+        "decision": decision,
+        "hard_failures": hard_fail,
+        "masks_pass": bool(masks_ok),
+        "core_if_proceed": core,
+        "limitation": (
+            "Complete patient-level independence between train and test cannot be claimed."
+        ),
+        "checks": {k: v.get("pass") for k, v in results.items()},
+    }
     (out / "gate_decision.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     lines = ["# Data Gate 0 — decision: " + decision, ""]
     for k, v in results.items():
-        lines.append(f"- {k}: {'PASS' if v.get('pass') else 'FAIL'}"
-                     + (f" ({v.get('reason')})" if v.get("reason") else ""))
-    lines += ["", f"Core if proceed: {', '.join(core)}",
-              "Limitation: complete patient-level independence cannot be claimed."]
+        lines.append(
+            f"- {k}: {'PASS' if v.get('pass') else 'FAIL'}"
+            + (f" ({v.get('reason')})" if v.get("reason") else "")
+        )
+    lines += [
+        "",
+        f"Core if proceed: {', '.join(core)}",
+        "Limitation: complete patient-level independence cannot be claimed.",
+    ]
     (out / "gate_report.md").write_text("\n".join(lines), encoding="utf-8")
     print(f"DATA GATE 0: {decision}")
     return 0 if decision == "PASS" else 2

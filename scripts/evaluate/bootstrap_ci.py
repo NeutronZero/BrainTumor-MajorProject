@@ -37,6 +37,7 @@ CLASSES = ["glioma", "meningioma", "pituitary", "notumor"]
 def clopperPearson(k: int, n: int, alpha: float = ALPHA) -> list[float]:
     """Exact two-sided binomial CI via Beta quantiles (scipy)."""
     from scipy.stats import beta
+
     lo = float(beta.ppf(alpha / 2, k, n - k + 1)) if k > 0 else 0.0
     hi = float(beta.ppf(1 - alpha / 2, k + 1, n - k)) if k < n else 1.0
     return [round(lo, 6), round(hi, 6)]
@@ -55,8 +56,7 @@ def macroF1FromConfusion(cm: np.ndarray) -> float:
     return sum(f1s) / 4
 
 
-def bootstrapMacroF1(y: np.ndarray, p: np.ndarray, b: int = B,
-                     seed: int = SEED) -> list[float]:
+def bootstrapMacroF1(y: np.ndarray, p: np.ndarray, b: int = B, seed: int = SEED) -> list[float]:
     """Percentile bootstrap CI for macro-F1 (fixed seed, deterministic)."""
     n = len(y)
     rng = np.random.RandomState(seed)
@@ -83,8 +83,7 @@ def main() -> int:
     pi = np.array([CLASSES.index(v) for v in y_pred], dtype=np.int64)
 
     acc_ci = clopperPearson(k, n)
-    f1_point = macroF1FromConfusion(
-        np.bincount(yi * 4 + pi, minlength=16).reshape(4, 4))
+    f1_point = macroF1FromConfusion(np.bincount(yi * 4 + pi, minlength=16).reshape(4, 4))
     f1_ci = bootstrapMacroF1(yi, pi)
 
     payload = {
@@ -108,9 +107,11 @@ def main() -> int:
             "ci95": f1_ci,
         },
         "producer": "scripts/evaluate/bootstrap_ci.py",
-        "note": ("Sampling uncertainty on the evaluated BRISC 2025 locked-test "
-                 "cohort only; not a clinical-generalization bound. "
-                 "Research prototype — not a medical diagnosis."),
+        "note": (
+            "Sampling uncertainty on the evaluated BRISC 2025 locked-test "
+            "cohort only; not a clinical-generalization bound. "
+            "Research prototype — not a medical diagnosis."
+        ),
     }
     out = root / "outputs" / "PBA-001" / "bootstrap_ci.json"
     out.write_text(json.dumps(payload, indent=1), encoding="utf-8")

@@ -7,16 +7,20 @@ no clinical meaning claimed).
 
 from __future__ import annotations
 
-DISCLAIMER = ("Automated engineering prototype output — not a clinical "
-              "diagnosis. Grad-CAM shows regions contributing to the model's "
-              "classification output; it does not prove the model attends to "
-              "the tumor and has no validated clinical meaning.")
+DISCLAIMER = (
+    "Automated engineering prototype output — not a clinical "
+    "diagnosis. Grad-CAM shows regions contributing to the model's "
+    "classification output; it does not prove the model attends to "
+    "the tumor and has no validated clinical meaning."
+)
 
 
 def build_report(payload: dict) -> dict:
-    c = {"predicted_class": payload["predicted_class"],
-         "confidence": payload["confidence"],
-         "classification_state": payload["classification_state"]}
+    c = {
+        "predicted_class": payload["predicted_class"],
+        "confidence": payload["confidence"],
+        "classification_state": payload["classification_state"],
+    }
     loc = payload["localization"]
     con = payload.get("consistency", {})
     lines = [
@@ -29,8 +33,11 @@ def build_report(payload: dict) -> dict:
         f"({'FLAGGED' if con.get('flagged') else 'stable'})",
     ]
     if payload["segmentation_state"] == "nonempty":
-        lines += [f"Segmentation: nonempty, area={loc['area_pixels']} px",
-                  f"Bbox (xyxy): {loc['bbox']}", f"Centroid: {loc['centroid']}"]
+        lines += [
+            f"Segmentation: nonempty, area={loc['area_pixels']} px",
+            f"Bbox (xyxy): {loc['bbox']}",
+            f"Centroid: {loc['centroid']}",
+        ]
     elif payload["segmentation_state"] == "empty":
         lines += ["Segmentation: empty — no tumor region localized."]
     else:

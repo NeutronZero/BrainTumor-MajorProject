@@ -7,6 +7,7 @@ from brain_tumor.classification.models import build_classifier, state_for_ckpt  
 
 def test_build_random_init_offline():
     import torch
+
     m = build_classifier("convnext_tiny", pretrained=False)
     m.eval()
     with torch.no_grad():
@@ -18,5 +19,6 @@ def test_build_random_init_offline():
 
 def test_unknown_arch_rejected():
     import pytest
+
     with pytest.raises(ValueError):
         build_classifier("not_a_model")

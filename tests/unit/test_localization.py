@@ -23,9 +23,9 @@ def test_single_component_scaled():
 
 def test_multi_component_warns_and_largest_wins():
     pm = np.zeros((20, 20))
-    pm[1:3, 1:3] = 0.9   # area 4 < min_area 10 -> dropped
+    pm[1:3, 1:3] = 0.9  # area 4 < min_area 10 -> dropped
     pm[10:15, 10:15] = 0.9  # area 25
-    pm[0:5, 15:20] = 0.9    # area 25 (tie -> first wins, still nonempty)
+    pm[0:5, 15:20] = 0.9  # area 25 (tie -> first wins, still nonempty)
     loc, w = extract(pm, (20, 20))
     assert loc.area_pixels == 50
     assert w == ["multiple_components"]

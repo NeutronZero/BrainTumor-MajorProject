@@ -10,6 +10,7 @@ Writes:
   outputs/PBA-004/reliability_diagram.png
   outputs/PBA-004/reliability_data.json  (plot source data + verification)
 """
+
 from __future__ import annotations
 
 import json
@@ -17,10 +18,10 @@ import sys
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-
 
 CLASSES = ["glioma", "meningioma", "pituitary", "notumor"]
 BINS = 15
@@ -51,14 +52,31 @@ def main() -> int:
         if n:
             acc, avg = float(correct[m].mean()), float(conf[m].mean())
             ece_check += (n / len(test)) * abs(acc - avg)
-            plot_bins.append({"bin": f"{lo:.2f}-{hi:.2f}", "lo": lo, "hi": hi,
-                              "center": (lo + hi) / 2, "n": n,
-                              "accuracy": acc, "mean_confidence": avg,
-                              "gap": acc - avg})
+            plot_bins.append(
+                {
+                    "bin": f"{lo:.2f}-{hi:.2f}",
+                    "lo": lo,
+                    "hi": hi,
+                    "center": (lo + hi) / 2,
+                    "n": n,
+                    "accuracy": acc,
+                    "mean_confidence": avg,
+                    "gap": acc - avg,
+                }
+            )
         else:
-            plot_bins.append({"bin": f"{lo:.2f}-{hi:.2f}", "lo": lo, "hi": hi,
-                              "center": (lo + hi) / 2, "n": 0,
-                              "accuracy": None, "mean_confidence": None, "gap": None})
+            plot_bins.append(
+                {
+                    "bin": f"{lo:.2f}-{hi:.2f}",
+                    "lo": lo,
+                    "hi": hi,
+                    "center": (lo + hi) / 2,
+                    "n": 0,
+                    "accuracy": None,
+                    "mean_confidence": None,
+                    "gap": None,
+                }
+            )
 
     ev_ece = ev["cls_primary"]["ece_post_T"]
     stored_ece = rep4["ece_post_T"]
@@ -73,16 +91,20 @@ def main() -> int:
     accs = np.array([b["accuracy"] for b in nonempty])
     ns = np.array([b["n"] for b in nonempty])
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7, 7), sharex=True,
-                                   gridspec_kw={"height_ratios": [3, 1.2]})
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(7, 7), sharex=True, gridspec_kw={"height_ratios": [3, 1.2]}
+    )
     ax1.plot([0, 1], [0, 1], linestyle="--", linewidth=1, label="perfect calibration")
     ax1.scatter(centers, accs, s=np.clip(ns, 10, 400), alpha=0.8, label="observed (size ~ n)")
     for b in nonempty:
-        ax1.text(b["mean_confidence"], b["accuracy"], f" n={b['n']}", fontsize=7,
-                 va="bottom", ha="left")
+        ax1.text(
+            b["mean_confidence"], b["accuracy"], f" n={b['n']}", fontsize=7, va="bottom", ha="left"
+        )
     ax1.set_ylabel("accuracy")
-    ax1.set_title(f"CLS-001 reliability (frozen T={cal['temperature']:.4f}, N=1000, "
-                  f"ECE={ev_ece:.4f}, CBW=2, uncertain=4)")
+    ax1.set_title(
+        f"CLS-001 reliability (frozen T={cal['temperature']:.4f}, N=1000, "
+        f"ECE={ev_ece:.4f}, CBW=2, uncertain=4)"
+    )
     ax1.set_xlim(0.5, 1.0)
     ax1.set_ylim(0.0, 1.02)
     ax1.legend(fontsize=8)
@@ -101,20 +123,33 @@ def main() -> int:
     fig.savefig(png, dpi=150)
     plt.close(fig)
 
-    data = {"source": "frozen per_case_test.json probs; descriptive only, no refit",
-            "frozen": {"T": cal["temperature"], "tau1": cal["tau1"], "tau2": cal["tau2"]},
-            "N": len(test),
-            "ece_recomputed": round(float(ece_check), 6),
-            "ece_locked_eval": ev_ece,
-            "ece_pba004_stored": stored_ece,
-            "verification": "recomputed == locked-eval == stored (tol 1e-6); N=1000; uncertain=4; CBW=2",
-            "confident_but_wrong_n": 2,
-            "uncertain_n": 4,
-            "bins_15": plot_bins,
-            "plot": str(png.name)}
+    data = {
+        "source": "frozen per_case_test.json probs; descriptive only, no refit",
+        "frozen": {"T": cal["temperature"], "tau1": cal["tau1"], "tau2": cal["tau2"]},
+        "N": len(test),
+        "ece_recomputed": round(float(ece_check), 6),
+        "ece_locked_eval": ev_ece,
+        "ece_pba004_stored": stored_ece,
+        "verification": "recomputed == locked-eval == stored (tol 1e-6); N=1000; uncertain=4; CBW=2",
+        "confident_but_wrong_n": 2,
+        "uncertain_n": 4,
+        "bins_15": plot_bins,
+        "plot": str(png.name),
+    }
     (out4 / "reliability_data.json").write_text(json.dumps(data, indent=1))
-    print(json.dumps({"png": str(png), "ece": ev_ece, "bins_nonempty": len(nonempty),
-                      "cbw": 2, "uncertain": 4, "verified": True}, indent=1))
+    print(
+        json.dumps(
+            {
+                "png": str(png),
+                "ece": ev_ece,
+                "bins_nonempty": len(nonempty),
+                "cbw": 2,
+                "uncertain": 4,
+                "verified": True,
+            },
+            indent=1,
+        )
+    )
     return 0
 
 

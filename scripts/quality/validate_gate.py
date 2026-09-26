@@ -22,6 +22,7 @@ from brain_tumor.quality.gate import assess  # noqa: E402
 
 def _png(a: np.ndarray) -> bytes:
     from PIL import Image
+
     buf = io.BytesIO()
     Image.fromarray(a.astype("uint8")).save(buf, format="PNG")
     return buf.getvalue()
@@ -47,10 +48,12 @@ def main() -> int:
     out = root / "outputs" / "QUALITY"
     out.mkdir(parents=True, exist_ok=True)
     manifest = load_manifest(root / "outputs" / "data_gate_0" / "project_manifest.csv")
-    val = [r for r in manifest if r["population"] == "official_train_pool"
-           and r["project_split"] == "val"]
-    assert len(val) == 1000 and not any(
-        r["population"] == "official_test_locked" for r in val)
+    val = [
+        r
+        for r in manifest
+        if r["population"] == "official_train_pool" and r["project_split"] == "val"
+    ]
+    assert len(val) == 1000 and not any(r["population"] == "official_test_locked" for r in val)
 
     rejects = []
     for i, r in enumerate(val):
@@ -67,14 +70,25 @@ def main() -> int:
         det[name] = {"verdict": a["verdict"], "failed": a["failed"]}
         print(f"corruption {name}: {a['verdict']} {a['failed']}", flush=True)
 
-    rep = {"clean_val_n": len(val), "false_rejects": len(rejects),
-           "false_reject_rate": round(len(rejects) / len(val), 6),
-           "false_reject_cases": rejects[:20],
-           "corruption_detection": det,
-           "note": "thresholds fixed in gate.py; val used for reporting only; no test contact"}
+    rep = {
+        "clean_val_n": len(val),
+        "false_rejects": len(rejects),
+        "false_reject_rate": round(len(rejects) / len(val), 6),
+        "false_reject_cases": rejects[:20],
+        "corruption_detection": det,
+        "note": "thresholds fixed in gate.py; val used for reporting only; no test contact",
+    }
     (out / "gate_validation.json").write_text(json.dumps(rep, indent=1))
-    print(json.dumps({"false_rejects": len(rejects), "detected": sum(
-        1 for v in det.values() if v["verdict"] == "reject"), "of": len(det)}, indent=1))
+    print(
+        json.dumps(
+            {
+                "false_rejects": len(rejects),
+                "detected": sum(1 for v in det.values() if v["verdict"] == "reject"),
+                "of": len(det),
+            },
+            indent=1,
+        )
+    )
     return 0
 
 

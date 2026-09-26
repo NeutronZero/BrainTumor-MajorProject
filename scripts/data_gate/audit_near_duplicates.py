@@ -14,6 +14,7 @@ IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
 
 def _ahash(p: Path):
     from PIL import Image
+
     with Image.open(p) as im:
         g = im.convert("L").resize((8, 8))
         px = list(g.getdata())
@@ -24,9 +25,14 @@ def _ahash(p: Path):
 def main() -> dict:
     root = Path(__file__).resolve().parents[2]
     data_dir = root / "data"
-    files = [p for p in data_dir.rglob("*") if p.suffix.lower() in IMG_EXTS] if data_dir.exists() else []
+    files = (
+        [p for p in data_dir.rglob("*") if p.suffix.lower() in IMG_EXTS]
+        if data_dir.exists()
+        else []
+    )
     try:
         import PIL  # noqa: F401
+
         buckets: dict[str, list[str]] = defaultdict(list)
         for p in sorted(files):
             try:
@@ -34,12 +40,22 @@ def main() -> dict:
             except Exception:
                 pass
         groups = {h: v for h, v in buckets.items() if len(v) > 1}
-        result = {"check": "near_duplicates", "pass": True, "policy": "report_only",
-                  "n_files": len(files), "n_collision_groups": len(groups),
-                  "groups_sample": list(groups.values())[:10]}
+        result = {
+            "check": "near_duplicates",
+            "pass": True,
+            "policy": "report_only",
+            "n_files": len(files),
+            "n_collision_groups": len(groups),
+            "groups_sample": list(groups.values())[:10],
+        }
     except ImportError:
-        result = {"check": "near_duplicates", "pass": True, "policy": "report_only",
-                  "skipped": "PIL unavailable", "n_files": len(files)}
+        result = {
+            "check": "near_duplicates",
+            "pass": True,
+            "policy": "report_only",
+            "skipped": "PIL unavailable",
+            "n_files": len(files),
+        }
     write_json("near_duplicate_report.json", result)
     print(f"near-duplicates: report-only n={len(files)}")
     return result

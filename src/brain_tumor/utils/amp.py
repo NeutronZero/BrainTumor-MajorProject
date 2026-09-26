@@ -59,7 +59,8 @@ def require_cuda_arch(min_major: int = 7, min_minor: int = 0) -> str:
         raise RuntimeError(
             f"GPU {name} is sm_{major}{minor}; this project requires "
             f"sm_{min_major}{min_minor}+ (T4 sm_75 target). Aborting instead of "
-            f"silently falling back.")
+            f"silently falling back."
+        )
     return "cuda"
 
 

@@ -25,16 +25,21 @@ SEEDS = (101, 202, 303)
 
 def _synthetic(seed: int, size: int = 512):
     from PIL import Image
+
     rng = np.random.RandomState(seed)
     return Image.fromarray((rng.rand(size, size) * 255).astype("uint8"))
 
 
 def _stats(xs: list[float]) -> dict:
     a = np.array(xs)
-    return {"n": len(xs), "median": round(float(np.median(a)), 4),
-            "p95": round(float(np.percentile(a, 95)), 4),
-            "min": round(float(a.min()), 4), "max": round(float(a.max()), 4),
-            "mean": round(float(a.mean()), 4)}
+    return {
+        "n": len(xs),
+        "median": round(float(np.median(a)), 4),
+        "p95": round(float(np.percentile(a, 95)), 4),
+        "min": round(float(a.min()), 4),
+        "max": round(float(a.max()), 4),
+        "mean": round(float(a.mean()), 4),
+    }
 
 
 def main() -> int:
@@ -47,10 +52,12 @@ def main() -> int:
 
     t0 = time.perf_counter()
     from brain_tumor.inference.service import InferenceService
+
     svc = InferenceService(
         classifier_ckpt=root / "checkpoints" / "CLS-001" / "best.pt",
         segmenter_ckpt=root / "checkpoints" / "SEG-001" / "best.pt",
-        device=device)
+        device=device,
+    )
     torch.cuda.synchronize()
     cold_load = time.perf_counter() - t0
     print(f"cold load (import+weights): {cold_load:.2f}s", flush=True)
@@ -62,14 +69,20 @@ def main() -> int:
         svc.consistency(img)
     torch.cuda.synchronize()
 
-    lat: dict[str, list[float]] = {"classify": [], "segment": [],
-                                   "consistency_k8": [], "analyze": []}
+    lat: dict[str, list[float]] = {
+        "classify": [],
+        "segment": [],
+        "consistency_k8": [],
+        "analyze": [],
+    }
     for r in range(REPEATS):
         for img in images:
-            for name, fn in (("classify", lambda: svc.classify(img)),
-                             ("segment", lambda: svc.segment(img)),
-                             ("consistency_k8", lambda: svc.consistency(img)),
-                             ("analyze", lambda: svc.analyze(img))):
+            for name, fn in (
+                ("classify", lambda: svc.classify(img)),
+                ("segment", lambda: svc.segment(img)),
+                ("consistency_k8", lambda: svc.consistency(img)),
+                ("analyze", lambda: svc.analyze(img)),
+            ):
                 t = time.perf_counter()
                 fn()
                 torch.cuda.synchronize()
@@ -83,29 +96,42 @@ def main() -> int:
         svc.analyze(img)
         svc.consistency(img)
     torch.cuda.synchronize()
-    mem = {"peak_allocated_MB": round(torch.cuda.max_memory_allocated() / 2**20, 1),
-           "peak_reserved_MB": round(torch.cuda.max_memory_reserved() / 2**20, 1)}
+    mem = {
+        "peak_allocated_MB": round(torch.cuda.max_memory_allocated() / 2**20, 1),
+        "peak_reserved_MB": round(torch.cuda.max_memory_reserved() / 2**20, 1),
+    }
 
     # Determinism probe (reported, not asserted).
     a1 = svc.analyze(images[0]).model_dump()
     a2 = svc.analyze(images[0]).model_dump()
-    deterministic = (a1 == a2)
+    deterministic = a1 == a2
 
     payload = {
-        "precision": "FP32 reference", "device": torch.cuda.get_device_name(0),
-        "torch": torch.__version__, "inputs": "synthetic 512px, seeds [101,202,303]",
-        "repeats_per_image": REPEATS, "cold_load_s": round(cold_load, 3),
+        "precision": "FP32 reference",
+        "device": torch.cuda.get_device_name(0),
+        "torch": torch.__version__,
+        "inputs": "synthetic 512px, seeds [101,202,303]",
+        "repeats_per_image": REPEATS,
+        "cold_load_s": round(cold_load, 3),
         "latency_s": {k: _stats(v) for k, v in lat.items()},
         "peak_gpu_memory": mem,
         "gpu_deterministic_repeat": bool(deterministic),
         "floors": "FP16/ONNX deltas vs this reference: Macro-F1/Dice >= -0.01; "
-                  "quantization >= -0.02 (accuracy), plus latency improvement",
+        "quantization >= -0.02 (accuracy), plus latency improvement",
     }
     (out / "gpu_latency_fp32.json").write_text(json.dumps(payload, indent=1))
-    print(json.dumps({"cold_load_s": payload["cold_load_s"],
-                      "median": {k: v["median"] for k, v in payload["latency_s"].items()},
-                      "p95": {k: v["p95"] for k, v in payload["latency_s"].items()},
-                      "mem": mem, "deterministic": deterministic}, indent=1))
+    print(
+        json.dumps(
+            {
+                "cold_load_s": payload["cold_load_s"],
+                "median": {k: v["median"] for k, v in payload["latency_s"].items()},
+                "p95": {k: v["p95"] for k, v in payload["latency_s"].items()},
+                "mem": mem,
+                "deterministic": deterministic,
+            },
+            indent=1,
+        )
+    )
     return 0
 
 

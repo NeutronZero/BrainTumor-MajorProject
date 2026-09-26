@@ -30,6 +30,7 @@ def sha(p: Path) -> str:
 
 def main() -> int:
     from PIL import Image
+
     root = Path(__file__).resolve().parents[2]
     sys.path.insert(0, str(root / "src"))
     from brain_tumor.classification.models import build_classifier
@@ -39,10 +40,16 @@ def main() -> int:
     dst = root / "checkpoints" / "CLS-001" / "best_stateonly.pt"
     ck = torch.load(src, map_location="cpu", weights_only=False)
     assert set(ck) >= {"state", "epoch", "val_metric"}, sorted(ck)
-    stripped = {"state": ck["state"], "epoch": ck["epoch"], "val_metric": ck["val_metric"],
-                "lineage": {"derived_from_sha256": sha(src),
-                            "method": "key removal only (optimizer/scheduler/scaler/rng dropped)",
-                            "locked_eval_attribution": "original best.pt (unchanged)"}}
+    stripped = {
+        "state": ck["state"],
+        "epoch": ck["epoch"],
+        "val_metric": ck["val_metric"],
+        "lineage": {
+            "derived_from_sha256": sha(src),
+            "method": "key removal only (optimizer/scheduler/scaler/rng dropped)",
+            "locked_eval_attribution": "original best.pt (unchanged)",
+        },
+    }
     torch.save(stripped, dst)
 
     # Equivalence proof.
@@ -53,7 +60,9 @@ def main() -> int:
     sa, sb = a.state_dict(), b.state_dict()
     assert sa.keys() == sb.keys()
     assert all(torch.equal(sa[k], sb[k]) for k in sa)
-    assert sum(p.numel() for p in a.parameters()) == sum(p.numel() for p in b.parameters()) == 27823204
+    assert (
+        sum(p.numel() for p in a.parameters()) == sum(p.numel() for p in b.parameters()) == 27823204
+    )
     tf = build_cls_transform(False)
     cal = json.loads((root / "outputs" / "CLS-001" / "calibration_frozen.json").read_text())
     a.eval()
@@ -68,9 +77,19 @@ def main() -> int:
             pb = torch.softmax(b(x) / cal["temperature"], dim=1)[0]
         assert torch.equal(pa, pb), (seed, size)
         assert pa.argmax().item() == pb.argmax().item()
-    print(json.dumps({"src_sha": sha(src)[:16], "dst_sha": sha(dst)[:16],
-                      "src_bytes": src.stat().st_size, "dst_bytes": dst.stat().st_size,
-                      "state_tensors": len(sa), "inference_identical_3_cases": True}, indent=1))
+    print(
+        json.dumps(
+            {
+                "src_sha": sha(src)[:16],
+                "dst_sha": sha(dst)[:16],
+                "src_bytes": src.stat().st_size,
+                "dst_bytes": dst.stat().st_size,
+                "state_tensors": len(sa),
+                "inference_identical_3_cases": True,
+            },
+            indent=1,
+        )
+    )
     return 0
 
 
