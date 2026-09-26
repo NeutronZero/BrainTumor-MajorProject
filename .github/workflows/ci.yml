@@ -1,12 +1,16 @@
 name: ci
 on: [push, pull_request]
+
 jobs:
   cpu-smoke:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.14" }  # matches requirements.lock baseline (recorded on 3.14)
+        with:
+          python-version: "3.14"  # matches requirements.lock baseline (recorded on 3.14)
+          cache: pip
+          cache-dependency-path: requirements.lock
       - run: pip install -r requirements.lock
       - run: pip install huggingface-hub  # fetch-only dep (kept out of the runtime lock)
       # CLS-001 + SEG-001 are the registry weights tests and the smoke check
@@ -14,4 +18,23 @@ jobs:
       - run: python scripts/fetch_models.py --only CLS-001 SEG-001
       - run: python scripts/reproducibility_check.py
       # fail_under=70 comes from [tool.coverage.report] in pyproject.toml
-      - run: python -m pytest -q --cov=brain_tumor --cov-report=term-missing
+      - run: python -m pytest -q --cov=brain_tumor --cov-report=term-missing --cov-fail-under=70
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - run: pip install ruff pip-audit
+      # Style gates on the production surface (app/src/tests). scripts/ carries
+      # legacy research-code lint debt (191 findings, mostly T201 prints) and
+      # is deliberately not gated.
+      - run: ruff check app src tests
+      - run: ruff format --check app src tests
+      # Dependency vulnerability gate: audits the lock, exits non-zero on any
+      # known CVE for the pinned versions.
+      - run: pip-audit -r requirements.lock --strict

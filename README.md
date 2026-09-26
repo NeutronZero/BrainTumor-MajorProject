@@ -39,6 +39,25 @@ python scripts/launch.py ui      # Streamlit → http://localhost:8501
 Raw equivalents: `uvicorn app.api.main:app --host 127.0.0.1 --port 8000`
 (from root) and `streamlit run app/streamlit/app.py`.
 
+### API access control (optional)
+
+The API is an open research-prototype surface by default. Two environment
+variables harden it when exposed beyond localhost:
+
+| Variable | Default | Effect |
+|---|---|---|
+| `BT_API_TOKEN` | unset (open) | When set, every inference endpoint requires `Authorization: Bearer <token>`. `/health` and `/metrics` stay open for probes/scrapers. |
+| `BT_RATE_LIMIT` | `120` | Max inference requests per client IP per 60s window (fixed window; 429 when exceeded). Validation failures count — hits are recorded pre-handler. |
+
+```powershell
+# example: token-gated, 60 req/min
+$env:BT_API_TOKEN="<secret>"; $env:BT_RATE_LIMIT="60"
+python scripts/launch.py api
+```
+
+Never expose the container directly to the internet without a reverse proxy;
+`docker run` binds `0.0.0.0` and every `/analyze` costs ~11 forward passes.
+
 Docker (API, needs checkpoints + outputs mounted — they are LFS/release
 artifacts, not baked into the image):
 
@@ -69,7 +88,7 @@ docker run --rm -p 8000:8000 `
 
 ```powershell
 python scripts/reproducibility_check.py
-python -m pytest -q   # 113 tests
+python -m pytest -q   # 125 tests
 python scripts/release/verify_manifest.py   # manifest ↔ tree integrity
 ```
 

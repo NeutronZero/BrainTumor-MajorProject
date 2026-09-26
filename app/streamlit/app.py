@@ -18,11 +18,18 @@ import io
 import sys
 from pathlib import Path
 
+import filetype
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from brain_tumor.inference.service import InferenceService  # noqa: E402
 
 LIMIT_BYTES = 10 * 1024 * 1024
+# Round-3 audit parity with the API: 32MP decompression-bomb ceiling and a
+# positive-mismatch MIME sniff (known non-image signatures are rejected here;
+# unidentifiable bytes fall through to PIL and surface as undecodable_image).
+_MAX_PIXELS = 32_000_000
+_ALLOWED_MIME = {"image/jpeg", "image/png", "image/bmp", "image/tiff"}
 DISCLAIMER = (
     "Engineering prototype output — not a medical diagnosis. "
     "Not a certified medical device; never use for clinical "
@@ -53,9 +60,16 @@ def build_payload(svc: InferenceService, data: bytes) -> dict:
     if len(data) > LIMIT_BYTES:
         return {"error": "file_too_large", "detail": "limit 10MB"}
     try:
+        kind = filetype.guess(data)
+    except Exception:  # noqa: BLE001 — sniff failure => let PIL decide
+        kind = None
+    if kind is not None and kind.mime not in _ALLOWED_MIME:
+        return {"error": "unsupported_type", "detail": f"sniffed {kind.mime} not supported"}
+    try:
+        Image.MAX_IMAGE_PIXELS = _MAX_PIXELS
         img = Image.open(io.BytesIO(data))
         img.load()
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — includes DecompressionBombError
         return {"error": "undecodable_image", "detail": "cannot decode upload"}
     try:
         # Same threading as API /analyze: compute once, pass down. Outputs

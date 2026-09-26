@@ -27,6 +27,11 @@ MIN_FOREGROUND_FRAC = 0.02  # pixels > 10/255; head MRI always exceeds this
 FOREGROUND_LEVEL = 10.0
 MAX_BYTES = 10 * 1024 * 1024  # matches API limit
 _ALLOWED_MIME = {"image/jpeg", "image/png", "image/bmp", "image/tiff"}
+# Decompression-bomb guard (round-3 audit): /quality decodes raw bytes with
+# PIL's default ~89MP ceiling, which lets a 10MB PNG allocate ~350MB. 32MP
+# matches the API's explicit guard (app/api/main.py _MAX_PIXELS) — project
+# inputs are ≤1024², so legit MRIs are nowhere near this.
+_MAX_PIXELS = 32_000_000
 
 
 def _reasons() -> list[str]:
@@ -48,9 +53,10 @@ def assess(data: bytes) -> dict:
     try:
         from PIL import Image
 
+        Image.MAX_IMAGE_PIXELS = _MAX_PIXELS
         img = Image.open(io.BytesIO(data))
         img.load()
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — includes DecompressionBombError
         failed.append("Q01_undecodable")
         return {"verdict": "reject", "failed": failed, "facts": facts}
     w, h = img.size

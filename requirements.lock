@@ -1,35 +1,89 @@
-# Locked dependencies — regenerate with pip freeze after verified env.
-# Python 3.14 / CPU baseline (Kaggle T4 image recorded per-run via run_config).
-# REL-002: regenerated from the verified env after pip check PASS.
-#   - declared filetype + prometheus-client (runtime imports in app/api/main.py)
-#   - refreshed fastapi/uvicorn/streamlit to the versions actually running here;
-#     the previous streamlit==1.50.0 pin (pandas<3) made the lock unresolvable
-#     together with pandas==3.0.3 (proven by clean-venv pip install failure).
+# Full transitive dependency freeze — Python 3.14 / CPU baseline.
+# (Kaggle T4 image recorded per-run via run_config.)
+# Round-3 audit: the previous 22-pin hand-curated lock left every transitive
+# dependency floating, so fresh-venv resolution could drift from the verified
+# env — the exact failure class this file's history documents (the
+# streamlit==1.50.0 / pandas==3.0.3 conflict below). This lock is now the
+# complete closure captured by `pip freeze` from the verified .venv-rel002
+# environment, so a fresh install resolves to the same graph bit-for-bit.
+# Regenerate: clean venv -> pip install -r pyproject dependencies + the
+# test/dev pins below -> pip freeze > requirements.lock.
+# REL-002: refreshed fastapi/uvicorn/streamlit to the versions actually
+# running here; the previous streamlit==1.50.0 pin (pandas<3) made the lock
+# unresolvable together with pandas==3.0.3 (proven by clean-venv pip install
+# failure).
 filetype==1.2.0
 prometheus-client==0.26.0
-# round-2 audit: required by Starlette for multipart/form-data (UploadFile);
-# was installed in the dev env but undeclared — every upload would have
-# 500'd in a fresh container/clean venv.
+# Required by Starlette for multipart/form-data (UploadFile); undeclared deps
+# 500 every upload in a fresh container/clean venv.
 python-multipart==0.0.32
-torch==2.13.0
-torchvision==0.28.0
+altair==6.3.0
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+attrs==26.1.0
+blinker==1.9.0
+certifi==2026.7.22
+charset-normalizer==3.5.1
+click==8.5.0
+cloudpickle==3.1.2
+colorama==0.4.6
+fastapi==0.141.1
+filelock==4.0.3
+fsspec==2026.9.0
+h11==0.16.0
+httpcore==1.0.9
+httptools==0.8.0
+httpx==0.28.1
+idna==3.20
+iniconfig==2.3.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+joblib==1.6.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+MarkupSafe==3.0.3
+mpmath==1.3.0
+narwhals==2.26.0
+networkx==3.7
 numpy==2.4.6
+packaging==26.3
 pandas==3.0.3
 pillow==12.2.0
-scipy==1.17.1
-scikit-learn==1.8.0
-pyyaml==6.0.3
+pluggy==1.6.0
+prometheus_client==0.26.0
+protobuf==7.36.2
+pyarrow==25.0.1
 pydantic==2.13.4
-fastapi==0.141.1
-# Load-bearing transitive pins (REL-002): starlette floats with fastapi and its
-# version dictates the TestClient transport (1.2.1: httpx; newer: httpx2).
-# Pinning keeps fresh-venv behavior identical to the verified env.
+pydantic_core==2.46.4
+pydeck==0.9.3
+Pygments==2.21.0
+python-dateutil==2.9.0.post0
+PyYAML==6.0.3
+referencing==0.37.0
+requests==2.34.2
+rpds-py==2026.6.3
+scikit-learn==1.8.0
+scipy==1.17.1
+six==1.17.0
+sortedcontainers==2.4.0
 starlette==1.2.1
-httpx==0.28.1
-uvicorn==0.40.0
 streamlit==1.62.0
-pytest==9.0.3
-# Test-only deps (kept in the lock so `pip install -r requirements.lock`
+sympy==1.14.0
+threadpoolctl==3.7.0
+toml==0.10.2
+torch==2.13.0
+torchvision==0.28.0
+typing_extensions==4.16.0
+typing-inspection==0.4.4
+tzdata==2026.4
+urllib3==2.8.0
+uvicorn==0.40.0
+watchdog==6.0.0
+websockets==16.1.1
+# Test/dev deps (kept in the lock so `pip install -r requirements.lock`
 # followed by `pytest` works with no extra step; harmless in the image).
-pytest-cov==7.1.0
+coverage==7.16.1
 hypothesis==6.155.1
+pytest==9.0.3
+pytest-cov==7.1.0

@@ -44,7 +44,7 @@ class UNet(nn.Module):
 
     def forward(self, x):
         skips = []
-        for d, p in zip(self.downs, self.pools):
+        for d, p in zip(self.downs, self.pools, strict=True):
             x = d(x)
             skips.append(x)
             x = p(x)

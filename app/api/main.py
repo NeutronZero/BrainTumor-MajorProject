@@ -12,13 +12,20 @@ REL-002 hardening: /analyze_batch is resource-bounded (max files, aggregate
 bytes, aggregate decoded pixels — all rejected before full-body parse), and
 inference-request metrics flow through one accounting helper so every
 inference endpoint reports exactly one observation per request.
+
+Round-3 audit hardening: inference endpoints are gated by an optional
+bearer token (env BT_API_TOKEN; unset = open prototype behavior) and a
+fixed-window per-client rate limit (BT_RATE_LIMIT/min, default 120),
+because /analyze costs ~11 forward passes and the container binds 0.0.0.0.
 """
 
 from __future__ import annotations
 
 import hashlib
 import io
+import os
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -57,6 +64,99 @@ def _count_request(endpoint: str, status: int) -> None:
     are not inference endpoints and are deliberately excluded.
     """
     INFERENCE_REQUESTS.labels(endpoint=endpoint, status=str(status)).inc()
+
+
+# ---- access hardening (round-3 audit) -----------------------------------------
+# Bearer-token gate: set BT_API_TOKEN to require `Authorization: Bearer <token>`
+# on every inference endpoint. Unset (default) keeps the open research-
+# prototype behavior; /health and /metrics stay open either way so liveness
+# probes and metric scrapers never need credentials. Comparison is a plain
+# string compare — this token gates a prototype API surface, it is not a
+# secret-keeping credential store; do not reuse it for anything sensitive.
+_API_TOKEN = os.environ.get("BT_API_TOKEN") or None
+
+
+class _AuthError(Exception):
+    def __init__(self, status: int, payload: dict):
+        self.status = status
+        self.payload = payload
+
+
+class AuthRateLimitMiddleware(BaseHTTPMiddleware):
+    """Bearer-token gate + fixed-window per-client rate limit on inference
+    endpoints (round-3 audit: the API shipped unauthenticated and unthrottled
+    while /analyze runs classify + segment + 8-probe consistency + quality +
+    reliability per request).
+
+    Scope: exactly RequestIDMiddleware._INFERENCE_PATHS — /health, /metrics,
+    /docs and /openapi.json pass through untouched. State is in-memory and
+    per-process by design (single-container deployment profile; a multi-
+    replica deployment should front this with a shared limiter).
+    """
+
+    _MAX_REQUESTS = int(os.environ.get("BT_RATE_LIMIT", "120"))
+    _WINDOW_SECONDS = 60.0
+    # Key-cap: an attacker spoofing unique XFF IPs must not grow _hits
+    # unboundedly (memory DoS). Past the cap, expired keys are pruned; if
+    # still over, the table resets (worst case: a brief grace window).
+    _MAX_CLIENTS = 10_000
+
+    def __init__(self, app: Any):
+        super().__init__(app)
+        self._hits: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
+
+    def _client_key(self, request: Request) -> str:
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            return fwd.split(",")[0].strip()
+        return request.client.host if request.client else "unknown"
+
+    def _gate(self, request: Request) -> None:
+        """Raise _AuthError on missing token or exhausted window; else record hit."""
+        if _API_TOKEN is not None:
+            header = request.headers.get("authorization", "")
+            if header != f"Bearer {_API_TOKEN}":
+                raise _AuthError(
+                    401,
+                    {"error": "unauthorized", "detail": "missing or invalid bearer token"},
+                )
+        key = self._client_key(request)
+        now = time.perf_counter()
+        with self._lock:
+            if len(self._hits) > self._MAX_CLIENTS:
+                self._hits = {
+                    k: [t for t in v if now - t < self._WINDOW_SECONDS]
+                    for k, v in self._hits.items()
+                    if any(now - t < self._WINDOW_SECONDS for t in v)
+                }
+                if len(self._hits) > self._MAX_CLIENTS:
+                    self._hits.clear()
+            window = [t for t in self._hits.get(key, []) if now - t < self._WINDOW_SECONDS]
+            if len(window) >= self._MAX_REQUESTS:
+                raise _AuthError(
+                    429,
+                    {
+                        "error": "rate_limited",
+                        "detail": f"max {self._MAX_REQUESTS} inference requests per "
+                        f"{int(self._WINDOW_SECONDS)}s window",
+                    },
+                )
+            window.append(now)
+            self._hits[key] = window
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path not in RequestIDMiddleware._INFERENCE_PATHS:
+            return await call_next(request)
+        try:
+            self._gate(request)
+        except _AuthError as e:
+            # Convert to the envelope HERE (never raise past BaseHTTPMiddleware:
+            # it would surface as 500 from ServerErrorMiddleware). The response
+            # flows through RequestIDMiddleware, which counts it as exactly one
+            # INFERENCE_REQUESTS observation at 401/429.
+            return JSONResponse(e.payload, status_code=e.status)
+        return await call_next(request)
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -140,15 +240,23 @@ def _integrity_report() -> dict[str, str | None]:
 # remains available via scripts/release/build_manifest.py.
 _INTEGRITY_TTL_SECONDS = 300.0
 _INTEGRITY_CACHE: dict[str, Any] = {"at": 0.0, "value": None}
+# /health runs in Starlette's sync threadpool — the cache dict is touched from
+# multiple threads (round-3 audit). Holding the lock across a rehash also
+# collapses concurrent probes into one 600MB rehash instead of N.
+_INTEGRITY_CACHE_LOCK = threading.Lock()
 
 
 def _integrity_report_cached() -> dict[str, str | None]:
     """TTL-cached integrity report for /health (300s)."""
-    now = time.time()
-    if _INTEGRITY_CACHE["value"] is None or now - _INTEGRITY_CACHE["at"] >= _INTEGRITY_TTL_SECONDS:
-        _INTEGRITY_CACHE["value"] = _integrity_report()
-        _INTEGRITY_CACHE["at"] = now
-    return _INTEGRITY_CACHE["value"]
+    with _INTEGRITY_CACHE_LOCK:
+        now = time.time()
+        if (
+            _INTEGRITY_CACHE["value"] is None
+            or now - _INTEGRITY_CACHE["at"] >= _INTEGRITY_TTL_SECONDS
+        ):
+            _INTEGRITY_CACHE["value"] = _integrity_report()
+            _INTEGRITY_CACHE["at"] = now
+        return _INTEGRITY_CACHE["value"]
 
 
 API_DISCLAIMER = (
@@ -267,6 +375,10 @@ app = FastAPI(
     version="0.1.0",
     description=API_DISCLAIMER + " Every inference payload embeds this notice in `disclaimer`.",
 )
+# Auth/rate-limit registered FIRST so RequestIDMiddleware sits outermost:
+# 401/429 short-circuit responses still get a request ID and still count as
+# exactly one INFERENCE_REQUESTS observation at their terminal status.
+app.add_middleware(AuthRateLimitMiddleware)
 app.add_middleware(RequestIDMiddleware)
 
 

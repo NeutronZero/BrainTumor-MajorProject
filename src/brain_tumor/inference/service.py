@@ -179,8 +179,6 @@ class InferenceService:
 
     def _autocast(self):
         """FP16 on CUDA (frozen deployment representation); no-op on CPU."""
-        import contextlib
-
         if self.device != "cpu" and torch.cuda.is_available():
             return torch.autocast(device_type="cuda", dtype=torch.float16)
         return contextlib.nullcontext()
@@ -517,12 +515,8 @@ class InferenceService:
             conf = float(confs[i])
             margin = float(margins[i])
             cls_state = "confident" if (conf >= self.tau1 and margin >= self.tau2) else "uncertain"
-            prob_dict = {c: round(float(p), 6) for c, p in zip(CLASSES, probs[i].cpu().numpy())}
-            c_result = {
-                "predicted_class": pred,
-                "probabilities": prob_dict,
-                "confidence": conf,
-                "classification_state": cls_state,
+            prob_dict = {
+                c: round(float(p), 6) for c, p in zip(CLASSES, probs[i].cpu().numpy(), strict=True)
             }
 
             warnings: list[str] = []
@@ -530,9 +524,15 @@ class InferenceService:
                 warnings.append("low_confidence")
 
             if pred == "notumor":
-                seg_state, loc = "empty", LocalizationResult(bbox=None, centroid=None, area_pixels=0)
+                seg_state, loc = (
+                    "empty",
+                    LocalizationResult(bbox=None, centroid=None, area_pixels=0),
+                )
             elif not self.segmentation_available:
-                seg_state, loc = "unavailable", LocalizationResult(bbox=None, centroid=None, area_pixels=0)
+                seg_state, loc = (
+                    "unavailable",
+                    LocalizationResult(bbox=None, centroid=None, area_pixels=0),
+                )
                 warnings.append("segmentation_unavailable")
             else:
                 # Segment this image (could be batched too for optimization)

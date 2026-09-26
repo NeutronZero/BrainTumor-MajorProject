@@ -30,7 +30,17 @@ COPY src/ ./src/
 COPY configs/ ./configs/
 COPY scripts/reproducibility_check.py ./scripts/reproducibility_check.py
 
+# Non-root runtime (round-3 audit): the API never needs privileges.
+RUN useradd --create-home --shell /usr/sbin/nologin appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8000
+
+# Liveness must key on model load state, not just process up (README: /health
+# "ok" requires checkpoints + frozen calibration artifacts on the mounts).
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).status == 200 else 1)"
 
 # Self-audit at boot: identical to the clean-checkout property proven in G2
 # (import application + load checkpoints). Fails fast on missing artifacts.
